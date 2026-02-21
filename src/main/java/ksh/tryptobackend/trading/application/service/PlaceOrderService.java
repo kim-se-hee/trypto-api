@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 @Service
@@ -31,6 +32,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     private final LivePricePort livePricePort;
     private final ExchangePort exchangePort;
     private final ExchangeCoinPort exchangeCoinPort;
+    private final Clock clock;
 
     @Override
     @Transactional
@@ -50,7 +52,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         validateLimitPrice(command);
 
         BigDecimal feeRate = exchange.feeRate();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         if (command.orderType() == OrderType.MARKET) {
             return placeMarketOrder(command, exchangeCoin, exchange, feeRate, now);
