@@ -3,12 +3,15 @@ package ksh.tryptobackend.trading.adapter.in;
 import jakarta.validation.Valid;
 import ksh.tryptobackend.common.dto.response.ApiResponseDto;
 import ksh.tryptobackend.common.dto.response.CursorPageResponseDto;
+import ksh.tryptobackend.trading.adapter.in.dto.command.CancelOrderCommand;
 import ksh.tryptobackend.trading.adapter.in.dto.request.FindOrderHistoryRequest;
 import ksh.tryptobackend.trading.adapter.in.dto.request.GetOrderAvailabilityRequest;
 import ksh.tryptobackend.trading.adapter.in.dto.request.PlaceOrderRequest;
+import ksh.tryptobackend.trading.adapter.in.dto.response.CancelOrderResponse;
 import ksh.tryptobackend.trading.adapter.in.dto.response.OrderAvailabilityResponse;
 import ksh.tryptobackend.trading.adapter.in.dto.response.OrderHistoryResponse;
 import ksh.tryptobackend.trading.adapter.in.dto.response.PlaceOrderResponse;
+import ksh.tryptobackend.trading.application.port.in.CancelOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.FindOrderHistoryUseCase;
 import ksh.tryptobackend.trading.application.port.in.GetOrderAvailabilityUseCase;
 import ksh.tryptobackend.trading.application.port.in.PlaceOrderUseCase;
@@ -17,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +35,7 @@ public class OrderController {
     private final PlaceOrderUseCase placeOrderUseCase;
     private final GetOrderAvailabilityUseCase getOrderAvailabilityUseCase;
     private final FindOrderHistoryUseCase findOrderHistoryUseCase;
+    private final CancelOrderUseCase cancelOrderUseCase;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -49,5 +54,11 @@ public class OrderController {
     public ApiResponseDto<CursorPageResponseDto<OrderHistoryResponse>> findOrderHistory(@Valid @ModelAttribute FindOrderHistoryRequest request) {
         CursorPageResponseDto<OrderHistoryResponse> response = findOrderHistoryUseCase.findOrderHistory(request.toQuery());
         return ApiResponseDto.success("조회 성공", response);
+    }
+
+    @PostMapping("/{orderId}/cancel")
+    public ApiResponseDto<CancelOrderResponse> cancelOrder(@PathVariable Long orderId) {
+        Order order = cancelOrderUseCase.cancelOrder(new CancelOrderCommand(orderId));
+        return ApiResponseDto.success("주문이 취소되었습니다.", CancelOrderResponse.from(order));
     }
 }
