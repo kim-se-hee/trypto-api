@@ -2,6 +2,7 @@ package ksh.tryptobackend.trading.domain.model;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
+import ksh.tryptobackend.trading.util.QuantityCalculator;
 import ksh.tryptobackend.trading.domain.vo.Fee;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
@@ -10,14 +11,11 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
 public class Order {
-
-    private static final int QUANTITY_SCALE = 8;
 
     private Long id;
     private final UUID idempotencyKey;
@@ -58,7 +56,7 @@ public class Order {
     public static Order createMarketBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
                                              BigDecimal orderAmount, BigDecimal currentPrice, BigDecimal feeRate,
                                              LocalDateTime now) {
-        BigDecimal quantity = calculateQuantity(orderAmount, currentPrice);
+        BigDecimal quantity = QuantityCalculator.calculate(orderAmount, currentPrice);
         BigDecimal filledAmount = quantity.multiply(currentPrice);
         Fee fee = Fee.calculate(filledAmount, feeRate);
 
@@ -103,7 +101,7 @@ public class Order {
     public static Order createLimitBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
                                             BigDecimal orderAmount, BigDecimal limitPrice, BigDecimal feeRate,
                                             LocalDateTime now) {
-        BigDecimal quantity = calculateQuantity(orderAmount, limitPrice);
+        BigDecimal quantity = QuantityCalculator.calculate(orderAmount, limitPrice);
         BigDecimal filledAmount = quantity.multiply(limitPrice);
         Fee fee = Fee.calculate(filledAmount, feeRate);
 
@@ -192,10 +190,6 @@ public class Order {
 
     public BigDecimal getTotalCostForBuy() {
         return getFilledAmount().add(fee.getAmount());
-    }
-
-    public static BigDecimal calculateQuantity(BigDecimal orderAmount, BigDecimal price) {
-        return orderAmount.divide(price, QUANTITY_SCALE, RoundingMode.FLOOR);
     }
 
     public void assignId(Long id) {
