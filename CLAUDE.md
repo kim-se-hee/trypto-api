@@ -328,7 +328,8 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 
 **테스트 작성 규칙**
 - 공통: Given-When-Then 패턴을 따른다
-- 인수 테스트: `.feature` 파일에 Gherkin 문법으로 시나리오를 작성하고 Step Definition에서 실제 API를 호출한다
+- 인수 테스트: `.feature` 파일에 Gherkin 문법(한국어)으로 시나리오를 작성하고 Step Definition에서 실제 API를 호출한다
+- Step Definition 애노테이션은 `io.cucumber.java.en` 패키지의 `@Given`, `@When`, `@Then`을 사용한다. 한글 애노테이션(`@먼저`, `@만일`, `@그러면`, `@그리고`) 사용 금지
 - 단위 테스트: `@DisplayName`에 한국어 설명을 작성하고 메서드명은 `methodName_condition_result` 패턴을 따른다
 
 ---

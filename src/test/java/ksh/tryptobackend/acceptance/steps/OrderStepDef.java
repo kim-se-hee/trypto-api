@@ -1,10 +1,9 @@
 package ksh.tryptobackend.acceptance.steps;
 
 import io.cucumber.java.Before;
-import io.cucumber.java.ko.그러면;
-import io.cucumber.java.ko.그리고;
-import io.cucumber.java.ko.만일;
-import io.cucumber.java.ko.먼저;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
 import ksh.tryptobackend.acceptance.mock.MockExchangeAdapter;
 import ksh.tryptobackend.acceptance.mock.MockExchangeCoinAdapter;
 import ksh.tryptobackend.acceptance.mock.MockLivePriceAdapter;
@@ -66,60 +65,60 @@ public class OrderStepDef {
         firstOrderId = null;
     }
 
-    @먼저("업비트 거래소가 등록되어 있다")
+    @Given("업비트 거래소가 등록되어 있다")
     public void 업비트_거래소가_등록되어_있다() {
         exchangeAdapter.addExchange(new ExchangeData(EXCHANGE_ID, new BigDecimal("0.0005"), KRW_COIN_ID, "KRW"));
     }
 
-    @그리고("업비트에 BTC가 상장되어 있다")
+    @Given("업비트에 BTC가 상장되어 있다")
     public void 업비트에_BTC가_상장되어_있다() {
         exchangeCoinAdapter.addExchangeCoin(new ExchangeCoinData(EXCHANGE_COIN_ID, EXCHANGE_ID, BTC_COIN_ID));
     }
 
-    @그리고("BTC 현재가는 {long}원이다")
+    @Given("BTC 현재가는 {long}원이다")
     public void BTC_현재가는_원이다(long price) {
         livePriceAdapter.setPrice(EXCHANGE_COIN_ID, new BigDecimal(price));
     }
 
-    @먼저("지갑에 KRW 잔고가 {long}원이다")
+    @Given("지갑에 KRW 잔고가 {long}원이다")
     public void 지갑에_KRW_잔고가_원이다(long amount) {
         walletBalanceAdapter.setBalance(WALLET_ID, KRW_COIN_ID, new BigDecimal(amount));
     }
 
-    @먼저("지갑에 BTC 잔고가 {double}개이다")
+    @Given("지갑에 BTC 잔고가 {double}개이다")
     public void 지갑에_BTC_잔고가_개이다(double amount) {
         walletBalanceAdapter.setBalance(WALLET_ID, BTC_COIN_ID, new BigDecimal(String.valueOf(amount)));
     }
 
-    @만일("시장가 매수 주문을 {long}원으로 요청한다")
+    @When("시장가 매수 주문을 {long}원으로 요청한다")
     public void 시장가_매수_주문을_원으로_요청한다(long amount) {
         Map<String, Object> body = createOrderBody("BUY", "MARKET", amount, null);
         apiClient.post("/api/orders", body);
         extractOrderIdIfSuccess();
     }
 
-    @만일("시장가 매도 주문을 {double}개로 요청한다")
+    @When("시장가 매도 주문을 {double}개로 요청한다")
     public void 시장가_매도_주문을_개로_요청한다(double amount) {
         Map<String, Object> body = createOrderBody("SELL", "MARKET", amount, null);
         apiClient.post("/api/orders", body);
         extractOrderIdIfSuccess();
     }
 
-    @만일("지정가 매수 주문을 {long}원에 가격 {long}원으로 요청한다")
+    @When("지정가 매수 주문을 {long}원에 가격 {long}원으로 요청한다")
     public void 지정가_매수_주문을_원에_가격_원으로_요청한다(long amount, long price) {
         Map<String, Object> body = createOrderBody("BUY", "LIMIT", amount, price);
         apiClient.post("/api/orders", body);
         extractOrderIdIfSuccess();
     }
 
-    @만일("지정가 매도 주문을 {double}개에 가격 {long}원으로 요청한다")
+    @When("지정가 매도 주문을 {double}개에 가격 {long}원으로 요청한다")
     public void 지정가_매도_주문을_개에_가격_원으로_요청한다(double amount, long price) {
         Map<String, Object> body = createOrderBody("SELL", "LIMIT", amount, price);
         apiClient.post("/api/orders", body);
         extractOrderIdIfSuccess();
     }
 
-    @만일("동일한 idempotencyKey로 시장가 매수 주문을 {long}원으로 {int}번 요청한다")
+    @When("동일한 idempotencyKey로 시장가 매수 주문을 {long}원으로 {int}번 요청한다")
     public void 동일한_idempotencyKey로_시장가_매수_주문을_원으로_N번_요청한다(long amount, int count) {
         savedIdempotencyKey = UUID.randomUUID().toString();
         for (int i = 0; i < count; i++) {
@@ -138,30 +137,30 @@ public class OrderStepDef {
         }
     }
 
-    @만일("매수 주문 가능 정보를 조회한다")
+    @When("매수 주문 가능 정보를 조회한다")
     public void 매수_주문_가능_정보를_조회한다() {
         apiClient.get("/api/orders/available?walletId=" + WALLET_ID
                 + "&exchangeCoinId=" + EXCHANGE_COIN_ID + "&side=BUY");
     }
 
-    @만일("주문 내역을 조회한다")
+    @When("주문 내역을 조회한다")
     public void 주문_내역을_조회한다() {
         apiClient.get("/api/orders?walletId=" + WALLET_ID);
     }
 
-    @만일("해당 주문을 취소한다")
+    @When("해당 주문을 취소한다")
     public void 해당_주문을_취소한다() {
         apiClient.post("/api/orders/" + lastOrderId + "/cancel");
     }
 
-    @그러면("주문 상태는 {string}이다")
+    @Then("주문 상태는 {string}이다")
     public void 주문_상태는_이다(String status) {
         apiClient.getLastResponse()
                 .expectBody()
                 .jsonPath("$.data.status").isEqualTo(status);
     }
 
-    @그리고("체결 수량은 {int}보다 크다")
+    @Then("체결 수량은 {int}보다 크다")
     public void 체결_수량은_보다_크다(int value) {
         apiClient.getLastResponse()
                 .expectBody()
@@ -170,19 +169,19 @@ public class OrderStepDef {
                 });
     }
 
-    @그리고("에러 코드는 {string}이다")
+    @Then("에러 코드는 {string}이다")
     public void 에러_코드는_이다(String code) {
         apiClient.getLastResponse()
                 .expectBody()
                 .jsonPath("$.code").isEqualTo(code);
     }
 
-    @그러면("두 응답의 orderId가 동일하다")
+    @Then("두 응답의 orderId가 동일하다")
     public void 두_응답의_orderId가_동일하다() {
         assertThat(firstOrderId).isEqualTo(lastOrderId);
     }
 
-    @그리고("주문 가능 금액은 {long}이다")
+    @Then("주문 가능 금액은 {long}이다")
     public void 주문_가능_금액은_이다(long amount) {
         apiClient.getLastResponse()
                 .expectBody()
@@ -191,7 +190,7 @@ public class OrderStepDef {
                 });
     }
 
-    @그리고("주문 내역이 {int}건이다")
+    @Then("주문 내역이 {int}건이다")
     public void 주문_내역이_건이다(int count) {
         apiClient.getLastResponse()
                 .expectBody()
