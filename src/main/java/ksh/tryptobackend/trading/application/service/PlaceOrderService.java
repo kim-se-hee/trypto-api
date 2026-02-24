@@ -45,7 +45,6 @@ public class PlaceOrderService implements PlaceOrderUseCase {
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
 
         validateOrderAmount(command, exchange.baseCurrencySymbol());
-        validateLimitPrice(command);
 
         BigDecimal feeRate = exchange.feeRate();
         LocalDateTime now = LocalDateTime.now(clock);
@@ -151,12 +150,6 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     private void validateOrderAmount(PlaceOrderCommand command, String baseCurrencySymbol) {
         if (command.side() == Side.BUY) {
             OrderAmountPolicy.of(baseCurrencySymbol).validate(command.amount());
-        }
-    }
-
-    private void validateLimitPrice(PlaceOrderCommand command) {
-        if (command.orderType() == OrderType.LIMIT && command.price() == null) {
-            throw new CustomException(ErrorCode.PRICE_REQUIRED_FOR_LIMIT);
         }
     }
 }

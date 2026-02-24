@@ -57,6 +57,7 @@ public class Order {
     public static Order createLimitBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
                                             BigDecimal orderAmount, BigDecimal limitPrice, BigDecimal feeRate,
                                             LocalDateTime now) {
+        validateLimitPrice(limitPrice);
         Quantity quantity = Quantity.fromDivision(orderAmount, limitPrice);
         BigDecimal filledAmount = quantity.value().multiply(limitPrice);
         Fee fee = Fee.calculate(filledAmount, feeRate);
@@ -68,6 +69,7 @@ public class Order {
     public static Order createLimitSellOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
                                              BigDecimal sellQuantity, BigDecimal limitPrice, BigDecimal feeRate,
                                              LocalDateTime now) {
+        validateLimitPrice(limitPrice);
         Fee fee = Fee.calculate(sellQuantity.multiply(limitPrice), feeRate);
 
         return createOrder(idempotencyKey, walletId, exchangeCoinId,
@@ -125,6 +127,12 @@ public class Order {
 
     public BigDecimal getTotalCostForBuy() {
         return getFilledAmount().add(fee.amount());
+    }
+
+    private static void validateLimitPrice(BigDecimal limitPrice) {
+        if (limitPrice == null) {
+            throw new CustomException(ErrorCode.PRICE_REQUIRED_FOR_LIMIT);
+        }
     }
 
     private static Order createOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
