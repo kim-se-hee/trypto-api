@@ -50,7 +50,7 @@ public class CancelOrderService implements CancelOrderUseCase {
                 .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
             walletBalancePort.unlockBalance(order.getWalletId(), exchange.baseCurrencyCoinId(), order.getTotalCostForBuy());
         } else {
-            walletBalancePort.unlockBalance(order.getWalletId(), exchangeCoin.coinId(), order.getQuantity());
+            walletBalancePort.unlockBalance(order.getWalletId(), exchangeCoin.coinId(), order.getQuantity().value());
         }
     }
 }

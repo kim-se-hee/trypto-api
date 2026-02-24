@@ -80,7 +80,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         }
 
         walletBalancePort.deductBalance(command.walletId(), exchange.baseCurrencyCoinId(), order.getTotalCostForBuy());
-        walletBalancePort.addBalance(command.walletId(), exchangeCoin.coinId(), order.getQuantity());
+        walletBalancePort.addBalance(command.walletId(), exchangeCoin.coinId(), order.getQuantity().value());
 
         return orderPersistencePort.save(order);
     }
@@ -98,7 +98,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
             command.idempotencyKey(), command.walletId(), command.exchangeCoinId(),
             command.amount(), currentPrice, feeRate, now);
 
-        walletBalancePort.deductBalance(command.walletId(), exchangeCoin.coinId(), order.getQuantity());
+        walletBalancePort.deductBalance(command.walletId(), exchangeCoin.coinId(), order.getQuantity().value());
 
         walletBalancePort.addBalance(command.walletId(), exchange.baseCurrencyCoinId(),
             order.getFilledAmount().subtract(order.getFee().amount()));
@@ -139,11 +139,11 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 
         BigDecimal available = walletBalancePort.getAvailableBalance(
             command.walletId(), exchangeCoin.coinId());
-        if (order.getQuantity().compareTo(available) > 0) {
+        if (order.getQuantity().value().compareTo(available) > 0) {
             throw new CustomException(ErrorCode.INSUFFICIENT_BALANCE);
         }
 
-        walletBalancePort.lockBalance(command.walletId(), exchangeCoin.coinId(), order.getQuantity());
+        walletBalancePort.lockBalance(command.walletId(), exchangeCoin.coinId(), order.getQuantity().value());
 
         return orderPersistencePort.save(order);
     }

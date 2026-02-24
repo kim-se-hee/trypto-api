@@ -5,8 +5,8 @@ import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.trading.domain.vo.Fee;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
+import ksh.tryptobackend.trading.domain.vo.Quantity;
 import ksh.tryptobackend.trading.domain.vo.Side;
-import ksh.tryptobackend.trading.util.QuantityCalculator;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -25,7 +25,7 @@ public class Order {
     private final Side side;
     private final OrderType orderType;
     private BigDecimal orderAmount;
-    private final BigDecimal quantity;
+    private final Quantity quantity;
     private final BigDecimal price;
     private BigDecimal filledPrice;
     private Fee fee;
@@ -36,8 +36,8 @@ public class Order {
     public static Order createMarketBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
                                              BigDecimal orderAmount, BigDecimal currentPrice, BigDecimal feeRate,
                                              LocalDateTime now) {
-        BigDecimal quantity = QuantityCalculator.calculate(orderAmount, currentPrice);
-        BigDecimal filledAmount = quantity.multiply(currentPrice);
+        Quantity quantity = Quantity.fromDivision(orderAmount, currentPrice);
+        BigDecimal filledAmount = quantity.value().multiply(currentPrice);
         Fee fee = Fee.calculate(filledAmount, feeRate);
 
         return createOrder(idempotencyKey, walletId, exchangeCoinId,
@@ -51,14 +51,14 @@ public class Order {
         Fee fee = Fee.calculate(filledAmount, feeRate);
 
         return createOrder(idempotencyKey, walletId, exchangeCoinId,
-            Side.SELL, OrderType.MARKET, sellQuantity, sellQuantity, null, currentPrice, fee, now);
+            Side.SELL, OrderType.MARKET, sellQuantity, new Quantity(sellQuantity), null, currentPrice, fee, now);
     }
 
     public static Order createLimitBuyOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
                                             BigDecimal orderAmount, BigDecimal limitPrice, BigDecimal feeRate,
                                             LocalDateTime now) {
-        BigDecimal quantity = QuantityCalculator.calculate(orderAmount, limitPrice);
-        BigDecimal filledAmount = quantity.multiply(limitPrice);
+        Quantity quantity = Quantity.fromDivision(orderAmount, limitPrice);
+        BigDecimal filledAmount = quantity.value().multiply(limitPrice);
         Fee fee = Fee.calculate(filledAmount, feeRate);
 
         return createOrder(idempotencyKey, walletId, exchangeCoinId,
@@ -71,11 +71,11 @@ public class Order {
         Fee fee = Fee.calculate(sellQuantity.multiply(limitPrice), feeRate);
 
         return createOrder(idempotencyKey, walletId, exchangeCoinId,
-            Side.SELL, OrderType.LIMIT, sellQuantity, sellQuantity, limitPrice, null, fee, now);
+            Side.SELL, OrderType.LIMIT, sellQuantity, new Quantity(sellQuantity), limitPrice, null, fee, now);
     }
 
     public static Order reconstitute(Long id, UUID idempotencyKey, Long walletId, Long exchangeCoinId,
-                                     Side side, OrderType orderType, BigDecimal orderAmount, BigDecimal quantity,
+                                     Side side, OrderType orderType, BigDecimal orderAmount, Quantity quantity,
                                      BigDecimal price, BigDecimal filledPrice, Fee fee, OrderStatus status,
                                      LocalDateTime createdAt, LocalDateTime filledAt) {
         return Order.builder()
@@ -120,7 +120,7 @@ public class Order {
     }
 
     public BigDecimal getFilledAmount() {
-        return quantity.multiply(filledPrice != null ? filledPrice : price);
+        return quantity.value().multiply(filledPrice != null ? filledPrice : price);
     }
 
     public BigDecimal getTotalCostForBuy() {
@@ -129,7 +129,7 @@ public class Order {
 
     private static Order createOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,
                                      Side side, OrderType orderType, BigDecimal orderAmount,
-                                     BigDecimal quantity, BigDecimal price, BigDecimal filledPrice,
+                                     Quantity quantity, BigDecimal price, BigDecimal filledPrice,
                                      Fee fee, LocalDateTime now) {
         return Order.builder()
             .idempotencyKey(idempotencyKey)

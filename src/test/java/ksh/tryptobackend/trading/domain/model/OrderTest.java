@@ -3,7 +3,7 @@ package ksh.tryptobackend.trading.domain.model;
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.trading.domain.vo.Fee;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
-import ksh.tryptobackend.trading.util.QuantityCalculator;
+import ksh.tryptobackend.trading.domain.vo.Quantity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -27,9 +27,9 @@ class OrderTest {
             BigDecimal amount = new BigDecimal("100000");
             BigDecimal price = new BigDecimal("100274000");
 
-            BigDecimal quantity = QuantityCalculator.calculate(amount, price);
+            Quantity quantity = Quantity.fromDivision(amount, price);
 
-            assertThat(quantity).isEqualByComparingTo(new BigDecimal("0.00099726"));
+            assertThat(quantity.value()).isEqualByComparingTo(new BigDecimal("0.00099726"));
         }
 
         @Test
@@ -38,9 +38,9 @@ class OrderTest {
             BigDecimal amount = new BigDecimal("1000000");
             BigDecimal price = new BigDecimal("500000");
 
-            BigDecimal quantity = QuantityCalculator.calculate(amount, price);
+            Quantity quantity = Quantity.fromDivision(amount, price);
 
-            assertThat(quantity).isEqualByComparingTo(new BigDecimal("2.00000000"));
+            assertThat(quantity.value()).isEqualByComparingTo(new BigDecimal("2.00000000"));
         }
 
         @Test
@@ -49,10 +49,10 @@ class OrderTest {
             BigDecimal amount = new BigDecimal("1");
             BigDecimal price = new BigDecimal("3");
 
-            BigDecimal quantity = QuantityCalculator.calculate(amount, price);
+            Quantity quantity = Quantity.fromDivision(amount, price);
 
             // 1/3 = 0.333333333... → floor 8자리 = 0.33333333
-            assertThat(quantity).isEqualByComparingTo(new BigDecimal("0.33333333"));
+            assertThat(quantity.value()).isEqualByComparingTo(new BigDecimal("0.33333333"));
         }
     }
 

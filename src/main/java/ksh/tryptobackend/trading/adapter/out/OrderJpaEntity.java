@@ -5,6 +5,7 @@ import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.vo.Fee;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
+import ksh.tryptobackend.trading.domain.vo.Quantity;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -79,7 +80,7 @@ public class OrderJpaEntity {
         entity.orderType = order.getOrderType();
         entity.side = order.getSide();
         entity.orderAmount = order.getOrderAmount();
-        entity.quantity = order.getQuantity();
+        entity.quantity = order.getQuantity().value();
         entity.price = order.getPrice();
         entity.filledPrice = order.getFilledPrice();
         entity.fee = order.getFee() != null ? order.getFee().amount() : null;
@@ -94,7 +95,7 @@ public class OrderJpaEntity {
         Fee domainFee = (fee != null && feeRate != null) ? Fee.of(fee, feeRate) : null;
         return Order.reconstitute(
             id, idempotencyKey, walletId, exchangeCoinId,
-            side, orderType, orderAmount, quantity,
+            side, orderType, orderAmount, new Quantity(quantity),
             price, filledPrice, domainFee, status,
             createdAt, filledAt
         );
