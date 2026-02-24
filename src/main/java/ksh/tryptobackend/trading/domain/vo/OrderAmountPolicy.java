@@ -2,20 +2,25 @@ package ksh.tryptobackend.trading.domain.vo;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 
-public record OrderAmountPolicy(BigDecimal minAmount, BigDecimal maxAmount) {
+@Getter
+@RequiredArgsConstructor
+public enum OrderAmountPolicy {
 
-    private static final OrderAmountPolicy KRW = new OrderAmountPolicy(
-        new BigDecimal("5000"), new BigDecimal("1000000000"));
-    private static final OrderAmountPolicy USDT = new OrderAmountPolicy(
-        new BigDecimal("5"), null);
+    DOMESTIC(new BigDecimal("5000"), new BigDecimal("1000000000")),
+    OVERSEAS(new BigDecimal("5"), null);
+
+    private final BigDecimal minAmount;
+    private final BigDecimal maxAmount;
 
     public static OrderAmountPolicy of(String baseCurrencySymbol) {
         return switch (baseCurrencySymbol) {
-            case "KRW" -> KRW;
-            case "USDT" -> USDT;
+            case "KRW" -> DOMESTIC;
+            case "USDT" -> OVERSEAS;
             default -> throw new CustomException(ErrorCode.UNSUPPORTED_BASE_CURRENCY);
         };
     }

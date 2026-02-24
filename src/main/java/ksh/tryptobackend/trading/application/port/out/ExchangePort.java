@@ -1,5 +1,6 @@
 package ksh.tryptobackend.trading.application.port.out;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 public interface ExchangePort {
@@ -8,7 +9,7 @@ public interface ExchangePort {
 
     record ExchangeData(
         Long exchangeId,
-        java.math.BigDecimal feeRate,
+        BigDecimal feeRate,
         Long baseCurrencyCoinId,
         String baseCurrencySymbol
     ) {
