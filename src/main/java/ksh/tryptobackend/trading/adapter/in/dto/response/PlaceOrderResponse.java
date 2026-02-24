@@ -31,7 +31,7 @@ public record PlaceOrderResponse(
             order.getQuantity(),
             order.getPrice(),
             order.getFilledPrice(),
-            order.getFee() != null ? order.getFee().getAmount() : null,
+            order.getFee() != null ? order.getFee().amount() : null,
             order.getStatus(),
             order.getCreatedAt(),
             order.getFilledAt()

@@ -4,15 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
 
-public final class Fee {
-
-    private final BigDecimal amount;
-    private final BigDecimal rate;
-
-    private Fee(BigDecimal amount, BigDecimal rate) {
-        this.amount = amount;
-        this.rate = rate;
-    }
+public record Fee(BigDecimal amount, BigDecimal rate) {
 
     public static Fee calculate(BigDecimal filledAmount, BigDecimal feeRate) {
         BigDecimal feeAmount = filledAmount.multiply(feeRate)
@@ -22,14 +14,6 @@ public final class Fee {
 
     public static Fee of(BigDecimal amount, BigDecimal rate) {
         return new Fee(amount, rate);
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public BigDecimal getRate() {
-        return rate;
     }
 
     @Override

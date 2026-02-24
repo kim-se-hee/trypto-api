@@ -68,7 +68,7 @@ class OrderTest {
 
             Fee fee = Fee.calculate(filledAmount, feeRate);
 
-            assertThat(fee.getAmount()).isEqualByComparingTo(new BigDecimal("49.86322000"));
+            assertThat(fee.amount()).isEqualByComparingTo(new BigDecimal("49.86322000"));
         }
 
         @Test
@@ -79,7 +79,7 @@ class OrderTest {
 
             Fee fee = Fee.calculate(filledAmount, feeRate);
 
-            assertThat(fee.getAmount()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(fee.amount()).isEqualByComparingTo(BigDecimal.ZERO);
         }
     }
 

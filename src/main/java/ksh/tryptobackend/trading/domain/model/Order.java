@@ -124,7 +124,7 @@ public class Order {
     }
 
     public BigDecimal getTotalCostForBuy() {
-        return getFilledAmount().add(fee.getAmount());
+        return getFilledAmount().add(fee.amount());
     }
 
     private static Order createOrder(UUID idempotencyKey, Long walletId, Long exchangeCoinId,

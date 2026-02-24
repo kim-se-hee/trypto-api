@@ -31,7 +31,7 @@ public record OrderHistoryResult(
             order.getPrice(),
             order.getQuantity(),
             order.getOrderAmount(),
-            order.getFee() != null ? order.getFee().getAmount() : null,
+            order.getFee() != null ? order.getFee().amount() : null,
             order.getCreatedAt(),
             order.getFilledAt()
         );

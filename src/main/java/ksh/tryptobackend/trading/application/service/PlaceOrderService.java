@@ -101,7 +101,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         walletBalancePort.deductBalance(command.walletId(), exchangeCoin.coinId(), order.getQuantity());
 
         walletBalancePort.addBalance(command.walletId(), exchange.baseCurrencyCoinId(),
-            order.getFilledAmount().subtract(order.getFee().getAmount()));
+            order.getFilledAmount().subtract(order.getFee().amount()));
 
         return orderPersistencePort.save(order);
     }
