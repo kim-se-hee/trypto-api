@@ -12,7 +12,7 @@ public record Quantity(BigDecimal value) {
         value = value.setScale(SCALE, RoundingMode.FLOOR);
     }
 
-    public static Quantity fromDivision(BigDecimal amount, BigDecimal price) {
+    public static Quantity fromAmountAndPrice(BigDecimal amount, BigDecimal price) {
         BigDecimal result = amount.divide(price, SCALE, RoundingMode.FLOOR);
         return new Quantity(result);
     }

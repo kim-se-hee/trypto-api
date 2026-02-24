@@ -27,7 +27,7 @@ class OrderTest {
             BigDecimal amount = new BigDecimal("100000");
             BigDecimal price = new BigDecimal("100274000");
 
-            Quantity quantity = Quantity.fromDivision(amount, price);
+            Quantity quantity = Quantity.fromAmountAndPrice(amount, price);
 
             assertThat(quantity.value()).isEqualByComparingTo(new BigDecimal("0.00099726"));
         }
@@ -38,7 +38,7 @@ class OrderTest {
             BigDecimal amount = new BigDecimal("1000000");
             BigDecimal price = new BigDecimal("500000");
 
-            Quantity quantity = Quantity.fromDivision(amount, price);
+            Quantity quantity = Quantity.fromAmountAndPrice(amount, price);
 
             assertThat(quantity.value()).isEqualByComparingTo(new BigDecimal("2.00000000"));
         }
@@ -49,7 +49,7 @@ class OrderTest {
             BigDecimal amount = new BigDecimal("1");
             BigDecimal price = new BigDecimal("3");
 
-            Quantity quantity = Quantity.fromDivision(amount, price);
+            Quantity quantity = Quantity.fromAmountAndPrice(amount, price);
 
             // 1/3 = 0.333333333... → floor 8자리 = 0.33333333
             assertThat(quantity.value()).isEqualByComparingTo(new BigDecimal("0.33333333"));
