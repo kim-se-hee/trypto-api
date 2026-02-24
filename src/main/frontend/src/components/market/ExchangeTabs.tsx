@@ -1,8 +1,13 @@
 import { cn } from "@/lib/utils";
-import type { ExchangeData } from "@/mocks/coins";
+
+export interface ExchangeTabItem {
+  id: string;
+  name: string;
+  baseCurrency: string;
+}
 
 interface ExchangeTabsProps {
-  exchanges: ExchangeData[];
+  exchanges: ExchangeTabItem[];
   selected: string;
   onSelect: (exchangeId: string) => void;
 }

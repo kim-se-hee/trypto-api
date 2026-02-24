@@ -43,7 +43,11 @@
     --color-sidebar-ring: var(--sidebar-ring);
     --color-positive: var(--positive);
     --color-negative: var(--negative);
+    --color-warning: var(--warning);
     --font-sans: 'Nunito', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+    --shadow-card: 0 2px 12px rgba(40, 13, 95, 0.06);
+    --shadow-card-hover: 0 3px 16px rgba(40, 13, 95, 0.09);
+    --shadow-card-active: 0 4px 20px rgba(40, 13, 95, 0.10);
 }
 
 :root {
@@ -71,6 +75,7 @@
     --chart-3: #ED4B9E;
     --chart-4: #FFB237;
     --chart-5: #31D0AA;
+    --warning: #FFB237;
     --sidebar: #FAF9FA;
     --sidebar-foreground: #280D5F;
     --sidebar-primary: #7645D9;
