@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Activity, Menu, X } from "lucide-react";
+import { Activity, Menu, X, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
   { path: "/market", label: "시세" },
@@ -12,6 +13,7 @@ const navItems = [
 
 export function Header() {
   const location = useLocation();
+  const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -42,6 +44,20 @@ export function Header() {
             );
           })}
         </nav>
+
+        {/* Desktop user info */}
+        <div className="hidden items-center gap-3 sm:flex">
+          {user && (
+            <span className="text-sm font-medium text-muted-foreground">{user.nickname}</span>
+          )}
+          <button
+            onClick={logout}
+            className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>로그아웃</span>
+          </button>
+        </div>
 
         {/* Mobile hamburger */}
         <button
@@ -74,6 +90,22 @@ export function Header() {
               </Link>
             );
           })}
+
+          <div className="mt-2 flex items-center justify-between border-t border-border/30 px-3 pt-3">
+            {user && (
+              <span className="text-sm font-medium text-muted-foreground">{user.nickname}</span>
+            )}
+            <button
+              onClick={() => {
+                setMobileOpen(false);
+                logout();
+              }}
+              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>로그아웃</span>
+            </button>
+          </div>
         </nav>
       )}
     </header>

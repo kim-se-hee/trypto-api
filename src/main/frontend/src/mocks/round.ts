@@ -1,0 +1,62 @@
+export type RoundStatus = "ACTIVE" | "BANKRUPT" | "ENDED";
+
+export type RuleType =
+  | "STOP_LOSS"
+  | "TAKE_PROFIT"
+  | "NO_CHASE_BUY"
+  | "AVERAGING_LIMIT"
+  | "OVERTRADE_LIMIT";
+
+export interface InvestmentRule {
+  ruleId: number;
+  ruleType: RuleType;
+  thresholdValue: number;
+}
+
+export interface InvestmentRound {
+  roundId: number;
+  userId: number;
+  roundNumber: number;
+  initialSeed: number;
+  emergencyFundingLimit: number;
+  emergencyChargeCount: number;
+  status: RoundStatus;
+  rules: InvestmentRule[];
+  startedAt: string;
+  endedAt: string | null;
+}
+
+export let mockActiveRound: InvestmentRound | null = null;
+
+let nextRoundId = 1;
+let nextRuleId = 1;
+
+export function createMockRound(
+  userId: number,
+  initialSeed: number,
+  emergencyFundingLimit: number,
+  rules: { ruleType: RuleType; thresholdValue: number }[],
+): InvestmentRound {
+  const round: InvestmentRound = {
+    roundId: nextRoundId++,
+    userId,
+    roundNumber: 1,
+    initialSeed,
+    emergencyFundingLimit,
+    emergencyChargeCount: 3,
+    status: "ACTIVE",
+    rules: rules.map((r) => ({
+      ruleId: nextRuleId++,
+      ruleType: r.ruleType,
+      thresholdValue: r.thresholdValue,
+    })),
+    startedAt: new Date().toISOString(),
+    endedAt: null,
+  };
+  mockActiveRound = round;
+  return round;
+}
+
+export function clearMockRound(): void {
+  mockActiveRound = null;
+}
