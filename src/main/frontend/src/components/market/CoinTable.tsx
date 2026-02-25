@@ -11,13 +11,15 @@ import type { CoinData } from "@/mocks/coins";
 interface CoinTableProps {
   coins: CoinData[];
   baseCurrency: string;
+  selectedSymbol?: string | null;
+  onSelect?: (symbol: string) => void;
 }
 
 type SortKey = "name" | "price" | "change" | "volume" | "marketCap";
 
 const GRID_COLS = "grid-cols-[2fr_minmax(100px,140px)_minmax(80px,100px)_80px_minmax(90px,120px)_minmax(90px,120px)]";
 
-export function CoinTable({ coins, baseCurrency }: CoinTableProps) {
+export function CoinTable({ coins, baseCurrency, selectedSymbol, onSelect }: CoinTableProps) {
   const comparator = useCallback((key: SortKey, dir: SortDir) => {
     return (a: CoinData, b: CoinData) => {
       let cmp = 0;
@@ -78,13 +80,17 @@ export function CoinTable({ coins, baseCurrency }: CoinTableProps) {
             검색 결과가 없습니다.
           </div>
         ) : (
-          sortedCoins.map((coin, i) => (
+          sortedCoins.map((coin, i) => {
+            const isSelected = selectedSymbol === coin.symbol;
+            return (
             <div
               key={coin.symbol}
+              onClick={() => onSelect?.(coin.symbol)}
               className={cn(
                 "group grid cursor-pointer items-center px-5 py-[18px] transition-colors hover:bg-primary/[0.03]",
                 GRID_COLS,
                 i !== sortedCoins.length - 1 && "border-b border-border/30",
+                isSelected && "bg-primary/[0.04]",
               )}
             >
               {/* Coin info */}
@@ -134,7 +140,7 @@ export function CoinTable({ coins, baseCurrency }: CoinTableProps) {
                 {formatVolume(coin.volume, baseCurrency)}
               </div>
             </div>
-          ))
+          )})
         )}
       </div>
     </div>
