@@ -9,6 +9,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   login: (email: string) => boolean;
   logout: () => void;
+  updateUser: (updates: Partial<Pick<MockUser, "nickname" | "password" | "portfolioPublic">>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -27,8 +28,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback(
+    (updates: Partial<Pick<MockUser, "nickname" | "password" | "portfolioPublic">>) => {
+      setUser((prev) => (prev ? { ...prev, ...updates } : prev));
+    },
+    [],
+  );
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: user !== null, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: user !== null, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
