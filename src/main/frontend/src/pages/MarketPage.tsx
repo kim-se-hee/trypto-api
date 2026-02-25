@@ -8,12 +8,15 @@ import { CoinSearchInput } from "@/components/market/CoinSearchInput";
 import { FilterChips } from "@/components/market/FilterChips";
 import { CoinTable } from "@/components/market/CoinTable";
 import { OrderPanel } from "@/components/market/OrderPanel";
+import { EmergencyFundingCard } from "@/components/round/EmergencyFundingCard";
+import { useRound } from "@/contexts/RoundContext";
 import { cexExchanges, dexExchanges } from "@/mocks/coins";
 import type { MarketType } from "@/components/market/MarketTypeTabs";
 import type { FilterType } from "@/components/market/FilterChips";
 
 export function MarketPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { activeRound, chargeEmergencyFunding } = useRound();
 
   const marketType = (searchParams.get("type") === "dex" ? "dex" : "cex") as MarketType;
   const isCex = marketType === "cex";
@@ -130,18 +133,26 @@ export function MarketPage() {
             onSelect={setSelectedSymbol}
           />
 
-          {/* Order panel */}
-          {selectedCoin && (
-            <OrderPanel
-              baseCurrency={exchange.baseCurrency}
-              coinSymbol={selectedCoin.symbol}
-              coinName={selectedCoin.name}
-              currentPrice={selectedCoin.currentPrice}
-              availableBase={exchange.baseCurrency === "KRW" ? 2500000 : 3250}
-              availableCoin={1.234567}
-              feeRate={0.0005}
-            />
-          )}
+          {/* Side panel */}
+          <div className="space-y-4">
+            {activeRound && (
+              <EmergencyFundingCard
+                round={activeRound}
+                onCharge={chargeEmergencyFunding}
+              />
+            )}
+            {selectedCoin && (
+              <OrderPanel
+                baseCurrency={exchange.baseCurrency}
+                coinSymbol={selectedCoin.symbol}
+                coinName={selectedCoin.name}
+                currentPrice={selectedCoin.currentPrice}
+                availableBase={exchange.baseCurrency === "KRW" ? 2500000 : 3250}
+                availableCoin={1.234567}
+                feeRate={0.0005}
+              />
+            )}
+          </div>
         </div>
 
         {/* Footer info */}

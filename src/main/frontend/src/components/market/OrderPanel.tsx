@@ -6,6 +6,19 @@ import { Input } from "@/components/ui/input";
 
 type OrderTab = "buy" | "sell" | "history";
 type OrderType = "limit" | "market";
+type OrderSide = "BUY" | "SELL";
+type OrderStatus = "FILLED" | "PENDING" | "CANCELLED";
+
+interface OrderHistoryItem {
+  id: number;
+  side: OrderSide;
+  type: "LIMIT" | "MARKET";
+  status: OrderStatus;
+  price: number;
+  quantity: number;
+  amount: number;
+  time: string;
+}
 
 interface OrderPanelProps {
   baseCurrency: string;
@@ -30,7 +43,7 @@ const ORDER_TYPES: { key: OrderType; label: string }[] = [
 
 const QUICK_RATIO_BUTTONS = [10, 25, 50, 100];
 
-const MOCK_HISTORY = [
+const MOCK_HISTORY: OrderHistoryItem[] = [
   { id: 1, side: "BUY", type: "LIMIT", status: "FILLED", price: 99850000, quantity: 0.0032, amount: 319520, time: "방금 전" },
   { id: 2, side: "SELL", type: "MARKET", status: "FILLED", price: 100120000, quantity: 0.0011, amount: 110132, time: "12분 전" },
   { id: 3, side: "BUY", type: "LIMIT", status: "PENDING", price: 99000000, quantity: 0.002, amount: 198000, time: "38분 전" },
@@ -71,6 +84,18 @@ export function OrderPanel({
   const [quantity, setQuantity] = useState("");
   const [amount, setAmount] = useState("");
   const [lastEdited, setLastEdited] = useState<"quantity" | "amount" | null>(null);
+
+  const filteredHistory = historyItems.filter((item) =>
+    historyFilter === "filled" ? item.status === "FILLED" : item.status === "PENDING",
+  );
+
+  const handleCancel = (id: number) => {
+    setHistoryItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, status: "CANCELLED" as const } : item,
+      ),
+    );
+  };
 
   const isBuy = activeTab === "buy";
   const isTradeTab = activeTab === "buy" || activeTab === "sell";
@@ -424,14 +449,3 @@ export function OrderPanel({
     </div>
   );
 }
-  const filteredHistory = historyItems.filter((item) =>
-    historyFilter === "filled" ? item.status === "FILLED" : item.status === "PENDING",
-  );
-
-  const handleCancel = (id: number) => {
-    setHistoryItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, status: "CANCELLED" as const } : item,
-      ),
-    );
-  };

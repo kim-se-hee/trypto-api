@@ -77,3 +77,7 @@ export function createMockRound(
 export function clearMockRound(): void {
   mockActiveRound = null;
 }
+
+export function setMockActiveRound(round: InvestmentRound | null): void {
+  mockActiveRound = round;
+}

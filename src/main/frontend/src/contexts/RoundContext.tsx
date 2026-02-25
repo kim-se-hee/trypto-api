@@ -5,6 +5,7 @@ import {
   createMockRound,
   clearMockRound,
   mockActiveRound,
+  setMockActiveRound,
 } from "@/mocks/round";
 
 interface CreateRoundParams {
@@ -19,6 +20,7 @@ interface RoundContextValue {
   hasActiveRound: boolean;
   createRound: (params: CreateRoundParams) => InvestmentRound;
   clearRound: () => void;
+  chargeEmergencyFunding: (amount: number) => boolean;
 }
 
 const RoundContext = createContext<RoundContextValue | null>(null);
@@ -42,9 +44,30 @@ export function RoundProvider({ children }: { children: ReactNode }) {
     setActiveRound(null);
   }, []);
 
+  const chargeEmergencyFunding = useCallback((amount: number): boolean => {
+    if (!activeRound) return false;
+    if (activeRound.status !== "ACTIVE") return false;
+    if (activeRound.emergencyChargeCount <= 0) return false;
+    if (amount <= 0 || amount > activeRound.emergencyFundingLimit) return false;
+
+    const updated: InvestmentRound = {
+      ...activeRound,
+      emergencyChargeCount: Math.max(0, activeRound.emergencyChargeCount - 1),
+    };
+    setMockActiveRound(updated);
+    setActiveRound(updated);
+    return true;
+  }, [activeRound]);
+
   return (
     <RoundContext.Provider
-      value={{ activeRound, hasActiveRound: activeRound !== null, createRound, clearRound }}
+      value={{
+        activeRound,
+        hasActiveRound: activeRound !== null,
+        createRound,
+        clearRound,
+        chargeEmergencyFunding,
+      }}
     >
       {children}
     </RoundContext.Provider>

@@ -1,12 +1,12 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Activity, Menu, X, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
-  { path: "/market", label: "시세" },
-  { path: "/portfolio", label: "투자내역" },
+  { path: "/market", label: "마켓" },
+  { path: "/portfolio", label: "포트폴리오" },
   { path: "/wallet", label: "입출금" },
   { path: "/ranking", label: "랭킹" },
   { path: "/regret", label: "투자 복기" },

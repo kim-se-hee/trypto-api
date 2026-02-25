@@ -117,7 +117,6 @@ function seededRandom(seed: number): () => number {
 
 function generateTimeSeries(
   periodDays: number,
-  startDate: Date,
   initialSeed: number,
   seed: number,
   bias: number,
@@ -166,8 +165,8 @@ const SEASON_DAYS = 42; // 라운드 진행 일수
 
 function buildSeasonData() {
   const startDate = new Date(SEASON_START);
-  const actualValues = generateTimeSeries(SEASON_DAYS, startDate, INITIAL_SEED, 342, 0.05, 0.025);
-  const ruleFollowedValues = generateTimeSeries(SEASON_DAYS, startDate, INITIAL_SEED, 377, 0.15, 0.018);
+  const actualValues = generateTimeSeries(SEASON_DAYS, INITIAL_SEED, 342, 0.05, 0.025);
+  const ruleFollowedValues = generateTimeSeries(SEASON_DAYS, INITIAL_SEED, 377, 0.15, 0.018);
 
   const snapshots: AssetSnapshot[] = Array.from({ length: SEASON_DAYS }, (_, i) => {
     const d = new Date(startDate);
@@ -202,7 +201,7 @@ function buildSeasonData() {
     totalViolations: 8,
   };
 
-  const btcHoldValues = generateTimeSeries(SEASON_DAYS, startDate, INITIAL_SEED, 1188, 0.12, 0.030);
+  const btcHoldValues = generateTimeSeries(SEASON_DAYS, INITIAL_SEED, 1188, 0.12, 0.030);
 
   return { snapshots, markers, summary, btcHoldValues, totalDays: SEASON_DAYS };
 }
