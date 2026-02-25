@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import { type MockUser, MOCK_USERS } from "@/mocks/auth";
 
+/** true로 바꾸면 로그인 없이 바로 메인 진입 */
+const DEV_SKIP_AUTH = true;
+
 interface AuthContextValue {
   user: MockUser | null;
   isAuthenticated: boolean;
@@ -11,7 +14,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<MockUser | null>(null);
+  const [user, setUser] = useState<MockUser | null>(DEV_SKIP_AUTH ? MOCK_USERS[0] : null);
 
   const login = useCallback((email: string): boolean => {
     const found = MOCK_USERS.find((u) => u.email === email);

@@ -26,10 +26,27 @@ export interface InvestmentRound {
   endedAt: string | null;
 }
 
-export let mockActiveRound: InvestmentRound | null = null;
+/** DEV_SKIP_AUTH와 함께 사용 — 기본 라운드를 미리 생성 */
+const DEV_DEFAULT_ROUND: InvestmentRound = {
+  roundId: 1,
+  userId: 1,
+  roundNumber: 1,
+  initialSeed: 10_000_000,
+  emergencyFundingLimit: 1_000_000,
+  emergencyChargeCount: 3,
+  status: "ACTIVE",
+  rules: [
+    { ruleId: 1, ruleType: "STOP_LOSS", thresholdValue: 10 },
+    { ruleId: 2, ruleType: "TAKE_PROFIT", thresholdValue: 30 },
+  ],
+  startedAt: new Date().toISOString(),
+  endedAt: null,
+};
 
-let nextRoundId = 1;
-let nextRuleId = 1;
+export let mockActiveRound: InvestmentRound | null = DEV_DEFAULT_ROUND;
+
+let nextRoundId = 2;
+let nextRuleId = 3;
 
 export function createMockRound(
   userId: number,
