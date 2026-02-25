@@ -252,6 +252,7 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 - 메서드 나열 순서: public 메서드를 먼저, private 메서드를 아래에 배치한다
   - public 메서드: 상태 변경 메서드 → 판별 메서드 → 조회 메서드 순으로 나열한다
   - private 메서드: 사용된 순서대로 나열한다
+- 매직 넘버/매직 상수를 사용하지 않는다. 도메인 개념(enum, VO, 상수 클래스)으로 대체한다
 
 ## 레이어별 컨벤션
 
@@ -274,13 +275,14 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 **Service**
 - 클래스명: `{UseCase명}Service` (예: `PlaceMarketBuyOrderService`)
 - 메서드명은 비즈니스 의미를 반영한다 (예: `placeMarketBuyOrder()`, `executeSwap()`)
-- 도메인 로직을 직접 수행하지 않고 도메인 객체와 포트를 조합하는 오케스트레이션을 담당한다
+- 서비스는 순수 오케스트레이션만 담당한다. 검증, 계산, 분기 등 비즈니스 로직은 도메인 모델과 VO에 위임한다
 - 쓰기 작업에 `@Transactional`을 선언한다
 
 **Domain**
 - 비즈니스 로직은 도메인 객체 안에 위치한다
 - 메서드명은 비즈니스 지식을 담는다 (예: `deductBalance()`, `checkSlippageExceeded()`)
 - Entity에는 `@Getter`만 허용하고 `@Setter`, `@Data` 금지. 상태 변경은 비즈니스 의미를 가진 메서드로만 수행한다
+- 원시 타입이 단위, 제한, 계산 등 비즈니스 규칙을 가지면 VO로 감싼다 (primitive obsession 방지)
 - VO는 불변 객체로 만든다. 모든 필드 `final`, 변경이 필요하면 새 객체를 생성한다
 - VO는 `equals()`/`hashCode()`를 반드시 구현한다
 - 일급 컬렉션을 활용하여 컬렉션 관련 로직을 캡슐화하려고 노력한다
