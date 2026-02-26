@@ -1,6 +1,6 @@
 package ksh.tryptobackend.trading.application.port.out;
 
-import ksh.tryptobackend.trading.domain.vo.InvestmentRule;
+import ksh.tryptobackend.trading.domain.model.InvestmentRule;
 
 import java.util.List;
 

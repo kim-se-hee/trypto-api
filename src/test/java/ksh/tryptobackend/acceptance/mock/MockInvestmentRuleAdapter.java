@@ -1,7 +1,7 @@
 package ksh.tryptobackend.acceptance.mock;
 
 import ksh.tryptobackend.trading.application.port.out.InvestmentRulePort;
-import ksh.tryptobackend.trading.domain.vo.InvestmentRule;
+import ksh.tryptobackend.trading.domain.model.InvestmentRule;
 
 import java.util.ArrayList;
 import java.util.List;

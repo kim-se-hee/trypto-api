@@ -1,11 +1,7 @@
 package ksh.tryptobackend.trading.application.service;
 
 import ksh.tryptobackend.trading.application.port.out.*;
-import ksh.tryptobackend.trading.domain.model.Holding;
-import ksh.tryptobackend.trading.domain.model.Order;
-import ksh.tryptobackend.trading.domain.model.RuleViolation;
-import ksh.tryptobackend.trading.domain.model.ViolationChecker;
-import ksh.tryptobackend.trading.domain.vo.InvestmentRule;
+import ksh.tryptobackend.trading.domain.model.*;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -49,8 +45,10 @@ public class ViolationCheckService {
         long todayOrderCount = orderPersistencePort.countByWalletIdAndCreatedAtBetween(
             walletId, today.atStartOfDay(), today.atTime(LocalTime.MAX));
 
-        LocalDateTime now = LocalDateTime.now(clock);
-        return ViolationChecker.check(order, rules, holding, changeRate, currentPrice,
-            todayOrderCount, now);
+        ViolationCheckContext context = new ViolationCheckContext(
+            order.getSide(), changeRate, holding, currentPrice, todayOrderCount,
+            LocalDateTime.now(clock));
+
+        return ViolationChecker.check(rules, context);
     }
 }
