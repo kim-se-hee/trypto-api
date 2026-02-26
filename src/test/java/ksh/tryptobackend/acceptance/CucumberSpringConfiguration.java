@@ -8,6 +8,6 @@ import org.springframework.context.annotation.Import;
 @CucumberContextConfiguration
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
-@Import(TestContainerConfiguration.class)
+@Import({TestContainerConfiguration.class, MockAdapterConfiguration.class})
 public class CucumberSpringConfiguration {
 }
