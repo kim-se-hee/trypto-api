@@ -14,7 +14,7 @@ import ksh.tryptobackend.acceptance.mock.MockViolationPersistenceAdapter;
 import ksh.tryptobackend.acceptance.mock.MockWalletBalanceAdapter;
 import ksh.tryptobackend.acceptance.mock.MockWalletInfoAdapter;
 import ksh.tryptobackend.acceptance.testclient.CommonApiClient;
-import ksh.tryptobackend.trading.adapter.out.OrderJpaRepository;
+import ksh.tryptobackend.trading.adapter.out.repository.OrderJpaRepository;
 import ksh.tryptobackend.trading.application.port.out.ExchangeCoinPort.ExchangeCoinData;
 import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;

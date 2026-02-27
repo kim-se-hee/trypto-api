@@ -1,5 +1,7 @@
 package ksh.tryptobackend.trading.adapter.out;
 
+import ksh.tryptobackend.trading.adapter.out.entity.HoldingJpaEntity;
+import ksh.tryptobackend.trading.adapter.out.repository.HoldingJpaRepository;
 import ksh.tryptobackend.trading.application.port.out.HoldingPersistencePort;
 import ksh.tryptobackend.trading.domain.model.Holding;
 import lombok.RequiredArgsConstructor;

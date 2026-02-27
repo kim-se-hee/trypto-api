@@ -1,4 +1,4 @@
-package ksh.tryptobackend.trading.adapter.out;
+package ksh.tryptobackend.trading.adapter.out.entity;
 
 import jakarta.persistence.*;
 import ksh.tryptobackend.trading.domain.model.Order;

@@ -2,6 +2,9 @@ package ksh.tryptobackend.trading.adapter.out;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import ksh.tryptobackend.trading.adapter.out.entity.OrderJpaEntity;
+import ksh.tryptobackend.trading.adapter.out.entity.QOrderJpaEntity;
+import ksh.tryptobackend.trading.adapter.out.repository.OrderJpaRepository;
 import ksh.tryptobackend.trading.application.port.out.OrderPersistencePort;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;

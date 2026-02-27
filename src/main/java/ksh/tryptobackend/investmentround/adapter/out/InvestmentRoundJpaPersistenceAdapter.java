@@ -1,5 +1,7 @@
 package ksh.tryptobackend.investmentround.adapter.out;
 
+import ksh.tryptobackend.investmentround.adapter.out.entity.InvestmentRoundJpaEntity;
+import ksh.tryptobackend.investmentround.adapter.out.repository.InvestmentRoundJpaRepository;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundPersistencePort;
 import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
 import ksh.tryptobackend.investmentround.domain.vo.RoundStatus;

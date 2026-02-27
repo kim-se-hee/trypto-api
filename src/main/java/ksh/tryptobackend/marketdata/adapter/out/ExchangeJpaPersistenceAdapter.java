@@ -1,5 +1,7 @@
 package ksh.tryptobackend.marketdata.adapter.out;
 
+import ksh.tryptobackend.marketdata.adapter.out.entity.ExchangeJpaEntity;
+import ksh.tryptobackend.marketdata.adapter.out.repository.ExchangeJpaRepository;
 import ksh.tryptobackend.marketdata.application.port.out.ExchangePort;
 import ksh.tryptobackend.marketdata.domain.model.Exchange;
 import lombok.RequiredArgsConstructor;

@@ -1,5 +1,7 @@
 package ksh.tryptobackend.investmentround.adapter.out;
 
+import ksh.tryptobackend.investmentround.adapter.out.entity.InvestmentRuleJpaEntity;
+import ksh.tryptobackend.investmentround.adapter.out.repository.InvestmentRuleJpaRepository;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRulePersistencePort;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRuleQueryPort;
 import ksh.tryptobackend.investmentround.application.port.out.dto.InvestmentRuleInfo;

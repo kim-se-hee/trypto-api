@@ -1,4 +1,4 @@
-package ksh.tryptobackend.investmentround.adapter.out;
+package ksh.tryptobackend.investmentround.adapter.out.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,5 +1,7 @@
 package ksh.tryptobackend.trading.adapter.out;
 
+import ksh.tryptobackend.trading.adapter.out.entity.RuleViolationJpaEntity;
+import ksh.tryptobackend.trading.adapter.out.repository.RuleViolationJpaRepository;
 import ksh.tryptobackend.trading.application.port.out.ViolationPersistencePort;
 import ksh.tryptobackend.trading.domain.model.RuleViolation;
 import lombok.RequiredArgsConstructor;

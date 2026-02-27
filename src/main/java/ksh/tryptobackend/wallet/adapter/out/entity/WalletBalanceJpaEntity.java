@@ -1,4 +1,4 @@
-package ksh.tryptobackend.wallet.adapter.out;
+package ksh.tryptobackend.wallet.adapter.out.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

@@ -1,5 +1,6 @@
-package ksh.tryptobackend.investmentround.adapter.out;
+package ksh.tryptobackend.investmentround.adapter.out.repository;
 
+import ksh.tryptobackend.investmentround.adapter.out.entity.InvestmentRoundJpaEntity;
 import ksh.tryptobackend.investmentround.domain.vo.RoundStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 

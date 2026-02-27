@@ -1,5 +1,6 @@
-package ksh.tryptobackend.trading.adapter.out;
+package ksh.tryptobackend.trading.adapter.out.repository;
 
+import ksh.tryptobackend.trading.adapter.out.entity.HoldingJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

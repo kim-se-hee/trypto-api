@@ -1,5 +1,7 @@
 package ksh.tryptobackend.wallet.adapter.out;
 
+import ksh.tryptobackend.wallet.adapter.out.entity.WalletBalanceJpaEntity;
+import ksh.tryptobackend.wallet.adapter.out.repository.WalletBalanceJpaRepository;
 import ksh.tryptobackend.wallet.application.port.out.WalletBalanceOperationPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

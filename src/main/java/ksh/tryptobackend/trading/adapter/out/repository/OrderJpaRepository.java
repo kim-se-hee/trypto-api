@@ -1,5 +1,6 @@
-package ksh.tryptobackend.trading.adapter.out;
+package ksh.tryptobackend.trading.adapter.out.repository;
 
+import ksh.tryptobackend.trading.adapter.out.entity.OrderJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;

@@ -5,12 +5,12 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import ksh.tryptobackend.acceptance.testclient.CommonApiClient;
-import ksh.tryptobackend.investmentround.adapter.out.InvestmentRoundJpaRepository;
-import ksh.tryptobackend.investmentround.adapter.out.InvestmentRuleJpaRepository;
-import ksh.tryptobackend.marketdata.adapter.out.ExchangeJpaEntity;
-import ksh.tryptobackend.marketdata.adapter.out.ExchangeJpaRepository;
+import ksh.tryptobackend.investmentround.adapter.out.repository.InvestmentRoundJpaRepository;
+import ksh.tryptobackend.investmentround.adapter.out.repository.InvestmentRuleJpaRepository;
+import ksh.tryptobackend.marketdata.adapter.out.entity.ExchangeJpaEntity;
+import ksh.tryptobackend.marketdata.adapter.out.repository.ExchangeJpaRepository;
 import ksh.tryptobackend.marketdata.domain.model.ExchangeMarketType;
-import ksh.tryptobackend.wallet.adapter.out.WalletJpaRepository;
+import ksh.tryptobackend.wallet.adapter.out.repository.WalletJpaRepository;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
