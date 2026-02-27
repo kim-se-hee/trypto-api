@@ -40,7 +40,7 @@ public class InvestmentRuleJpaEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public static InvestmentRuleJpaEntity fromDomain(ksh.tryptobackend.investmentround.domain.model.InvestmentRule rule) {
+    public static InvestmentRuleJpaEntity fromDomain(ksh.tryptobackend.investmentround.domain.model.RuleSetting rule) {
         InvestmentRuleJpaEntity entity = new InvestmentRuleJpaEntity();
         entity.id = rule.getRuleId();
         entity.roundId = rule.getRoundId();
@@ -50,8 +50,8 @@ public class InvestmentRuleJpaEntity {
         return entity;
     }
 
-    public ksh.tryptobackend.investmentround.domain.model.InvestmentRule toRoundDomain() {
-        return ksh.tryptobackend.investmentround.domain.model.InvestmentRule.builder()
+    public ksh.tryptobackend.investmentround.domain.model.RuleSetting toRoundDomain() {
+        return ksh.tryptobackend.investmentround.domain.model.RuleSetting.builder()
             .ruleId(id)
             .roundId(roundId)
             .ruleType(ruleType)

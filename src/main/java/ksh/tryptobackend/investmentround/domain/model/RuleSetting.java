@@ -1,8 +1,8 @@
 package ksh.tryptobackend.investmentround.domain.model;
 
+import ksh.tryptobackend.common.domain.vo.RuleType;
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
-import ksh.tryptobackend.common.domain.vo.RuleType;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
-public class InvestmentRule {
+public class RuleSetting {
 
     private static final BigDecimal ZERO = BigDecimal.ZERO;
     private static final BigDecimal MIN_COUNT = BigDecimal.ONE;
@@ -22,9 +22,9 @@ public class InvestmentRule {
     private final BigDecimal thresholdValue;
     private final LocalDateTime createdAt;
 
-    public static InvestmentRule create(Long roundId, RuleType ruleType, BigDecimal thresholdValue, LocalDateTime createdAt) {
+    public static RuleSetting create(Long roundId, RuleType ruleType, BigDecimal thresholdValue, LocalDateTime createdAt) {
         validateThreshold(ruleType, thresholdValue);
-        return InvestmentRule.builder()
+        return RuleSetting.builder()
             .roundId(roundId)
             .ruleType(ruleType)
             .thresholdValue(thresholdValue)

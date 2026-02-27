@@ -3,7 +3,7 @@ package ksh.tryptobackend.investmentround.adapter.out;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRulePersistencePort;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRuleQueryPort;
 import ksh.tryptobackend.investmentround.application.port.out.dto.InvestmentRuleInfo;
-import ksh.tryptobackend.investmentround.domain.model.InvestmentRule;
+import ksh.tryptobackend.investmentround.domain.model.RuleSetting;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +16,7 @@ public class InvestmentRuleJpaPersistenceAdapter implements InvestmentRulePersis
     private final InvestmentRuleJpaRepository repository;
 
     @Override
-    public List<InvestmentRule> saveAll(List<InvestmentRule> rules) {
+    public List<RuleSetting> saveAll(List<RuleSetting> rules) {
         List<InvestmentRuleJpaEntity> entities = rules.stream()
             .map(InvestmentRuleJpaEntity::fromDomain)
             .toList();

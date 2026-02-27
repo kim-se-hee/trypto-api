@@ -1,10 +1,10 @@
 package ksh.tryptobackend.investmentround.application.port.out;
 
-import ksh.tryptobackend.investmentround.domain.model.InvestmentRule;
+import ksh.tryptobackend.investmentround.domain.model.RuleSetting;
 
 import java.util.List;
 
 public interface InvestmentRulePersistencePort {
 
-    List<InvestmentRule> saveAll(List<InvestmentRule> rules);
+    List<RuleSetting> saveAll(List<RuleSetting> rules);
 }
