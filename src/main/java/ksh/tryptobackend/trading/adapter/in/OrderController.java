@@ -16,7 +16,7 @@ import ksh.tryptobackend.trading.application.port.in.GetOrderAvailabilityUseCase
 import ksh.tryptobackend.trading.application.port.in.PlaceOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.command.CancelOrderCommand;
 import ksh.tryptobackend.trading.application.port.in.dto.result.OrderAvailabilityResult;
-import ksh.tryptobackend.trading.application.port.in.dto.result.OrderHistoryResult;
+import ksh.tryptobackend.trading.application.port.in.dto.result.OrderHistoryCursorResult;
 import ksh.tryptobackend.trading.domain.model.Order;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -48,7 +48,7 @@ public class OrderController {
 
     @GetMapping
     public ApiResponseDto<CursorPageResponseDto<OrderHistoryResponse>> findOrderHistory(@Valid @ModelAttribute FindOrderHistoryRequest request) {
-        CursorPageResponseDto<OrderHistoryResult> result = findOrderHistoryUseCase.findOrderHistory(request.toQuery());
+        OrderHistoryCursorResult result = findOrderHistoryUseCase.findOrderHistory(request.toQuery());
         CursorPageResponseDto<OrderHistoryResponse> response = CursorPageResponseDto.of(
             result.content().stream().map(OrderHistoryResponse::from).toList(),
             result.nextCursor(),

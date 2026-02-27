@@ -1,10 +1,9 @@
 package ksh.tryptobackend.trading.application.port.in;
 
-import ksh.tryptobackend.common.dto.response.CursorPageResponseDto;
 import ksh.tryptobackend.trading.application.port.in.dto.query.FindOrderHistoryQuery;
-import ksh.tryptobackend.trading.application.port.in.dto.result.OrderHistoryResult;
+import ksh.tryptobackend.trading.application.port.in.dto.result.OrderHistoryCursorResult;
 
 public interface FindOrderHistoryUseCase {
 
-    CursorPageResponseDto<OrderHistoryResult> findOrderHistory(FindOrderHistoryQuery query);
+    OrderHistoryCursorResult findOrderHistory(FindOrderHistoryQuery query);
 }
