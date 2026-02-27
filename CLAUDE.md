@@ -137,6 +137,8 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 
 ## 레이어별 컨벤션
 
+- 베스트 프랙티스: `PlaceOrderService`와 trading 도메인을 참고한다. 서비스는 포트 호출과 도메인 객체 생성/위임만 수행하고, 비즈니스 로직은 도메인 모델(`Order`, `Holding`)과 VO(`BalanceChange`, `OrderAmountPolicy`)에 있다
+
 **Controller**
 - 클래스명: `{도메인}Controller` (예: `OrderController`, `SwapController`)
 - 메서드명: HTTP 메서드 + 자원을 표현한다 (예: `createOrder()`, `getPortfolio()`)
@@ -157,7 +159,11 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 - 클래스명: `{UseCase명}Service` (예: `PlaceMarketBuyOrderService`)
 - 메서드명은 비즈니스 의미를 반영한다 (예: `placeMarketBuyOrder()`, `executeSwap()`)
 - 서비스는 순수 오케스트레이션만 담당한다. 검증, 계산, 분기 등 비즈니스 로직은 도메인 모델과 VO에 위임한다
+- 오케스트레이션의 각 단계를 private 메서드로 추출하여 public 메서드의 가독성을 높인다
 - 쓰기 작업에 `@Transactional`을 선언한다
+- 생성 시 검증은 도메인 모델이나 VO의 팩토리 메서드(`create`, `of` 등)에서 수행한다. 서비스에서 검증 후 생성하지 않는다
+- 컬렉션에 대한 검증이나 계산(`stream`으로 합산, 중복 체크 등)은 일급 컬렉션으로 캡슐화한다
+- 다른 바운디드 컨텍스트의 도메인 모델을 직접 import하지 않는다. Output Port를 통해 필요한 정보만 가져온다
 
 **Domain**
 - 비즈니스 로직은 도메인 객체 안에 위치한다
