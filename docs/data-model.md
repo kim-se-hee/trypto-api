@@ -6,11 +6,12 @@
 |--------|---------------|--------|--------------|
 | Identity | User | — | Email, Password |
 | Wallet | Wallet, Transfer | WalletBalance | WalletAddress, TransferStatus, Chain |
-| Trading | Order, Swap | Holding, RuleViolation | Side, OrderType, OrderStatus, Fee, Slippage, ViolationReason, OrderAmountPolicy, TradingVenue, RuleType |
+| Trading | Order, Swap | Holding, RuleViolation | Side, OrderType, OrderStatus, Fee, Slippage, ViolationReason, OrderAmountPolicy, TradingVenue, ViolationRule |
 | MarketData | Coin, Exchange | ExchangeCoin, PriceCandle, WithdrawalFee | — |
 | Portfolio | PortfolioSnapshot, Holding | Ranking, SnapshotDetail | ProfitRate, AvgBuyPrice, TotalBuyAmount, RankingPeriod |
-| InvestmentRound | InvestmentRound | InvestmentRule, EmergencyFunding | SeedPolicy, RoundStatus, RuleType, RuleValue |
+| InvestmentRound | InvestmentRound | RuleSetting, EmergencyFunding | SeedPolicy, RoundStatus, RuleValue |
 | RegretAnalysis | RegretReport | RuleScenario, ViolationTrade | AssetHistory, ImpactGap |
+| Common (Shared Kernel) | — | — | RuleType |
 
 **소유 관계:**
 - WalletBalance → WalletAddress
@@ -22,7 +23,7 @@
 - ExchangeCoin → PriceCandle
 - Swap → Fee, Slippage
 - SnapshotDetail → AvgBuyPrice, TotalBuyAmount
-- InvestmentRule → RuleType, RuleValue
+- RuleSetting → RuleType, RuleValue
 - Ranking → RankingPeriod
 - RuleScenario → ImpactGap
 
