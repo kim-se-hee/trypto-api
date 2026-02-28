@@ -56,9 +56,14 @@ public class RankingStepDefinition {
         apiClient.get("/api/rankings?period=" + period + "&referenceDate=" + referenceDate);
     }
 
-    @When("기간 {string} 페이지 {int} 크기 {int}로 랭킹 목록을 조회한다")
-    public void 기간_페이지_크기로_랭킹_목록을_조회한다(String period, int page, int size) {
-        apiClient.get("/api/rankings?period=" + period + "&page=" + page + "&size=" + size);
+    @When("기간 {string} 크기 {int}로 랭킹 목록을 조회한다")
+    public void 기간_크기로_랭킹_목록을_조회한다(String period, int size) {
+        apiClient.get("/api/rankings?period=" + period + "&size=" + size);
+    }
+
+    @When("기간 {string} 커서 {int} 크기 {int}로 랭킹 목록을 조회한다")
+    public void 기간_커서_크기로_랭킹_목록을_조회한다(String period, int cursorRank, int size) {
+        apiClient.get("/api/rankings?period=" + period + "&cursorRank=" + cursorRank + "&size=" + size);
     }
 
     @Then("랭킹 목록 개수는 {int}개이다")
@@ -73,6 +78,20 @@ public class RankingStepDefinition {
         apiClient.getLastResponse()
             .expectBody()
             .jsonPath("$.data.content[0].rank").isEqualTo(rank);
+    }
+
+    @Then("다음 페이지가 존재한다")
+    public void 다음_페이지가_존재한다() {
+        apiClient.getLastResponse()
+            .expectBody()
+            .jsonPath("$.data.hasNext").isEqualTo(true);
+    }
+
+    @Then("다음 페이지가 존재하지 않는다")
+    public void 다음_페이지가_존재하지_않는다() {
+        apiClient.getLastResponse()
+            .expectBody()
+            .jsonPath("$.data.hasNext").isEqualTo(false);
     }
 
     private void insertUser(Long userId, String nickname, boolean portfolioPublic) {
