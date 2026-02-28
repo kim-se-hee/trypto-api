@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import ksh.tryptobackend.ranking.application.port.in.dto.query.GetRankingsQuery;
 import ksh.tryptobackend.ranking.domain.vo.RankingPeriod;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
@@ -13,16 +12,15 @@ import java.time.LocalDate;
 public record GetRankingsRequest(
     @NotNull RankingPeriod period,
     @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate referenceDate,
-    @Min(0) Integer page,
+    @Min(1) Integer cursorRank,
     @Min(1) @Max(50) Integer size
 ) {
 
     public GetRankingsRequest {
-        if (page == null) page = 0;
         if (size == null) size = 20;
     }
 
     public GetRankingsQuery toQuery() {
-        return new GetRankingsQuery(period, referenceDate, PageRequest.of(page, size));
+        return new GetRankingsQuery(period, referenceDate, cursorRank, size);
     }
 }
