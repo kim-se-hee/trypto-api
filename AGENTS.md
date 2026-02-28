@@ -118,7 +118,7 @@ INVALID_PAGE_SIZE(400, "invalid.page.size"),
 invalid.page.size=잘못된 페이지 크기입니다: {0}
 
 // 서비스
-throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize));
+    throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize));
 ```
 
 ## 공통 컨벤션
@@ -184,6 +184,10 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 ```
 
 **Adapter Out**
+- `adapter/out/` 하위에 `entity/`, `repository/` 패키지로 분리한다. Adapter 클래스는 `adapter/out/`에 그대로 둔다
+    - `adapter/out/entity/`: JPA 엔티티 클래스 (`{도메인}JpaEntity`)
+    - `adapter/out/repository/`: Spring Data JPA 리포지토리 인터페이스 (`{도메인}JpaRepository`)
+    - `adapter/out/`: Persistence Adapter, 외부 API Adapter, 크로스 컨텍스트 Adapter
 - Persistence 클래스명: `{도메인}JpaPersistenceAdapter` (예: `OrderJpaPersistenceAdapter`)
 - External API 클래스명: `{외부서비스}ApiAdapter` (예: `JupiterApiAdapter`)
 - 메서드명은 비즈니스 로직을 드러내지 않고 데이터 조회 조건을 표현한다 (예: `findByUserIdAndCoin()`, `saveOrder()`)
@@ -194,8 +198,6 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 ---
 
 # Git 컨벤션
-
-- 베스트 프랙티스: PR #2 (`[#1] CEX 모의 주문 기능 구현`)를 참고한다. 커밋 단위, PR 본문 구조, 설계 결정 문서화 방식의 기준이다
 
 **커밋 메시지**
 
@@ -235,10 +237,10 @@ fix: 지정가 매수 주문 시 수수료 미반영 수정
 - 관련 없는 수정을 하나의 커밋에 섞지 않는다
 - 논리적으로 분리할 수 있는 변경은 별도 커밋으로 나눈다
 - 분리 기준:
-  - 문서, 기능, 테스트, 버그 수정처럼 커밋 타입이 다르면 분리한다
-  - 서로 다른 모듈의 변경은 각각 별도 커밋으로 나눈다
-  - 같은 모듈이라도 도메인, 애플리케이션, 어댑터는 별도 커밋으로 나눈다
-  - 새 기능을 위해 기존 모듈을 확장한 변경은 새 모듈 커밋과 분리한다. 예를 들어 ErrorCode 추가나 enum 타입 추가는 별도로 먼저 커밋한다
+    - 문서, 기능, 테스트, 버그 수정처럼 커밋 타입이 다르면 분리한다
+    - 서로 다른 모듈의 변경은 각각 별도 커밋으로 나눈다
+    - 같은 모듈이라도 도메인, 애플리케이션, 어댑터는 별도 커밋으로 나눈다
+    - 새 기능을 위해 기존 모듈을 확장한 변경은 새 모듈 커밋과 분리한다. 예를 들어 ErrorCode 추가나 enum 타입 추가는 별도로 먼저 커밋한다
 
 **점진적 커밋**
 
