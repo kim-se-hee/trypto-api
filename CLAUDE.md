@@ -267,3 +267,7 @@ GitHub Flow를 따른다. `main` 브랜치와 `feature/*` 브랜치만 사용한
 
 - 공통: `docs/architecture.md`, `docs/testing.md`, `docs/data-model.md`, `docs/schema.md`
 - 도메인별: `docs/{domain}/{기능}.md` (예: `docs/trading/cex-order.md`)
+
+## AI 워크플로우 컨텍스트
+
+- `.claude/ai-context/api-catalog.json` — 전체 API 인덱스. `/sync-api-catalog`으로 동기화한다.
