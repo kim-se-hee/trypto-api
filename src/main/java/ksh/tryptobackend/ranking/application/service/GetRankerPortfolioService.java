@@ -9,10 +9,8 @@ import ksh.tryptobackend.ranking.application.port.in.dto.result.RankerPortfolioR
 import ksh.tryptobackend.ranking.application.port.out.InvestmentRoundPort;
 import ksh.tryptobackend.ranking.application.port.out.PortfolioSnapshotPort;
 import ksh.tryptobackend.ranking.application.port.out.RankingPersistencePort;
-import ksh.tryptobackend.ranking.application.port.out.UserQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.RankingWithUserProjection;
 import ksh.tryptobackend.ranking.application.port.out.dto.RoundInfo;
-import ksh.tryptobackend.ranking.application.port.out.dto.UserInfo;
 import ksh.tryptobackend.ranking.domain.model.Ranking;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,7 +24,6 @@ import java.util.List;
 public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
 
     private final RankingPersistencePort rankingPersistencePort;
-    private final UserQueryPort userQueryPort;
     private final InvestmentRoundPort investmentRoundPort;
     private final PortfolioSnapshotPort portfolioSnapshotPort;
 
@@ -36,11 +33,10 @@ public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
         LocalDate latestDate = findLatestReferenceDate(query);
         RankingWithUserProjection ranking = findRanking(query, latestDate);
         validateTop100(ranking);
-        UserInfo user = findUser(query.userId());
-        validatePortfolioPublic(user);
+        validatePortfolioPublic(ranking);
         RoundInfo round = findActiveRound(query.userId());
         List<PortfolioHoldingResult> holdings = findHoldings(query.userId(), round.roundId());
-        return buildResult(ranking, user, holdings);
+        return buildResult(ranking, holdings);
     }
 
     private LocalDate findLatestReferenceDate(GetRankerPortfolioQuery query) {
@@ -60,13 +56,8 @@ public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
         }
     }
 
-    private UserInfo findUser(Long userId) {
-        return userQueryPort.findById(userId)
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-    }
-
-    private void validatePortfolioPublic(UserInfo user) {
-        if (!user.portfolioPublic()) {
+    private void validatePortfolioPublic(RankingWithUserProjection ranking) {
+        if (!ranking.portfolioPublic()) {
             throw new CustomException(ErrorCode.PORTFOLIO_PRIVATE);
         }
     }
@@ -82,11 +73,11 @@ public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
             .toList();
     }
 
-    private RankerPortfolioResult buildResult(RankingWithUserProjection ranking, UserInfo user,
+    private RankerPortfolioResult buildResult(RankingWithUserProjection ranking,
                                                List<PortfolioHoldingResult> holdings) {
         return new RankerPortfolioResult(
-            user.userId(),
-            user.nickname(),
+            ranking.userId(),
+            ranking.nickname(),
             ranking.rank(),
             ranking.profitRate(),
             holdings
