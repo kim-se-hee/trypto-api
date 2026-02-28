@@ -271,3 +271,10 @@ GitHub Flow를 따른다. `main` 브랜치와 `feature/*` 브랜치만 사용한
 ## AI 워크플로우 컨텍스트
 
 - `.claude/ai-context/api-catalog.json` — 전체 API 인덱스. `/sync-api-catalog`으로 동기화한다.
+
+### 기능 구현 판단
+
+어떤 기능을 구현해야 하는지 파악할 때:
+1. `api-catalog.json`에서 `status: "planned"` API 목록을 확인한다
+2. `ui-analyst` 에이전트로 프론트엔드 UI를 분석하여 필요한 API를 역추적한다
+3. `docs/` 기능 문서와 대조하여 구현 범위를 확정한다
