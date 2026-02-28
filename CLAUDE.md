@@ -276,5 +276,11 @@ GitHub Flow를 따른다. `main` 브랜치와 `feature/*` 브랜치만 사용한
 
 어떤 기능을 구현해야 하는지 파악할 때:
 1. `api-catalog.json`에서 `status: "planned"` API 목록을 확인한다
-2. `ui-analyst` 에이전트로 프론트엔드 UI를 분석하여 필요한 API를 역추적한다
-3. `docs/` 기능 문서와 대조하여 구현 범위를 확정한다
+2. `docs/` 기능 문서와 대조하여 구현 범위를 확정한다
+3. planned API가 없으면 `ui-analyst` 에이전트로 프론트엔드 UI를 분석하여 누락된 API를 찾고 카탈로그에 추가한다
+
+### API 카탈로그 관리
+
+- 구현 완료 시 해당 API의 `status`를 `"implemented"`로 변경하고 `doc` 경로를 추가한다
+- 새로운 API가 발견되면 `status: "planned"`로 카탈로그에 추가한다
+- `/sync-api-catalog`으로 구현된 코드 기준으로 카탈로그를 동기화할 수 있다
