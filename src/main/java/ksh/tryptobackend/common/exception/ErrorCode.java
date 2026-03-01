@@ -34,7 +34,7 @@ public enum ErrorCode {
     RANKING_NOT_FOUND(404, "ranking.not.found"),
     ROUND_NOT_FOUND(404, "round.not.found"),
     ROUND_ACCESS_DENIED(403, "round.access.denied"),
-    ROUND_NOT_ACTIVE(404, "round.not.active"),
+    ROUND_NOT_ACTIVE(409, "round.not.active"),
     USER_NOT_FOUND(404, "user.not.found"),
     ;
 

@@ -42,7 +42,7 @@ public class InvestmentRound {
             .build();
     }
 
-    public static void validateEmergencyFundingLimit(BigDecimal emergencyFundingLimit) {
+    private static void validateEmergencyFundingLimit(BigDecimal emergencyFundingLimit) {
         if (emergencyFundingLimit.compareTo(ZERO) < 0
             || emergencyFundingLimit.compareTo(MAX_EMERGENCY_FUNDING_LIMIT) > 0) {
             throw new CustomException(ErrorCode.INVALID_EMERGENCY_FUNDING_LIMIT);
