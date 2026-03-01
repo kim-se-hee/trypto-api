@@ -2,8 +2,10 @@ package ksh.tryptobackend.regretanalysis.adapter.out;
 
 import ksh.tryptobackend.trading.application.port.out.OrderQueryPort;
 import ksh.tryptobackend.trading.application.port.out.dto.OrderInfo;
+import ksh.tryptobackend.trading.domain.vo.Side;
 import ksh.tryptobackend.regretanalysis.application.port.out.OrderHistoryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.dto.TradeRecord;
+import ksh.tryptobackend.regretanalysis.application.port.out.dto.TradeSide;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -32,8 +34,16 @@ public class OrderHistoryAdapter implements OrderHistoryPort {
 
     private TradeRecord toTradeRecord(OrderInfo info) {
         return new TradeRecord(
-            info.orderId(), info.walletId(), info.exchangeCoinId(), info.side(),
+            info.orderId(), info.walletId(), info.exchangeCoinId(),
+            toTradeSide(info.side()),
             info.amount(), info.quantity(), info.filledPrice(), info.filledAt()
         );
+    }
+
+    private TradeSide toTradeSide(Side side) {
+        return switch (side) {
+            case BUY -> TradeSide.BUY;
+            case SELL -> TradeSide.SELL;
+        };
     }
 }
