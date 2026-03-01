@@ -17,14 +17,14 @@ public class EmergencyFundingJpaPersistenceAdapter implements EmergencyFundingPe
     private final EmergencyFundingJpaRepository repository;
 
     @Override
-    public Optional<EmergencyFunding> findByRoundIdAndIdempotencyKey(Long roundId, UUID idempotencyKey) {
-        return repository.findByRoundIdAndIdempotencyKey(roundId, idempotencyKey)
-            .map(EmergencyFundingJpaEntity::toDomain);
-    }
-
-    @Override
     public EmergencyFunding save(EmergencyFunding funding) {
         EmergencyFundingJpaEntity saved = repository.save(EmergencyFundingJpaEntity.fromDomain(funding));
         return saved.toDomain();
+    }
+
+    @Override
+    public Optional<EmergencyFunding> findByRoundIdAndIdempotencyKey(Long roundId, UUID idempotencyKey) {
+        return repository.findByRoundIdAndIdempotencyKey(roundId, idempotencyKey)
+            .map(EmergencyFundingJpaEntity::toDomain);
     }
 }

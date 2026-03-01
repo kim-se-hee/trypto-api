@@ -19,6 +19,12 @@ public class InvestmentRoundJpaPersistenceAdapter implements InvestmentRoundPers
     private final InvestmentRoundJpaRepository repository;
 
     @Override
+    public InvestmentRound save(InvestmentRound round) {
+        InvestmentRoundJpaEntity saved = repository.save(InvestmentRoundJpaEntity.fromDomain(round));
+        return saved.toDomain();
+    }
+
+    @Override
     public boolean existsActiveRoundByUserId(Long userId) {
         return repository.existsByUserIdAndStatus(userId, RoundStatus.ACTIVE);
     }
@@ -31,12 +37,6 @@ public class InvestmentRoundJpaPersistenceAdapter implements InvestmentRoundPers
     @Override
     public Optional<InvestmentRound> findById(Long roundId) {
         return repository.findById(roundId).map(InvestmentRoundJpaEntity::toDomain);
-    }
-
-    @Override
-    public InvestmentRound save(InvestmentRound round) {
-        InvestmentRoundJpaEntity saved = repository.save(InvestmentRoundJpaEntity.fromDomain(round));
-        return saved.toDomain();
     }
 
     @Override

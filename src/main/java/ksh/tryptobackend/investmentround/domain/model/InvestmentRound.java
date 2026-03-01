@@ -42,13 +42,6 @@ public class InvestmentRound {
             .build();
     }
 
-    private static void validateEmergencyFundingLimit(BigDecimal emergencyFundingLimit) {
-        if (emergencyFundingLimit.compareTo(ZERO) < 0
-            || emergencyFundingLimit.compareTo(MAX_EMERGENCY_FUNDING_LIMIT) > 0) {
-            throw new CustomException(ErrorCode.INVALID_EMERGENCY_FUNDING_LIMIT);
-        }
-    }
-
     public InvestmentRound end(LocalDateTime endedAt) {
         if (status == RoundStatus.ENDED) {
             return this;
@@ -70,12 +63,6 @@ public class InvestmentRound {
             .build();
     }
 
-    public void validateOwnedBy(Long requesterUserId) {
-        if (!userId.equals(requesterUserId)) {
-            throw new CustomException(ErrorCode.ROUND_ACCESS_DENIED);
-        }
-    }
-
     public InvestmentRound chargeEmergencyFunding(BigDecimal amount) {
         validateChargeEmergencyFunding(amount);
 
@@ -90,6 +77,19 @@ public class InvestmentRound {
             .startedAt(startedAt)
             .endedAt(endedAt)
             .build();
+    }
+
+    public void validateOwnedBy(Long requesterUserId) {
+        if (!userId.equals(requesterUserId)) {
+            throw new CustomException(ErrorCode.ROUND_ACCESS_DENIED);
+        }
+    }
+
+    private static void validateEmergencyFundingLimit(BigDecimal emergencyFundingLimit) {
+        if (emergencyFundingLimit.compareTo(ZERO) < 0
+            || emergencyFundingLimit.compareTo(MAX_EMERGENCY_FUNDING_LIMIT) > 0) {
+            throw new CustomException(ErrorCode.INVALID_EMERGENCY_FUNDING_LIMIT);
+        }
     }
 
     private void validateChargeEmergencyFunding(BigDecimal amount) {
