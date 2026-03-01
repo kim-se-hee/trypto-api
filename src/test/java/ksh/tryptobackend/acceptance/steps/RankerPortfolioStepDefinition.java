@@ -95,18 +95,21 @@ public class RankerPortfolioStepDefinition {
     private void insertPortfolioSnapshot() {
         LocalDateTime snapshotDate = LocalDateTime.of(2026, 3, 1, 0, 0);
         jdbcTemplate.update(
-            "INSERT INTO portfolio_snapshot (snapshot_id, user_id, round_id, total_asset_krw, total_profit_krw, total_profit_rate, snapshot_date) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            1L, 1L, 1L, new BigDecimal("11550000.00000000"), new BigDecimal("1550000.00000000"), new BigDecimal("15.5000"), snapshotDate);
+            "INSERT INTO portfolio_snapshot (snapshot_id, user_id, round_id, exchange_id, total_asset, total_asset_krw, total_investment, total_profit, total_profit_rate, snapshot_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            1L, 1L, 1L, 1L,
+            new BigDecimal("11550000.00000000"), new BigDecimal("11550000.00000000"),
+            new BigDecimal("10000000.00000000"), new BigDecimal("1550000.00000000"),
+            new BigDecimal("15.5000"), snapshotDate);
 
         jdbcTemplate.update(
-            "INSERT INTO portfolio_snapshot_detail (detail_id, snapshot_id, coin_id, exchange_id, quantity, avg_buy_price, current_price, profit_rate, asset_ratio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            1L, 1L, 1L, 1L,
+            "INSERT INTO portfolio_snapshot_detail (detail_id, snapshot_id, coin_id, quantity, avg_buy_price, current_price, profit_rate, asset_ratio) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            1L, 1L, 1L,
             new BigDecimal("0.10000000"), new BigDecimal("90000000.00000000"), new BigDecimal("95000000.00000000"),
             new BigDecimal("5.5600"), new BigDecimal("60.0000"));
 
         jdbcTemplate.update(
-            "INSERT INTO portfolio_snapshot_detail (detail_id, snapshot_id, coin_id, exchange_id, quantity, avg_buy_price, current_price, profit_rate, asset_ratio) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            2L, 1L, 2L, 1L,
+            "INSERT INTO portfolio_snapshot_detail (detail_id, snapshot_id, coin_id, quantity, avg_buy_price, current_price, profit_rate, asset_ratio) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            2L, 1L, 2L,
             new BigDecimal("1.00000000"), new BigDecimal("4000000.00000000"), new BigDecimal("4600000.00000000"),
             new BigDecimal("15.0000"), new BigDecimal("40.0000"));
     }

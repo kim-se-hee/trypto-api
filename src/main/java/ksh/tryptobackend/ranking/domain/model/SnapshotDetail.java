@@ -12,7 +12,6 @@ public class SnapshotDetail {
     private final Long id;
     private final Long snapshotId;
     private final Long coinId;
-    private final Long exchangeId;
     private final BigDecimal quantity;
     private final BigDecimal avgBuyPrice;
     private final BigDecimal currentPrice;
