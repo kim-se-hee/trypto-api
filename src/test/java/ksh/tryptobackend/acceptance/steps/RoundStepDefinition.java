@@ -109,6 +109,11 @@ public class RoundStepDefinition {
         apiClient.post("/api/rounds", request);
     }
 
+    @When("활성 라운드 조회 요청을 보낸다")
+    public void 활성_라운드_조회_요청을_보낸다() {
+        apiClient.get("/api/rounds/active?userId=" + USER_ID);
+    }
+
     @When("거래소 {long}의 시드머니를 0으로 라운드 시작 요청을 보낸다")
     public void 거래소_의_시드머니를_0으로_라운드_시작_요청을_보낸다(long exchangeId) {
         Map<String, Object> request = defaultRequest();
