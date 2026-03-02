@@ -43,10 +43,10 @@ public class RoundStepDefinition {
 
     @Before
     public void setUp() {
-        investmentRuleJpaRepository.deleteAll();
-        walletJpaRepository.deleteAll();
-        investmentRoundJpaRepository.deleteAll();
-        exchangeJpaRepository.deleteAll();
+        investmentRuleJpaRepository.deleteAllInBatch();
+        walletJpaRepository.deleteAllInBatch();
+        investmentRoundJpaRepository.deleteAllInBatch();
+        exchangeJpaRepository.deleteAllInBatch();
     }
 
     @Given("라운드용 거래소 메타데이터가 준비되어 있다")
