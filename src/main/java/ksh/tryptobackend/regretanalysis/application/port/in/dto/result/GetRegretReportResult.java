@@ -6,12 +6,15 @@ import ksh.tryptobackend.regretanalysis.application.port.out.dto.RuleInfo;
 import ksh.tryptobackend.regretanalysis.domain.model.RegretReport;
 import ksh.tryptobackend.regretanalysis.domain.model.RuleImpact;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetail;
+import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetails;
 import ksh.tryptobackend.regretanalysis.domain.vo.ThresholdUnit;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public record GetRegretReportResult(
     Long reportId,
@@ -37,8 +40,8 @@ public record GetRegretReportResult(
             .map(ri -> toRuleImpactResult(ri, ruleMap))
             .toList();
 
-        List<ViolationDetailResult> violationDetailResults = groupViolationDetails(
-            report.getViolationDetails().toList(), ruleMap, coinSymbols);
+        List<ViolationDetailResult> violationDetailResults = toViolationDetailResults(
+            report.getViolationDetails(), ruleMap, coinSymbols);
 
         return new GetRegretReportResult(
             report.getReportId(),
@@ -60,47 +63,31 @@ public record GetRegretReportResult(
     private static RuleImpactResult toRuleImpactResult(RuleImpact ruleImpact,
                                                         Map<Long, RuleInfo> ruleMap) {
         RuleInfo rule = ruleMap.get(ruleImpact.getRuleId());
-        RuleType ruleType = rule != null ? rule.ruleType() : null;
-        BigDecimal thresholdValue = rule != null ? rule.thresholdValue() : BigDecimal.ZERO;
-        String thresholdUnit = ruleType != null ? ThresholdUnit.from(ruleType).symbol() : "";
 
         return new RuleImpactResult(
             ruleImpact.getRuleImpactId(),
             ruleImpact.getRuleId(),
-            ruleType,
-            thresholdValue,
-            thresholdUnit,
+            rule.ruleType(),
+            rule.thresholdValue(),
+            ThresholdUnit.from(rule.ruleType()).symbol(),
             ruleImpact.getViolationCount(),
             ruleImpact.getTotalLossAmount(),
             ruleImpact.getImpactGap().value()
         );
     }
 
-    private static List<ViolationDetailResult> groupViolationDetails(
-            List<ViolationDetail> details,
+    private static List<ViolationDetailResult> toViolationDetailResults(
+            ViolationDetails violationDetails,
             Map<Long, RuleInfo> ruleMap,
             Map<Long, String> coinSymbols) {
-        Map<Long, List<ViolationDetail>> orderGroup = new LinkedHashMap<>();
-        List<ViolationDetail> monitoringViolations = new ArrayList<>();
-
-        for (ViolationDetail detail : details) {
-            if (detail.getOrderId() != null) {
-                orderGroup.computeIfAbsent(detail.getOrderId(), k -> new ArrayList<>()).add(detail);
-            } else {
-                monitoringViolations.add(detail);
-            }
-        }
-
         List<ViolationDetailResult> results = new ArrayList<>();
 
-        for (Map.Entry<Long, List<ViolationDetail>> entry : orderGroup.entrySet()) {
+        for (Map.Entry<Long, List<ViolationDetail>> entry : violationDetails.groupByOrder().entrySet()) {
             List<ViolationDetail> grouped = entry.getValue();
             ViolationDetail first = grouped.getFirst();
 
             List<String> violatedRules = grouped.stream()
-                .map(d -> ruleMap.get(d.getRuleId()))
-                .filter(Objects::nonNull)
-                .map(r -> r.ruleType().name())
+                .map(d -> ruleMap.get(d.getRuleId()).ruleType().name())
                 .distinct()
                 .toList();
 
@@ -111,14 +98,13 @@ public record GetRegretReportResult(
                 violatedRules, first.getProfitLoss(), first.getOccurredAt()));
         }
 
-        for (ViolationDetail detail : monitoringViolations) {
+        for (ViolationDetail detail : violationDetails.findMonitoringViolations()) {
             RuleInfo rule = ruleMap.get(detail.getRuleId());
-            String ruleName = rule != null ? rule.ruleType().name() : "";
             String coinSymbol = coinSymbols.getOrDefault(detail.getCoinId(), "");
 
             results.add(new ViolationDetailResult(
                 detail.getViolationDetailId(), null, coinSymbol,
-                List.of(ruleName), detail.getProfitLoss(), detail.getOccurredAt()));
+                List.of(rule.ruleType().name()), detail.getProfitLoss(), detail.getOccurredAt()));
         }
 
         return results;
