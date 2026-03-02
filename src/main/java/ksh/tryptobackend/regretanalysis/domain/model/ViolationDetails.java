@@ -1,8 +1,6 @@
 package ksh.tryptobackend.regretanalysis.domain.model;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ViolationDetails {
@@ -18,6 +16,21 @@ public class ViolationDetails {
             .map(ViolationDetail::getCoinId)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
+    }
+
+    public Map<Long, List<ViolationDetail>> groupByOrder() {
+        return details.stream()
+            .filter(ViolationDetail::isOrderViolation)
+            .collect(Collectors.groupingBy(
+                ViolationDetail::getOrderId,
+                LinkedHashMap::new,
+                Collectors.toList()));
+    }
+
+    public List<ViolationDetail> findMonitoringViolations() {
+        return details.stream()
+            .filter(ViolationDetail::isMonitoringViolation)
+            .toList();
     }
 
     public List<ViolationDetail> toList() {
