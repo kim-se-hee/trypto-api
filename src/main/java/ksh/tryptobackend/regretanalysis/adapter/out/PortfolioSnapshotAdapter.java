@@ -3,7 +3,7 @@ package ksh.tryptobackend.regretanalysis.adapter.out;
 import ksh.tryptobackend.ranking.application.port.out.SnapshotQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.SnapshotInfo;
 import ksh.tryptobackend.regretanalysis.application.port.out.PortfolioSnapshotPort;
-import ksh.tryptobackend.regretanalysis.application.port.out.dto.AssetSnapshot;
+import ksh.tryptobackend.regretanalysis.domain.model.AssetSnapshot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -30,7 +30,7 @@ public class PortfolioSnapshotAdapter implements PortfolioSnapshotPort {
     }
 
     private AssetSnapshot toAssetSnapshot(SnapshotInfo info) {
-        return new AssetSnapshot(
+        return AssetSnapshot.reconstitute(
             info.snapshotId(), info.roundId(), info.exchangeId(),
             info.totalAsset(), info.totalInvestment(),
             info.totalProfitRate(), info.snapshotDate()

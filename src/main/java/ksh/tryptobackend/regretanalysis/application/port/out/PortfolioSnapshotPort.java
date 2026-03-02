@@ -1,6 +1,6 @@
 package ksh.tryptobackend.regretanalysis.application.port.out;
 
-import ksh.tryptobackend.regretanalysis.application.port.out.dto.AssetSnapshot;
+import ksh.tryptobackend.regretanalysis.domain.model.AssetSnapshot;
 
 import java.util.List;
 import java.util.Optional;
