@@ -4,7 +4,6 @@ import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.marketdata.application.port.out.ExchangeQueryPort;
 import ksh.tryptobackend.marketdata.application.port.out.dto.ExchangeDetail;
-import ksh.tryptobackend.marketdata.domain.model.ExchangeMarketType;
 import ksh.tryptobackend.regretanalysis.application.port.out.ExchangeInfoPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.dto.ExchangeInfoRecord;
 import lombok.RequiredArgsConstructor;
@@ -21,17 +20,6 @@ public class ExchangeInfoAdapter implements ExchangeInfoPort {
         ExchangeDetail detail = exchangeQueryPort.findExchangeDetailById(exchangeId)
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
 
-        return new ExchangeInfoRecord(
-            exchangeId,
-            detail.name(),
-            toCurrency(detail.marketType())
-        );
-    }
-
-    private String toCurrency(ExchangeMarketType marketType) {
-        return switch (marketType) {
-            case DOMESTIC -> "KRW";
-            case OVERSEAS -> "USDT";
-        };
+        return new ExchangeInfoRecord(exchangeId, detail.name(), detail.currency());
     }
 }
