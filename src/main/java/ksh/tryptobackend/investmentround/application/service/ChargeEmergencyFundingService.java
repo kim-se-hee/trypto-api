@@ -7,13 +7,11 @@ import ksh.tryptobackend.investmentround.application.port.in.dto.command.ChargeE
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.ChargeEmergencyFundingResult;
 import ksh.tryptobackend.investmentround.application.port.out.EmergencyFundingPersistencePort;
 import ksh.tryptobackend.investmentround.application.port.out.ExchangeInfoPort;
+import ksh.tryptobackend.investmentround.application.port.out.FundingWalletPort;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundPersistencePort;
 import ksh.tryptobackend.investmentround.application.port.out.dto.ExchangeInfo;
 import ksh.tryptobackend.investmentround.domain.model.EmergencyFunding;
 import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
-import ksh.tryptobackend.wallet.application.port.out.WalletBalanceOperationPort;
-import ksh.tryptobackend.wallet.application.port.out.WalletQueryPort;
-import ksh.tryptobackend.wallet.application.port.out.dto.WalletInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,28 +27,28 @@ public class ChargeEmergencyFundingService implements ChargeEmergencyFundingUseC
     private final InvestmentRoundPersistencePort investmentRoundPersistencePort;
     private final EmergencyFundingPersistencePort emergencyFundingPersistencePort;
     private final ExchangeInfoPort exchangeInfoPort;
-    private final WalletQueryPort walletQueryPort;
-    private final WalletBalanceOperationPort walletBalanceOperationPort;
+    private final FundingWalletPort fundingWalletPort;
     private final Clock clock;
 
     @Override
     @Transactional
     public ChargeEmergencyFundingResult chargeEmergencyFunding(ChargeEmergencyFundingCommand command) {
+        InvestmentRound round = getRound(command.roundId());
+        round.validateOwnedBy(command.userId());
+
         Optional<EmergencyFunding> existing = emergencyFundingPersistencePort
             .findByRoundIdAndIdempotencyKey(command.roundId(), command.idempotencyKey());
         if (existing.isPresent()) {
-            return toResultFromExisting(existing.get(), command.roundId());
+        return toResult(existing.get(), round);
         }
 
-        InvestmentRound round = getRound(command.roundId());
-        round.validateOwnedBy(command.userId());
         InvestmentRound updatedRound = round.chargeEmergencyFunding(command.amount());
 
-        WalletInfo wallet = getWallet(command.roundId(), command.exchangeId());
+        Long walletId = getWalletId(command.roundId(), command.exchangeId());
         ExchangeInfo exchange = getExchange(command.exchangeId());
 
         LocalDateTime now = LocalDateTime.now(clock);
-        walletBalanceOperationPort.addBalance(wallet.walletId(), exchange.baseCurrencyCoinId(), command.amount());
+        fundingWalletPort.addBalance(walletId, exchange.baseCurrencyCoinId(), command.amount());
         EmergencyFunding funding = saveEmergencyFunding(command, now);
         investmentRoundPersistencePort.save(updatedRound);
 
@@ -62,8 +60,8 @@ public class ChargeEmergencyFundingService implements ChargeEmergencyFundingUseC
             .orElseThrow(() -> new CustomException(ErrorCode.ROUND_NOT_FOUND));
     }
 
-    private WalletInfo getWallet(Long roundId, Long exchangeId) {
-        return walletQueryPort.findByRoundIdAndExchangeId(roundId, exchangeId)
+    private Long getWalletId(Long roundId, Long exchangeId) {
+        return fundingWalletPort.findWalletId(roundId, exchangeId)
             .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
     }
 
@@ -76,11 +74,6 @@ public class ChargeEmergencyFundingService implements ChargeEmergencyFundingUseC
         EmergencyFunding funding = EmergencyFunding.create(
             command.roundId(), command.exchangeId(), command.amount(), command.idempotencyKey(), now);
         return emergencyFundingPersistencePort.save(funding);
-    }
-
-    private ChargeEmergencyFundingResult toResultFromExisting(EmergencyFunding funding, Long roundId) {
-        InvestmentRound round = getRound(roundId);
-        return toResult(funding, round);
     }
 
     private ChargeEmergencyFundingResult toResult(EmergencyFunding funding, InvestmentRound round) {
