@@ -5,7 +5,7 @@ import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.regretanalysis.application.port.in.GetRegretChartUseCase;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.query.GetRegretChartQuery;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult;
-import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.ChartDataPoint;
+import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.DailyComparison;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.ViolationMarkerPoint;
 import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.ExchangeInfoPort;
@@ -54,7 +54,7 @@ public class GetRegretChartService implements GetRegretChartUseCase {
         BtcBenchmark btcBenchmark = buildBtcBenchmark(timeline, exchangeInfo.currency());
         ViolationMarkers violationMarkers = ViolationMarkers.from(violations, timeline);
 
-        List<ChartDataPoint> assetHistory = mapToAssetHistory(timeline.getSnapshots(), lossTimeline, btcBenchmark);
+        List<DailyComparison> assetHistory = mapToAssetHistory(timeline.getSnapshots(), lossTimeline, btcBenchmark);
         List<ViolationMarkerPoint> markerPoints = mapToViolationMarkerPoints(violationMarkers);
 
         return new RegretChartResult(
@@ -101,14 +101,14 @@ public class GetRegretChartService implements GetRegretChartUseCase {
         return BtcBenchmark.calculate(timeline.getSeedMoney(), priceMap, timeline.getDates(), timeline.getStartDate());
     }
 
-    private List<ChartDataPoint> mapToAssetHistory(List<AssetSnapshot> snapshots,
+    private List<DailyComparison> mapToAssetHistory(List<AssetSnapshot> snapshots,
                                                     CumulativeLossTimeline lossTimeline,
                                                     BtcBenchmark btcBenchmark) {
         return snapshots.stream()
             .map(snapshot -> {
                 LocalDate date = snapshot.getSnapshotLocalDate();
                 BigDecimal actualAsset = snapshot.getTotalAsset();
-                return new ChartDataPoint(
+                return new DailyComparison(
                     date,
                     actualAsset,
                     lossTimeline.calculateRuleFollowedAsset(actualAsset, date),

@@ -23,7 +23,7 @@ public record RegretChartResponse(
         BigDecimal btcHoldAsset
     ) {
 
-        public static AssetHistoryItem from(RegretChartResult.ChartDataPoint result) {
+        public static AssetHistoryItem from(RegretChartResult.DailyComparison result) {
             return new AssetHistoryItem(
                 result.snapshotDate(),
                 result.actualAsset(),

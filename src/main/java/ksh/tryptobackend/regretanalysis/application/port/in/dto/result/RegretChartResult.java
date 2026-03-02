@@ -10,11 +10,11 @@ public record RegretChartResult(
     String exchangeName,
     String currency,
     int totalDays,
-    List<ChartDataPoint> assetHistory,
+    List<DailyComparison> assetHistory,
     List<ViolationMarkerPoint> violationMarkers
 ) {
 
-    public record ChartDataPoint(
+    public record DailyComparison(
         LocalDate snapshotDate,
         BigDecimal actualAsset,
         BigDecimal ruleFollowedAsset,
