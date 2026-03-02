@@ -27,6 +27,8 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -109,20 +111,24 @@ public class GetRegretChartService implements GetRegretChartUseCase {
 
     private Map<LocalDate, BigDecimal> buildCumulativeLossMap(RegretReport report,
                                                                List<AssetSnapshot> snapshots) {
-        List<ViolationDetail> violations = report.getViolationDetails();
+        List<ViolationDetail> sortedViolations = report.getViolationDetails().stream()
+            .sorted(Comparator.comparing(v -> v.getOccurredAt().toLocalDate()))
+            .toList();
 
-        return snapshots.stream()
-            .collect(Collectors.toMap(
-                snapshot -> snapshot.snapshotDate().toLocalDate(),
-                snapshot -> calculateCumulativeLoss(violations, snapshot.snapshotDate().toLocalDate())
-            ));
-    }
+        Map<LocalDate, BigDecimal> cumulativeLossByDate = new HashMap<>();
+        BigDecimal cumulativeLoss = BigDecimal.ZERO;
+        int violationIndex = 0;
 
-    private BigDecimal calculateCumulativeLoss(List<ViolationDetail> violations, LocalDate snapshotDate) {
-        return violations.stream()
-            .filter(v -> !v.getOccurredAt().toLocalDate().isAfter(snapshotDate))
-            .map(ViolationDetail::getLossAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        for (AssetSnapshot snapshot : snapshots) {
+            LocalDate snapshotDate = snapshot.snapshotDate().toLocalDate();
+            while (violationIndex < sortedViolations.size()
+                && !sortedViolations.get(violationIndex).getOccurredAt().toLocalDate().isAfter(snapshotDate)) {
+                cumulativeLoss = cumulativeLoss.add(sortedViolations.get(violationIndex).getLossAmount());
+                violationIndex++;
+            }
+            cumulativeLossByDate.put(snapshotDate, cumulativeLoss);
+        }
+        return cumulativeLossByDate;
     }
 
     private Map<LocalDate, BigDecimal> buildBtcHoldAssetMap(List<AssetSnapshot> snapshots,
