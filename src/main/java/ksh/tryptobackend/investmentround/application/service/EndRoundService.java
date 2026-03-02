@@ -4,7 +4,6 @@ import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.investmentround.application.port.in.EndRoundUseCase;
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.EndRoundCommand;
-import ksh.tryptobackend.investmentround.application.port.in.dto.result.EndRoundResult;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundPersistencePort;
 import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
 import lombok.RequiredArgsConstructor;
@@ -23,26 +22,20 @@ public class EndRoundService implements EndRoundUseCase {
 
     @Override
     @Transactional
-    public EndRoundResult endRound(EndRoundCommand command) {
+    public InvestmentRound endRound(EndRoundCommand command) {
         InvestmentRound round = getRound(command.roundId());
         round.validateOwnedBy(command.userId());
 
         if (round.isEnded()) {
-            return toResult(round);
+            return round;
         }
 
         InvestmentRound endedRound = round.end(LocalDateTime.now(clock));
-        InvestmentRound savedRound = investmentRoundPersistencePort.save(endedRound);
-
-        return toResult(savedRound);
+        return investmentRoundPersistencePort.save(endedRound);
     }
 
     private InvestmentRound getRound(Long roundId) {
         return investmentRoundPersistencePort.findById(roundId)
             .orElseThrow(() -> new CustomException(ErrorCode.ROUND_NOT_FOUND));
-    }
-
-    private EndRoundResult toResult(InvestmentRound round) {
-        return new EndRoundResult(round.getRoundId(), round.getStatus(), round.getEndedAt());
     }
 }

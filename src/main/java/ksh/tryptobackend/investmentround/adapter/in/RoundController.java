@@ -8,8 +8,8 @@ import ksh.tryptobackend.investmentround.adapter.in.dto.response.EndRoundRespons
 import ksh.tryptobackend.investmentround.adapter.in.dto.response.StartRoundResponse;
 import ksh.tryptobackend.investmentround.application.port.in.EndRoundUseCase;
 import ksh.tryptobackend.investmentround.application.port.in.StartRoundUseCase;
-import ksh.tryptobackend.investmentround.application.port.in.dto.result.EndRoundResult;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundResult;
+import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,8 +37,8 @@ public class RoundController {
     @PostMapping("/{roundId}/end")
     public ResponseEntity<ApiResponseDto<EndRoundResponse>> endRound(@PathVariable Long roundId,
                                                                      @Valid @RequestBody EndRoundRequest request) {
-        EndRoundResult result = endRoundUseCase.endRound(request.toCommand(roundId));
+        InvestmentRound round = endRoundUseCase.endRound(request.toCommand(roundId));
         return ResponseEntity.ok(
-            ApiResponseDto.success("라운드를 종료했습니다.", EndRoundResponse.from(result)));
+            ApiResponseDto.success("라운드를 종료했습니다.", EndRoundResponse.from(round)));
     }
 }
