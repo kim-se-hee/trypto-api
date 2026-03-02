@@ -11,6 +11,8 @@ import ksh.tryptobackend.investmentround.domain.model.EmergencyFunding;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -41,6 +43,7 @@ public class EmergencyFundingJpaEntity {
     @Column(name = "amount", nullable = false, precision = 30, scale = 8)
     private BigDecimal amount;
 
+    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "idempotency_key", nullable = false, length = 36)
     private UUID idempotencyKey;
 
