@@ -16,7 +16,6 @@ import ksh.tryptobackend.regretanalysis.application.port.out.dto.AssetSnapshot;
 import ksh.tryptobackend.regretanalysis.application.port.out.dto.BtcDailyPrice;
 import ksh.tryptobackend.regretanalysis.application.port.out.dto.ExchangeInfoRecord;
 import ksh.tryptobackend.regretanalysis.application.port.out.dto.RoundInfoResult;
-import ksh.tryptobackend.regretanalysis.domain.model.RegretReport;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetail;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -51,12 +50,13 @@ public class GetRegretChartService implements GetRegretChartUseCase {
     @Transactional(readOnly = true)
     public RegretChartResult getRegretChart(GetRegretChartQuery query) {
         RoundInfoResult round = getRoundAndValidateOwner(query);
-        RegretReport report = getReport(query);
+        validateReportExists(query);
+        List<ViolationDetail> violations = getViolationDetails(query);
         ExchangeInfoRecord exchangeInfo = getExchangeInfo(query.exchangeId());
         List<AssetSnapshot> snapshots = getSnapshots(query);
 
-        List<DailyAssetResult> assetHistory = buildAssetHistory(snapshots, report, exchangeInfo.currency());
-        List<ViolationMarkerResult> violationMarkers = buildViolationMarkers(report, snapshots);
+        List<DailyAssetResult> assetHistory = buildAssetHistory(snapshots, violations, exchangeInfo.currency());
+        List<ViolationMarkerResult> violationMarkers = buildViolationMarkers(violations, snapshots);
         int totalDays = calculateTotalDays(snapshots);
 
         return new RegretChartResult(
@@ -74,8 +74,15 @@ public class GetRegretChartService implements GetRegretChartUseCase {
         return round;
     }
 
-    private RegretReport getReport(GetRegretChartQuery query) {
-        return regretReportPersistencePort.getByRoundIdAndExchangeId(query.roundId(), query.exchangeId());
+    private void validateReportExists(GetRegretChartQuery query) {
+        if (!regretReportPersistencePort.existsByRoundIdAndExchangeId(query.roundId(), query.exchangeId())) {
+            throw new CustomException(ErrorCode.REPORT_NOT_FOUND);
+        }
+    }
+
+    private List<ViolationDetail> getViolationDetails(GetRegretChartQuery query) {
+        return regretReportPersistencePort.findViolationDetailsByRoundIdAndExchangeId(
+            query.roundId(), query.exchangeId());
     }
 
     private ExchangeInfoRecord getExchangeInfo(Long exchangeId) {
@@ -92,9 +99,9 @@ public class GetRegretChartService implements GetRegretChartUseCase {
     }
 
     private List<DailyAssetResult> buildAssetHistory(List<AssetSnapshot> snapshots,
-                                                      RegretReport report,
+                                                      List<ViolationDetail> violations,
                                                       String currency) {
-        Map<LocalDate, BigDecimal> cumulativeLossMap = buildCumulativeLossMap(report, snapshots);
+        Map<LocalDate, BigDecimal> cumulativeLossMap = buildCumulativeLossMap(violations, snapshots);
         Map<LocalDate, BigDecimal> btcHoldAssetMap = buildBtcHoldAssetMap(snapshots, currency);
 
         return snapshots.stream()
@@ -109,9 +116,9 @@ public class GetRegretChartService implements GetRegretChartUseCase {
             .toList();
     }
 
-    private Map<LocalDate, BigDecimal> buildCumulativeLossMap(RegretReport report,
+    private Map<LocalDate, BigDecimal> buildCumulativeLossMap(List<ViolationDetail> violations,
                                                                List<AssetSnapshot> snapshots) {
-        List<ViolationDetail> sortedViolations = report.getViolationDetails().stream()
+        List<ViolationDetail> sortedViolations = violations.stream()
             .sorted(Comparator.comparing(v -> v.getOccurredAt().toLocalDate()))
             .toList();
 
@@ -162,7 +169,7 @@ public class GetRegretChartService implements GetRegretChartUseCase {
             ));
     }
 
-    private List<ViolationMarkerResult> buildViolationMarkers(RegretReport report,
+    private List<ViolationMarkerResult> buildViolationMarkers(List<ViolationDetail> violations,
                                                                List<AssetSnapshot> snapshots) {
         Map<LocalDate, BigDecimal> assetByDate = snapshots.stream()
             .collect(Collectors.toMap(
@@ -170,7 +177,7 @@ public class GetRegretChartService implements GetRegretChartUseCase {
                 AssetSnapshot::totalAsset
             ));
 
-        Set<LocalDate> violationDates = report.getViolationDetails().stream()
+        Set<LocalDate> violationDates = violations.stream()
             .map(v -> v.getOccurredAt().toLocalDate())
             .collect(Collectors.toSet());
 
