@@ -4,18 +4,25 @@ import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetail;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class CumulativeLossTimeline {
 
-    private final Map<LocalDate, BigDecimal> lossByDate;
+    public record DailyLoss(LocalDate date, BigDecimal cumulativeLoss) {}
 
-    private CumulativeLossTimeline(Map<LocalDate, BigDecimal> lossByDate) {
-        this.lossByDate = lossByDate;
+    private final List<DailyLoss> entries;
+    private final Map<LocalDate, DailyLoss> entryByDate;
+
+    private CumulativeLossTimeline(List<DailyLoss> entries) {
+        this.entries = entries;
+        this.entryByDate = entries.stream()
+            .collect(Collectors.toMap(DailyLoss::date, Function.identity()));
     }
 
     public static CumulativeLossTimeline build(List<ViolationDetail> violations,
@@ -24,7 +31,7 @@ public final class CumulativeLossTimeline {
             .sorted(Comparator.comparing(v -> v.getOccurredAt().toLocalDate()))
             .toList();
 
-        Map<LocalDate, BigDecimal> cumulativeLossByDate = new HashMap<>();
+        List<DailyLoss> result = new ArrayList<>();
         BigDecimal cumulativeLoss = BigDecimal.ZERO;
         int violationIndex = 0;
 
@@ -34,13 +41,14 @@ public final class CumulativeLossTimeline {
                 cumulativeLoss = cumulativeLoss.add(sortedViolations.get(violationIndex).getLossAmount());
                 violationIndex++;
             }
-            cumulativeLossByDate.put(snapshotDate, cumulativeLoss);
+            result.add(new DailyLoss(snapshotDate, cumulativeLoss));
         }
-        return new CumulativeLossTimeline(cumulativeLossByDate);
+        return new CumulativeLossTimeline(result);
     }
 
     public BigDecimal getLossAt(LocalDate date) {
-        return lossByDate.getOrDefault(date, BigDecimal.ZERO);
+        DailyLoss entry = entryByDate.get(date);
+        return entry != null ? entry.cumulativeLoss() : BigDecimal.ZERO;
     }
 
     public BigDecimal calculateRuleFollowedAsset(BigDecimal actualAsset, LocalDate date) {
@@ -51,19 +59,22 @@ public final class CumulativeLossTimeline {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof CumulativeLossTimeline that)) return false;
-        if (lossByDate.size() != that.lossByDate.size()) return false;
-        for (Map.Entry<LocalDate, BigDecimal> entry : lossByDate.entrySet()) {
-            BigDecimal otherValue = that.lossByDate.get(entry.getKey());
-            if (otherValue == null || entry.getValue().compareTo(otherValue) != 0) return false;
+        if (entries.size() != that.entries.size()) return false;
+        for (int i = 0; i < entries.size(); i++) {
+            DailyLoss a = entries.get(i);
+            DailyLoss b = that.entries.get(i);
+            if (!a.date().equals(b.date()) || a.cumulativeLoss().compareTo(b.cumulativeLoss()) != 0) {
+                return false;
+            }
         }
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(lossByDate.size());
-        for (Map.Entry<LocalDate, BigDecimal> entry : lossByDate.entrySet()) {
-            result = 31 * result + Objects.hash(entry.getKey(), entry.getValue().stripTrailingZeros());
+        int result = Objects.hash(entries.size());
+        for (DailyLoss entry : entries) {
+            result = 31 * result + Objects.hash(entry.date(), entry.cumulativeLoss().stripTrailingZeros());
         }
         return result;
     }
