@@ -5,8 +5,8 @@ import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.regretanalysis.application.port.in.GetRegretChartUseCase;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.query.GetRegretChartQuery;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult;
-import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.DailyAssetResult;
-import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.ViolationMarkerResult;
+import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.ChartDataPoint;
+import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.ViolationMarkerPoint;
 import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.ExchangeInfoPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.InvestmentRoundPort;
@@ -55,8 +55,8 @@ public class GetRegretChartService implements GetRegretChartUseCase {
         ExchangeInfoRecord exchangeInfo = getExchangeInfo(query.exchangeId());
         List<AssetSnapshot> snapshots = getSnapshots(query);
 
-        List<DailyAssetResult> assetHistory = buildAssetHistory(snapshots, violations, exchangeInfo.currency());
-        List<ViolationMarkerResult> violationMarkers = buildViolationMarkers(violations, snapshots);
+        List<ChartDataPoint> assetHistory = buildAssetHistory(snapshots, violations, exchangeInfo.currency());
+        List<ViolationMarkerPoint> violationMarkers = buildViolationMarkers(violations, snapshots);
         int totalDays = calculateTotalDays(snapshots);
 
         return new RegretChartResult(
@@ -98,7 +98,7 @@ public class GetRegretChartService implements GetRegretChartUseCase {
         return snapshots;
     }
 
-    private List<DailyAssetResult> buildAssetHistory(List<AssetSnapshot> snapshots,
+    private List<ChartDataPoint> buildAssetHistory(List<AssetSnapshot> snapshots,
                                                       List<ViolationDetail> violations,
                                                       String currency) {
         Map<LocalDate, BigDecimal> cumulativeLossMap = buildCumulativeLossMap(violations, snapshots);
@@ -111,7 +111,7 @@ public class GetRegretChartService implements GetRegretChartUseCase {
                 BigDecimal cumulativeLoss = cumulativeLossMap.getOrDefault(date, BigDecimal.ZERO);
                 BigDecimal ruleFollowedAsset = actualAsset.add(cumulativeLoss);
                 BigDecimal btcHoldAsset = btcHoldAssetMap.getOrDefault(date, BigDecimal.ZERO);
-                return new DailyAssetResult(date, actualAsset, ruleFollowedAsset, btcHoldAsset);
+                return new ChartDataPoint(date, actualAsset, ruleFollowedAsset, btcHoldAsset);
             })
             .toList();
     }
@@ -169,7 +169,7 @@ public class GetRegretChartService implements GetRegretChartUseCase {
             ));
     }
 
-    private List<ViolationMarkerResult> buildViolationMarkers(List<ViolationDetail> violations,
+    private List<ViolationMarkerPoint> buildViolationMarkers(List<ViolationDetail> violations,
                                                                List<AssetSnapshot> snapshots) {
         Map<LocalDate, BigDecimal> assetByDate = snapshots.stream()
             .collect(Collectors.toMap(
@@ -184,7 +184,7 @@ public class GetRegretChartService implements GetRegretChartUseCase {
         return violationDates.stream()
             .sorted()
             .filter(assetByDate::containsKey)
-            .map(date -> new ViolationMarkerResult(date, assetByDate.get(date)))
+            .map(date -> new ViolationMarkerPoint(date, assetByDate.get(date)))
             .toList();
     }
 
