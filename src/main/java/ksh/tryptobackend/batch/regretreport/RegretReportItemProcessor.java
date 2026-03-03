@@ -37,23 +37,29 @@ public class RegretReportItemProcessor implements ItemProcessor<RegretReportInpu
             return null;
         }
 
-        Map<Long, BigDecimal> currentPrices = resolveCurrentPrices(violations);
-        List<ViolationDetail> details = toViolationDetails(violations, currentPrices);
-
-        AssetSnapshot snapshot = portfolioSnapshotPort
-            .getLatestByRoundIdAndExchangeId(input.roundId(), input.exchangeId());
-        BigDecimal actualProfitRate = snapshot.getTotalProfitRate();
-        BigDecimal totalInvestment = snapshot.getTotalInvestment();
-
-        ViolationDetails violationDetails = new ViolationDetails(details);
-        List<RuleImpact> impacts = violationDetails.toRuleImpacts(totalInvestment);
+        List<ViolationDetail> details = calculateViolationDetails(violations);
+        AssetSnapshot snapshot = getLatestSnapshot(input);
+        List<RuleImpact> impacts = new ViolationDetails(details)
+            .toRuleImpacts(snapshot.getTotalInvestment());
 
         return RegretReport.generate(
             input.userId(), input.roundId(), input.exchangeId(),
-            actualProfitRate, totalInvestment,
+            snapshot.getTotalProfitRate(), snapshot.getTotalInvestment(),
             impacts, details,
             input.startedAt().toLocalDate(), LocalDate.now()
         );
+    }
+
+    private List<ViolationDetail> calculateViolationDetails(List<TradeViolation> violations) {
+        Map<Long, BigDecimal> currentPrices = resolveCurrentPrices(violations);
+        return violations.stream()
+            .map(v -> {
+                BigDecimal lossAmount = v.calculateLoss(currentPrices.get(v.getExchangeCoinId()));
+                return ViolationDetail.create(
+                    v.getOrderId(), v.getRuleId(), v.getExchangeCoinId(),
+                    lossAmount, lossAmount, v.getViolatedAt());
+            })
+            .toList();
     }
 
     private Map<Long, BigDecimal> resolveCurrentPrices(List<TradeViolation> violations) {
@@ -63,15 +69,8 @@ public class RegretReportItemProcessor implements ItemProcessor<RegretReportInpu
             .collect(Collectors.toMap(id -> id, livePricePort::getCurrentPrice));
     }
 
-    private List<ViolationDetail> toViolationDetails(List<TradeViolation> violations,
-                                                      Map<Long, BigDecimal> currentPrices) {
-        return violations.stream()
-            .map(v -> {
-                BigDecimal lossAmount = v.calculateLoss(currentPrices.get(v.getExchangeCoinId()));
-                return ViolationDetail.create(
-                    v.getOrderId(), v.getRuleId(), v.getExchangeCoinId(),
-                    lossAmount, lossAmount, v.getViolatedAt());
-            })
-            .toList();
+    private AssetSnapshot getLatestSnapshot(RegretReportInput input) {
+        return portfolioSnapshotPort
+            .getLatestByRoundIdAndExchangeId(input.roundId(), input.exchangeId());
     }
 }
