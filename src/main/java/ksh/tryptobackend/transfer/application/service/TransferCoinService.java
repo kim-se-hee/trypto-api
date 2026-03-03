@@ -13,6 +13,8 @@ import ksh.tryptobackend.transfer.application.port.out.TransferWithdrawalFeePort
 import ksh.tryptobackend.transfer.application.port.out.dto.TransferDepositAddressInfo;
 import ksh.tryptobackend.transfer.application.port.out.dto.TransferWalletInfo;
 import ksh.tryptobackend.transfer.domain.model.Transfer;
+import ksh.tryptobackend.transfer.domain.vo.TransferBalanceChange;
+import ksh.tryptobackend.transfer.domain.vo.TransferDestination;
 import ksh.tryptobackend.transfer.domain.vo.TransferDestinationChain;
 import ksh.tryptobackend.transfer.domain.vo.TransferFailureReason;
 import ksh.tryptobackend.transfer.domain.vo.TransferSourceExchange;
@@ -21,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
 
@@ -46,21 +47,23 @@ public class TransferCoinService implements TransferCoinUseCase {
 
     private Transfer executeTransfer(TransferCoinCommand command) {
         TransferWalletInfo wallet = walletPort.getWallet(command.fromWalletId());
-        validateNotBaseCurrency(wallet.exchangeId(), command.coinId());
+        TransferSourceExchange sourceExchange = exchangePort.getExchangeDetail(wallet.exchangeId());
+        sourceExchange.validateTransferable(command.coinId());
         validateSourceChainSupport(wallet.exchangeId(), command.coinId(), command.chain());
+
         WithdrawalCondition condition = withdrawalFeePort.getWithdrawalFee(
             wallet.exchangeId(), command.coinId(), command.chain());
-        validateMinWithdrawal(command.amount(), condition.minWithdrawal());
-        validateBalance(command.fromWalletId(), command.coinId(), command.amount(), condition.fee());
+        condition.validateMinWithdrawal(command.amount());
+        condition.validateSufficientBalance(
+            walletPort.getAvailableBalance(command.fromWalletId(), command.coinId()),
+            command.amount());
 
-        Transfer transfer = determineOutcome(command, wallet, condition.fee());
+        TransferDestination destination = resolveDestination(command, wallet);
+        Transfer transfer = Transfer.create(command.clientTransferId(), command.fromWalletId(),
+            command.coinId(), command.chain(), command.toAddress(), command.toTag(),
+            command.amount(), condition.fee(), destination, LocalDateTime.now(clock));
         applyBalanceChanges(transfer);
         return transferPersistencePort.save(transfer);
-    }
-
-    private void validateNotBaseCurrency(Long exchangeId, Long coinId) {
-        TransferSourceExchange sourceExchange = exchangePort.getExchangeDetail(exchangeId);
-        sourceExchange.validateTransferable(coinId);
     }
 
     private void validateSourceChainSupport(Long exchangeId, Long coinId, String chain) {
@@ -68,30 +71,12 @@ public class TransferCoinService implements TransferCoinUseCase {
             .orElseThrow(() -> new CustomException(ErrorCode.UNSUPPORTED_CHAIN));
     }
 
-    private void validateMinWithdrawal(BigDecimal amount, BigDecimal minWithdrawal) {
-        if (amount.compareTo(minWithdrawal) < 0) {
-            throw new CustomException(ErrorCode.BELOW_MIN_WITHDRAWAL);
-        }
-    }
-
-    private void validateBalance(Long walletId, Long coinId, BigDecimal amount, BigDecimal fee) {
-        BigDecimal required = amount.add(fee);
-        BigDecimal available = walletPort.getAvailableBalance(walletId, coinId);
-        if (available.compareTo(required) < 0) {
-            throw new CustomException(ErrorCode.INSUFFICIENT_BALANCE);
-        }
-    }
-
-    private Transfer determineOutcome(TransferCoinCommand command, TransferWalletInfo wallet,
-                                       BigDecimal fee) {
-        LocalDateTime now = LocalDateTime.now(clock);
-
+    private TransferDestination resolveDestination(TransferCoinCommand command,
+                                                   TransferWalletInfo wallet) {
         var depositAddress = depositPort.findByRoundIdAndChainAndAddress(
             wallet.roundId(), command.chain(), command.toAddress());
         if (depositAddress.isEmpty()) {
-            return Transfer.frozen(command.clientTransferId(), command.fromWalletId(),
-                command.coinId(), command.chain(), command.toAddress(), command.toTag(),
-                command.amount(), fee, TransferFailureReason.WRONG_ADDRESS, now);
+            return new TransferDestination.Failed(TransferFailureReason.WRONG_ADDRESS);
         }
 
         TransferDepositAddressInfo destAddress = depositAddress.get();
@@ -100,35 +85,31 @@ public class TransferCoinService implements TransferCoinUseCase {
         var destChainInfo = chainPort.findByExchangeIdAndCoinIdAndChain(
             destWallet.exchangeId(), command.coinId(), command.chain());
         if (destChainInfo.isEmpty()) {
-            return Transfer.frozen(command.clientTransferId(), command.fromWalletId(),
-                command.coinId(), command.chain(), command.toAddress(), command.toTag(),
-                command.amount(), fee, TransferFailureReason.WRONG_CHAIN, now);
+            return new TransferDestination.Failed(TransferFailureReason.WRONG_CHAIN);
         }
 
         TransferDestinationChain destChain = destChainInfo.get();
         if (destChain.isMissingRequiredTag(command.toTag())) {
-            return Transfer.frozen(command.clientTransferId(), command.fromWalletId(),
-                command.coinId(), command.chain(), command.toAddress(), command.toTag(),
-                command.amount(), fee, TransferFailureReason.MISSING_TAG, now);
+            return new TransferDestination.Failed(TransferFailureReason.MISSING_TAG);
         }
 
-        return Transfer.success(command.clientTransferId(), command.fromWalletId(),
-            destAddress.walletId(), command.coinId(), command.chain(),
-            command.toAddress(), command.toTag(), command.amount(), fee, now);
+        return new TransferDestination.Resolved(destAddress.walletId());
     }
 
     private void applyBalanceChanges(Transfer transfer) {
-        BigDecimal totalDeduction = transfer.getAmount().add(transfer.getFee());
+        for (TransferBalanceChange change : transfer.planBalanceChanges()) {
+            applyBalanceChange(change);
+        }
+    }
 
-        switch (transfer.getStatus()) {
-            case SUCCESS -> {
-                walletPort.deductBalance(transfer.getFromWalletId(), transfer.getCoinId(), totalDeduction);
-                walletPort.addBalance(transfer.getToWalletId(), transfer.getCoinId(), transfer.getAmount());
-            }
-            case FROZEN -> {
-                walletPort.lockBalance(transfer.getFromWalletId(), transfer.getCoinId(), totalDeduction);
-            }
-            default -> throw new IllegalStateException("Unexpected transfer status: " + transfer.getStatus());
+    private void applyBalanceChange(TransferBalanceChange change) {
+        switch (change) {
+            case TransferBalanceChange.Deduct d ->
+                walletPort.deductBalance(d.walletId(), d.coinId(), d.amount());
+            case TransferBalanceChange.Add a ->
+                walletPort.addBalance(a.walletId(), a.coinId(), a.amount());
+            case TransferBalanceChange.Lock l ->
+                walletPort.lockBalance(l.walletId(), l.coinId(), l.amount());
         }
     }
 }

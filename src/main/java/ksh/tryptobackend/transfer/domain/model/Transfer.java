@@ -69,9 +69,9 @@ public class Transfer {
         };
     }
 
-    public static Transfer success(UUID idempotencyKey, Long fromWalletId, Long toWalletId,
-                                    Long coinId, String chain, String toAddress, String toTag,
-                                    BigDecimal amount, BigDecimal fee, LocalDateTime createdAt) {
+    private static Transfer success(UUID idempotencyKey, Long fromWalletId, Long toWalletId,
+                                     Long coinId, String chain, String toAddress, String toTag,
+                                     BigDecimal amount, BigDecimal fee, LocalDateTime createdAt) {
         return Transfer.builder()
             .idempotencyKey(idempotencyKey)
             .fromWalletId(fromWalletId)
@@ -87,10 +87,10 @@ public class Transfer {
             .build();
     }
 
-    public static Transfer frozen(UUID idempotencyKey, Long fromWalletId,
-                                   Long coinId, String chain, String toAddress, String toTag,
-                                   BigDecimal amount, BigDecimal fee,
-                                   TransferFailureReason failureReason, LocalDateTime createdAt) {
+    private static Transfer frozen(UUID idempotencyKey, Long fromWalletId,
+                                    Long coinId, String chain, String toAddress, String toTag,
+                                    BigDecimal amount, BigDecimal fee,
+                                    TransferFailureReason failureReason, LocalDateTime createdAt) {
         return Transfer.builder()
             .idempotencyKey(idempotencyKey)
             .fromWalletId(fromWalletId)
