@@ -118,7 +118,7 @@ INVALID_PAGE_SIZE(400, "invalid.page.size"),
 invalid.page.size=잘못된 페이지 크기입니다: {0}
 
 // 서비스
-    throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize));
+throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize));
 ```
 
 ## 공통 컨벤션
@@ -131,8 +131,8 @@ invalid.page.size=잘못된 페이지 크기입니다: {0}
 - 클래스는 단일 책임 원칙을 지킨다. 분리 시 재사용 가능성과 변경 주기를 함께 고려한다. 여러 곳에서 호출되면 분리하고, 항상 같이 바뀌고 따로 쓸 일이 없다면 하나로 둔다
 - `get` vs `find` 네이밍: `get`은 대상이 반드시 존재한다고 가정하며 없으면 예외를 던진다. `find`는 대상이 없을 수 있으며 `Optional` 또는 빈 컬렉션을 반환한다
 - 메서드 나열 순서: public 메서드를 먼저, private 메서드를 아래에 배치한다
-    - public 메서드: 상태 변경 메서드 → 판별 메서드 → 조회 메서드 순으로 나열한다
-    - private 메서드: 사용된 순서대로 나열한다
+  - public 메서드: 상태 변경 메서드 → 판별 메서드 → 조회 메서드 순으로 나열한다
+  - private 메서드: 사용된 순서대로 나열한다
 - 매직 넘버/매직 상수를 사용하지 않는다. 도메인 개념(enum, VO, 상수 클래스)으로 대체한다
 
 ## 레이어별 컨벤션
@@ -185,11 +185,16 @@ invalid.page.size=잘못된 페이지 크기입니다: {0}
 
 **Adapter Out**
 - `adapter/out/` 하위에 `entity/`, `repository/` 패키지로 분리한다. Adapter 클래스는 `adapter/out/`에 그대로 둔다
-    - `adapter/out/entity/`: JPA 엔티티 클래스 (`{도메인}JpaEntity`)
-    - `adapter/out/repository/`: Spring Data JPA 리포지토리 인터페이스 (`{도메인}JpaRepository`)
-    - `adapter/out/`: Persistence Adapter, 외부 API Adapter, 크로스 컨텍스트 Adapter
+  - `adapter/out/entity/`: JPA 엔티티 클래스 (`{도메인}JpaEntity`)
+  - `adapter/out/repository/`: Spring Data JPA 리포지토리 인터페이스 (`{도메인}JpaRepository`)
+  - `adapter/out/`: Persistence Adapter, 외부 API Adapter, 크로스 컨텍스트 Adapter
 - Persistence 클래스명: `{도메인}JpaPersistenceAdapter` (예: `OrderJpaPersistenceAdapter`)
 - External API 클래스명: `{외부서비스}ApiAdapter` (예: `JupiterApiAdapter`)
+- 크로스 컨텍스트 Adapter 클래스명: `{소비하는 컨텍스트 관점의 이름}Adapter` (예: `AnalysisRoundAdapter`, `OrderHistoryAdapter`)
+  - 다른 모듈이 노출하는 QueryPort를 주입받아 자기 모듈의 Port로 변환한다
+  - 타 모듈의 도메인 모델, Output Port, JPA 엔티티(Q 클래스)를 직접 의존하지 않는다
+  - 타 모듈의 DTO → 자기 모듈의 DTO 변환 책임은 이 어댑터에 있다
+  - 소비하는 컨텍스트의 Port/DTO는 자기 컨텍스트의 유비쿼터스 언어로 이름을 짓는다. 생산하는 컨텍스트의 이름을 그대로 복사하지 않는다 (예: trading의 `OrderInfo`를 regretanalysis에서 소비할 때 → `TradeRecord`)
 - 메서드명은 비즈니스 로직을 드러내지 않고 데이터 조회 조건을 표현한다 (예: `findByUserIdAndCoin()`, `saveOrder()`)
 - 조건이 2개 이하인 단순 조회는 Spring Data JPA 쿼리 메서드를 활용한다
 - 조건이 복잡하거나 동적 쿼리가 필요한 경우 반드시 QueryDSL을 사용한다
@@ -237,10 +242,10 @@ fix: 지정가 매수 주문 시 수수료 미반영 수정
 - 관련 없는 수정을 하나의 커밋에 섞지 않는다
 - 논리적으로 분리할 수 있는 변경은 별도 커밋으로 나눈다
 - 분리 기준:
-    - 문서, 기능, 테스트, 버그 수정처럼 커밋 타입이 다르면 분리한다
-    - 서로 다른 모듈의 변경은 각각 별도 커밋으로 나눈다
-    - 같은 모듈이라도 도메인, 애플리케이션, 어댑터는 별도 커밋으로 나눈다
-    - 새 기능을 위해 기존 모듈을 확장한 변경은 새 모듈 커밋과 분리한다. 예를 들어 ErrorCode 추가나 enum 타입 추가는 별도로 먼저 커밋한다
+  - 문서, 기능, 테스트, 버그 수정처럼 커밋 타입이 다르면 분리한다
+  - 서로 다른 모듈의 변경은 각각 별도 커밋으로 나눈다
+  - 같은 모듈이라도 도메인, 애플리케이션, 어댑터는 별도 커밋으로 나눈다
+  - 새 기능을 위해 기존 모듈을 확장한 변경은 새 모듈 커밋과 분리한다. 예를 들어 ErrorCode 추가나 enum 타입 추가는 별도로 먼저 커밋한다
 
 **점진적 커밋**
 
@@ -267,3 +272,20 @@ GitHub Flow를 따른다. `main` 브랜치와 `feature/*` 브랜치만 사용한
 
 - 공통: `docs/architecture.md`, `docs/testing.md`, `docs/data-model.md`, `docs/schema.md`
 - 도메인별: `docs/{domain}/{기능}.md` (예: `docs/trading/cex-order.md`)
+
+## AI 워크플로우 컨텍스트
+
+- `.claude/ai-context/api-catalog.json` — 전체 API 인덱스. `/sync-api-catalog`으로 동기화한다.
+
+### 기능 구현 판단
+
+어떤 기능을 구현해야 하는지 파악할 때:
+1. `api-catalog.json`에서 `status: "planned"` API 목록을 확인한다
+2. `docs/` 기능 문서와 대조하여 구현 범위를 확정한다
+3. planned API가 없으면 `ui-analyst` 에이전트로 프론트엔드 UI를 분석하여 누락된 API를 찾고 카탈로그에 추가한다
+
+### API 카탈로그 관리
+
+- 구현 완료 시 해당 API의 `status`를 `"implemented"`로 변경하고 `doc` 경로를 추가한다
+- 새로운 API가 발견되면 `status: "planned"`로 카탈로그에 추가한다
+- `/sync-api-catalog`으로 구현된 코드 기준으로 카탈로그를 동기화할 수 있다
