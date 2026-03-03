@@ -4,18 +4,24 @@ import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import ksh.tryptobackend.ranking.adapter.out.entity.PortfolioSnapshotJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.entity.QPortfolioSnapshotJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.entity.QRankingCoinJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.entity.QRankingExchangeJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.entity.QSnapshotDetailJpaEntity;
+import ksh.tryptobackend.ranking.adapter.out.entity.SnapshotDetailJpaEntity;
+import ksh.tryptobackend.ranking.adapter.out.repository.PortfolioSnapshotJpaRepository;
+import ksh.tryptobackend.ranking.adapter.out.repository.SnapshotDetailJpaRepository;
 import ksh.tryptobackend.ranking.application.port.out.PortfolioSnapshotPort;
 import ksh.tryptobackend.ranking.application.port.out.SnapshotQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.SnapshotDetailProjection;
 import ksh.tryptobackend.ranking.application.port.out.dto.SnapshotInfo;
+import ksh.tryptobackend.ranking.domain.model.PortfolioSnapshot;
+import ksh.tryptobackend.ranking.domain.model.SnapshotDetail;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,6 +30,8 @@ import java.util.Optional;
 public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshotPort, SnapshotQueryPort {
 
     private final JPAQueryFactory queryFactory;
+    private final PortfolioSnapshotJpaRepository snapshotRepository;
+    private final SnapshotDetailJpaRepository detailRepository;
 
     private static final QPortfolioSnapshotJpaEntity snapshot = QPortfolioSnapshotJpaEntity.portfolioSnapshotJpaEntity;
     private static final QSnapshotDetailJpaEntity detail = QSnapshotDetailJpaEntity.snapshotDetailJpaEntity;
@@ -82,7 +90,20 @@ public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshot
             .fetch();
     }
 
-    private Expression<LocalDateTime> latestSnapshotDate(Long userId, Long roundId) {
+    public PortfolioSnapshot save(PortfolioSnapshot domain) {
+        PortfolioSnapshotJpaEntity entity = PortfolioSnapshotJpaEntity.fromDomain(domain);
+        PortfolioSnapshotJpaEntity saved = snapshotRepository.save(entity);
+        return saved.toDomain();
+    }
+
+    public void saveDetails(Long snapshotId, List<SnapshotDetail> details) {
+        List<SnapshotDetailJpaEntity> entities = details.stream()
+            .map(d -> SnapshotDetailJpaEntity.fromDomain(d, snapshotId))
+            .toList();
+        detailRepository.saveAll(entities);
+    }
+
+    private Expression<LocalDate> latestSnapshotDate(Long userId, Long roundId) {
         return JPAExpressions
             .select(snapshot.snapshotDate.max())
             .from(snapshot)
