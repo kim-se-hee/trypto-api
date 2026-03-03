@@ -1,7 +1,7 @@
 package ksh.tryptobackend.regretanalysis.domain.model;
 
 import ksh.tryptobackend.common.domain.vo.RuleType;
-import ksh.tryptobackend.regretanalysis.application.port.out.dto.TradeSide;
+import ksh.tryptobackend.regretanalysis.domain.vo.TradeSide;
 import ksh.tryptobackend.regretanalysis.domain.strategy.ViolationLossStrategy;
 import ksh.tryptobackend.regretanalysis.domain.vo.ViolationLossContext;
 import ksh.tryptobackend.regretanalysis.domain.vo.ViolationLossContext.SoldPortion;

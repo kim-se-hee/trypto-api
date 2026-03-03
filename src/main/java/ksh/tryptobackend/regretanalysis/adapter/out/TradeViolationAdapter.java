@@ -1,16 +1,15 @@
 package ksh.tryptobackend.regretanalysis.adapter.out;
 
-import ksh.tryptobackend.investmentround.application.port.out.InvestmentRuleQueryPort;
-import ksh.tryptobackend.investmentround.application.port.out.dto.InvestmentRuleInfo;
+import ksh.tryptobackend.regretanalysis.application.port.out.InvestmentRulePort;
+import ksh.tryptobackend.regretanalysis.application.port.out.OrderHistoryPort;
+import ksh.tryptobackend.regretanalysis.application.port.out.RuleViolationPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.TradeViolationQueryPort;
-import ksh.tryptobackend.regretanalysis.application.port.out.dto.TradeSide;
+import ksh.tryptobackend.regretanalysis.application.port.out.dto.RuleInfo;
+import ksh.tryptobackend.regretanalysis.application.port.out.dto.RuleViolationRecord;
+import ksh.tryptobackend.regretanalysis.application.port.out.dto.TradeRecord;
 import ksh.tryptobackend.regretanalysis.domain.model.TradeViolation;
+import ksh.tryptobackend.regretanalysis.domain.vo.TradeSide;
 import ksh.tryptobackend.regretanalysis.domain.vo.ViolationLossContext.SoldPortion;
-import ksh.tryptobackend.trading.application.port.out.OrderQueryPort;
-import ksh.tryptobackend.trading.application.port.out.ViolationQueryPort;
-import ksh.tryptobackend.trading.application.port.out.dto.OrderInfo;
-import ksh.tryptobackend.trading.application.port.out.dto.ViolationInfo;
-import ksh.tryptobackend.trading.domain.vo.Side;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -25,107 +24,101 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TradeViolationAdapter implements TradeViolationQueryPort {
 
-    private final InvestmentRuleQueryPort investmentRuleQueryPort;
-    private final ViolationQueryPort violationQueryPort;
-    private final OrderQueryPort orderQueryPort;
+    private final InvestmentRulePort investmentRulePort;
+    private final RuleViolationPort ruleViolationPort;
+    private final OrderHistoryPort orderHistoryPort;
 
     @Override
     public List<TradeViolation> findByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
-        Map<Long, InvestmentRuleInfo> ruleMap = loadRuleMap(roundId);
+        Map<Long, RuleInfo> ruleMap = loadRuleMap(roundId);
         if (ruleMap.isEmpty()) {
             return List.of();
         }
 
-        List<ViolationInfo> violations = violationQueryPort
+        List<RuleViolationRecord> violations = ruleViolationPort
             .findByRuleIdsAndExchangeId(new ArrayList<>(ruleMap.keySet()), exchangeId);
         if (violations.isEmpty()) {
             return List.of();
         }
 
-        Map<Long, OrderInfo> orderMap = loadOrderMap(violations);
-        Map<SellOrderKey, List<OrderInfo>> sellOrderCache = loadSellOrders(orderMap);
+        Map<Long, TradeRecord> orderMap = loadOrderMap(violations);
+        Map<SellOrderKey, List<TradeRecord>> sellOrderCache = loadSellOrders(orderMap);
 
         return violations.stream()
             .filter(v -> v.orderId() != null)
+            .filter(v -> ruleMap.containsKey(v.ruleId()) && orderMap.containsKey(v.orderId()))
             .map(v -> toTradeViolation(v, ruleMap, orderMap, sellOrderCache))
-            .filter(Objects::nonNull)
             .toList();
     }
 
-    private Map<Long, InvestmentRuleInfo> loadRuleMap(Long roundId) {
-        return investmentRuleQueryPort.findByRoundId(roundId).stream()
-            .collect(Collectors.toMap(InvestmentRuleInfo::ruleId, r -> r));
+    private Map<Long, RuleInfo> loadRuleMap(Long roundId) {
+        return investmentRulePort.findByRoundId(roundId).stream()
+            .collect(Collectors.toMap(RuleInfo::ruleId, r -> r));
     }
 
-    private Map<Long, OrderInfo> loadOrderMap(List<ViolationInfo> violations) {
+    private Map<Long, TradeRecord> loadOrderMap(List<RuleViolationRecord> violations) {
         List<Long> orderIds = violations.stream()
-            .map(ViolationInfo::orderId)
+            .map(RuleViolationRecord::orderId)
             .filter(Objects::nonNull)
             .toList();
-        return orderQueryPort.findFilledByOrderIds(orderIds).stream()
-            .collect(Collectors.toMap(OrderInfo::orderId, o -> o));
+        return orderHistoryPort.findByOrderIds(orderIds).stream()
+            .collect(Collectors.toMap(TradeRecord::orderId, t -> t));
     }
 
-    private Map<SellOrderKey, List<OrderInfo>> loadSellOrders(Map<Long, OrderInfo> orderMap) {
-        Map<SellOrderKey, List<OrderInfo>> buyOrderGroups = orderMap.values().stream()
-            .filter(o -> o.side() == Side.BUY)
+    private Map<SellOrderKey, List<TradeRecord>> loadSellOrders(Map<Long, TradeRecord> orderMap) {
+        Map<SellOrderKey, List<TradeRecord>> buyOrderGroups = orderMap.values().stream()
+            .filter(o -> o.side() == TradeSide.BUY)
             .collect(Collectors.groupingBy(o -> new SellOrderKey(o.walletId(), o.exchangeCoinId())));
+
+        if (buyOrderGroups.isEmpty()) {
+            return Map.of();
+        }
 
         return buyOrderGroups.entrySet().stream()
             .collect(Collectors.toMap(
                 Map.Entry::getKey,
                 entry -> {
                     LocalDateTime earliestFilledAt = entry.getValue().stream()
-                        .map(OrderInfo::filledAt)
+                        .map(TradeRecord::filledAt)
                         .min(LocalDateTime::compareTo)
-                        .orElseThrow();
-                    return orderQueryPort.findFilledSellOrders(
+                        .orElseThrow(() -> new IllegalStateException(
+                            "BUY 주문 그룹에 filledAt이 없습니다: key=" + entry.getKey()));
+                    return orderHistoryPort.findSellOrdersAfter(
                         entry.getKey().walletId(), entry.getKey().exchangeCoinId(), earliestFilledAt);
                 }
             ));
     }
 
-    private TradeViolation toTradeViolation(ViolationInfo violation,
-                                             Map<Long, InvestmentRuleInfo> ruleMap,
-                                             Map<Long, OrderInfo> orderMap,
-                                             Map<SellOrderKey, List<OrderInfo>> sellOrderCache) {
-        InvestmentRuleInfo rule = ruleMap.get(violation.ruleId());
-        OrderInfo order = orderMap.get(violation.orderId());
-        if (rule == null || order == null) {
-            return null;
-        }
-
+    private TradeViolation toTradeViolation(RuleViolationRecord violation,
+                                             Map<Long, RuleInfo> ruleMap,
+                                             Map<Long, TradeRecord> orderMap,
+                                             Map<SellOrderKey, List<TradeRecord>> sellOrderCache) {
+        RuleInfo rule = ruleMap.get(violation.ruleId());
+        TradeRecord order = orderMap.get(violation.orderId());
         List<SoldPortion> soldPortions = resolveSoldPortions(order, sellOrderCache);
 
         return TradeViolation.create(
             order.orderId(), rule.ruleId(), rule.ruleType(),
-            toTradeSide(order.side()),
+            order.side(),
             order.filledPrice(), order.quantity(), order.amount(),
             order.exchangeCoinId(), violation.createdAt(),
             soldPortions
         );
     }
 
-    private List<SoldPortion> resolveSoldPortions(OrderInfo order,
-                                                    Map<SellOrderKey, List<OrderInfo>> sellOrderCache) {
-        if (order.side() != Side.BUY) {
+    private List<SoldPortion> resolveSoldPortions(TradeRecord order,
+                                                    Map<SellOrderKey, List<TradeRecord>> sellOrderCache) {
+        if (order.side() != TradeSide.BUY) {
             return List.of();
         }
 
         SellOrderKey key = new SellOrderKey(order.walletId(), order.exchangeCoinId());
-        List<OrderInfo> sellOrders = sellOrderCache.getOrDefault(key, List.of());
+        List<TradeRecord> sellOrders = sellOrderCache.getOrDefault(key, List.of());
 
         return sellOrders.stream()
             .filter(s -> s.filledAt().isAfter(order.filledAt()))
             .map(s -> new SoldPortion(s.filledPrice(), s.quantity()))
             .toList();
-    }
-
-    private TradeSide toTradeSide(Side side) {
-        return switch (side) {
-            case BUY -> TradeSide.BUY;
-            case SELL -> TradeSide.SELL;
-        };
     }
 
     private record SellOrderKey(Long walletId, Long exchangeCoinId) {

@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -40,11 +41,10 @@ public class RegretReportItemProcessor implements ItemProcessor<RegretReportInpu
         Map<Long, BigDecimal> currentPrices = resolveCurrentPrices(violations);
         List<ViolationDetail> details = toViolationDetails(violations, currentPrices);
 
-        AssetSnapshot snapshot = portfolioSnapshotPort
-            .findLatestByRoundIdAndExchangeId(input.roundId(), input.exchangeId())
-            .orElse(null);
-        BigDecimal actualProfitRate = snapshot != null ? snapshot.getTotalProfitRate() : BigDecimal.ZERO;
-        BigDecimal totalInvestment = snapshot != null ? snapshot.getTotalInvestment() : BigDecimal.ZERO;
+        Optional<AssetSnapshot> snapshotOpt = portfolioSnapshotPort
+            .findLatestByRoundIdAndExchangeId(input.roundId(), input.exchangeId());
+        BigDecimal actualProfitRate = snapshotOpt.map(AssetSnapshot::getTotalProfitRate).orElse(BigDecimal.ZERO);
+        BigDecimal totalInvestment = snapshotOpt.map(AssetSnapshot::getTotalInvestment).orElse(BigDecimal.ZERO);
 
         ViolationDetails violationDetails = new ViolationDetails(details);
         List<RuleImpact> impacts = violationDetails.toRuleImpacts(totalInvestment);
@@ -70,7 +70,7 @@ public class RegretReportItemProcessor implements ItemProcessor<RegretReportInpu
             .map(v -> {
                 BigDecimal lossAmount = v.calculateLoss(currentPrices.get(v.getExchangeCoinId()));
                 return ViolationDetail.create(
-                    v.getOrderId(), v.getRuleId(), null,
+                    v.getOrderId(), v.getRuleId(), v.getExchangeCoinId(),
                     lossAmount, lossAmount, v.getViolatedAt());
             })
             .toList();
