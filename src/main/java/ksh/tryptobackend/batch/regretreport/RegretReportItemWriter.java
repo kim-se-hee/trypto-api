@@ -1,4 +1,4 @@
-package ksh.tryptobackend.regretanalysis.adapter.in.batch;
+package ksh.tryptobackend.batch.regretreport;
 
 import ksh.tryptobackend.regretanalysis.application.port.out.RegretReportPersistencePort;
 import ksh.tryptobackend.regretanalysis.domain.model.RegretReport;

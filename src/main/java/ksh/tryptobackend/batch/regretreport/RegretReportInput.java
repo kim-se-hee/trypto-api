@@ -1,4 +1,4 @@
-package ksh.tryptobackend.regretanalysis.adapter.in.batch;
+package ksh.tryptobackend.batch.regretreport;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
