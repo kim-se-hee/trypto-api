@@ -11,12 +11,12 @@ import ksh.tryptobackend.transfer.application.port.out.TransferPersistencePort;
 import ksh.tryptobackend.transfer.application.port.out.TransferWalletPort;
 import ksh.tryptobackend.transfer.application.port.out.TransferWithdrawalFeePort;
 import ksh.tryptobackend.transfer.application.port.out.dto.TransferDepositAddressInfo;
-import ksh.tryptobackend.transfer.application.port.out.dto.TransferExchangeCoinChainInfo;
-import ksh.tryptobackend.transfer.application.port.out.dto.TransferExchangeInfo;
 import ksh.tryptobackend.transfer.application.port.out.dto.TransferWalletInfo;
-import ksh.tryptobackend.transfer.application.port.out.dto.TransferWithdrawalFeeInfo;
 import ksh.tryptobackend.transfer.domain.model.Transfer;
+import ksh.tryptobackend.transfer.domain.vo.TransferDestinationChain;
 import ksh.tryptobackend.transfer.domain.vo.TransferFailureReason;
+import ksh.tryptobackend.transfer.domain.vo.TransferSourceExchange;
+import ksh.tryptobackend.transfer.domain.vo.WithdrawalCondition;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,21 +48,19 @@ public class TransferCoinService implements TransferCoinUseCase {
         TransferWalletInfo wallet = walletPort.getWallet(command.fromWalletId());
         validateNotBaseCurrency(wallet.exchangeId(), command.coinId());
         validateSourceChainSupport(wallet.exchangeId(), command.coinId(), command.chain());
-        TransferWithdrawalFeeInfo feeInfo = withdrawalFeePort.getWithdrawalFee(
+        WithdrawalCondition condition = withdrawalFeePort.getWithdrawalFee(
             wallet.exchangeId(), command.coinId(), command.chain());
-        validateMinWithdrawal(command.amount(), feeInfo.minWithdrawal());
-        validateBalance(command.fromWalletId(), command.coinId(), command.amount(), feeInfo.fee());
+        validateMinWithdrawal(command.amount(), condition.minWithdrawal());
+        validateBalance(command.fromWalletId(), command.coinId(), command.amount(), condition.fee());
 
-        Transfer transfer = determineOutcome(command, wallet, feeInfo.fee());
+        Transfer transfer = determineOutcome(command, wallet, condition.fee());
         applyBalanceChanges(transfer);
         return transferPersistencePort.save(transfer);
     }
 
     private void validateNotBaseCurrency(Long exchangeId, Long coinId) {
-        TransferExchangeInfo exchangeInfo = exchangePort.getExchangeDetail(exchangeId);
-        if (exchangeInfo.baseCurrencyCoinId().equals(coinId)) {
-            throw new CustomException(ErrorCode.BASE_CURRENCY_NOT_TRANSFERABLE);
-        }
+        TransferSourceExchange sourceExchange = exchangePort.getExchangeDetail(exchangeId);
+        sourceExchange.validateTransferable(coinId);
     }
 
     private void validateSourceChainSupport(Long exchangeId, Long coinId, String chain) {
@@ -107,8 +105,8 @@ public class TransferCoinService implements TransferCoinUseCase {
                 command.amount(), fee, TransferFailureReason.WRONG_CHAIN, now);
         }
 
-        TransferExchangeCoinChainInfo destChain = destChainInfo.get();
-        if (destChain.tagRequired() && (command.toTag() == null || command.toTag().isBlank())) {
+        TransferDestinationChain destChain = destChainInfo.get();
+        if (destChain.isMissingRequiredTag(command.toTag())) {
             return Transfer.frozen(command.clientTransferId(), command.fromWalletId(),
                 command.coinId(), command.chain(), command.toAddress(), command.toTag(),
                 command.amount(), fee, TransferFailureReason.MISSING_TAG, now);

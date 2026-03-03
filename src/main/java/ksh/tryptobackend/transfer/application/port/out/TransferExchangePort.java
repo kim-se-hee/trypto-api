@@ -1,8 +1,8 @@
 package ksh.tryptobackend.transfer.application.port.out;
 
-import ksh.tryptobackend.transfer.application.port.out.dto.TransferExchangeInfo;
+import ksh.tryptobackend.transfer.domain.vo.TransferSourceExchange;
 
 public interface TransferExchangePort {
 
-    TransferExchangeInfo getExchangeDetail(Long exchangeId);
+    TransferSourceExchange getExchangeDetail(Long exchangeId);
 }

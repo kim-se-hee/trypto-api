@@ -4,7 +4,7 @@ import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.marketdata.application.port.out.ExchangeQueryPort;
 import ksh.tryptobackend.transfer.application.port.out.TransferExchangePort;
-import ksh.tryptobackend.transfer.application.port.out.dto.TransferExchangeInfo;
+import ksh.tryptobackend.transfer.domain.vo.TransferSourceExchange;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,9 +15,10 @@ public class TransferExchangeAdapter implements TransferExchangePort {
     private final ExchangeQueryPort exchangeQueryPort;
 
     @Override
-    public TransferExchangeInfo getExchangeDetail(Long exchangeId) {
+    public TransferSourceExchange getExchangeDetail(Long exchangeId) {
         return exchangeQueryPort.findExchangeDetailById(exchangeId)
-            .map(detail -> new TransferExchangeInfo(detail.baseCurrencyCoinId(), detail.currency()))
+            .map(detail -> TransferSourceExchange.of(
+                detail.baseCurrencyCoinId(), "KRW".equals(detail.currency())))
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
     }
 }
