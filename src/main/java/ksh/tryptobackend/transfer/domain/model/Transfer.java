@@ -2,6 +2,7 @@ package ksh.tryptobackend.transfer.domain.model;
 
 import ksh.tryptobackend.transfer.domain.vo.TransferFailureReason;
 import ksh.tryptobackend.transfer.domain.vo.TransferStatus;
+import ksh.tryptobackend.transfer.domain.vo.TransferType;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -70,5 +71,13 @@ public class Transfer {
 
     public void refund() {
         this.status = TransferStatus.REFUNDED;
+    }
+
+    public TransferType resolveType(Long viewerWalletId) {
+        return fromWalletId.equals(viewerWalletId) ? TransferType.WITHDRAW : TransferType.DEPOSIT;
+    }
+
+    public BigDecimal resolveVisibleFee(Long viewerWalletId) {
+        return resolveType(viewerWalletId) == TransferType.WITHDRAW ? fee : BigDecimal.ZERO;
     }
 }
