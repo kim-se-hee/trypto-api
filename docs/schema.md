@@ -65,22 +65,35 @@ erDiagram
         id coin_id FK "코인 ID"
     }
 
+    EXCHANGE_COIN_CHAIN {
+        id exchange_coin_chain_id PK "주 식별자"
+        id exchange_coin_id FK "거래소-코인 ID"
+        string chain "지원 체인"
+        boolean tag_required "태그 필수 여부"
+    }
+
     WITHDRAWAL_FEE {
         id withdrawal_fee_id PK "주 식별자"
         id exchange_id FK "거래소 ID"
         id coin_id FK "코인 ID"
         string chain "출금 체인"
         number fee "출금 수수료"
+        number min_withdrawal "최소 출금 수량"
     }
 
     WALLET {
         id wallet_id PK "주 식별자"
         id round_id FK "라운드 ID"
         id exchange_id FK "거래소 ID"
-        string wallet_address "지갑 주소"
-        string wallet_tag "태그 메모"
-        string chain "체인"
         datetime created_at "생성일"
+    }
+
+    DEPOSIT_ADDRESS {
+        id deposit_address_id PK "주 식별자"
+        id wallet_id FK "지갑 ID"
+        string chain "체인"
+        string address "입금 주소"
+        string tag "태그 메모 (nullable)"
     }
 
     WALLET_BALANCE {
@@ -93,16 +106,18 @@ erDiagram
 
     TRANSFER {
         id transfer_id PK "주 식별자"
+        uuid idempotency_key UK "멱등 키"
         id from_wallet_id FK "출발 지갑 ID"
-        id to_wallet_id FK "도착 지갑 ID"
+        id to_wallet_id FK "도착 지갑 ID (nullable)"
         id coin_id FK "송금 코인 ID"
         number amount "송금 수량"
         string chain "사용 체인"
         string to_address "입력한 도착 주소"
         string to_tag "입력한 태그"
         number fee "송금 수수료 (적용된 결과)"
-        string status "성공 실패 동결"
-        string failure_reason "실패 사유"
+        string status "SUCCESS FROZEN REFUNDED"
+        string failure_reason "WRONG_ADDRESS WRONG_CHAIN MISSING_TAG (nullable)"
+        datetime frozen_until "동결 해제 시각 (nullable)"
         datetime created_at "송금 시각"
     }
 
@@ -242,9 +257,11 @@ erDiagram
     EXCHANGE ||--|{ EXCHANGE_COIN : ""
     COIN ||--o| EXCHANGE : "base_currency"
     COIN ||--|{ EXCHANGE_COIN : ""
+    EXCHANGE_COIN ||--o{ EXCHANGE_COIN_CHAIN : ""
     EXCHANGE ||--|{ WITHDRAWAL_FEE : ""
     COIN ||--|{ WITHDRAWAL_FEE : ""
     EXCHANGE ||--o{ WALLET : ""
+    WALLET ||--o{ DEPOSIT_ADDRESS : ""
     WALLET ||--o{ WALLET_BALANCE : ""
     COIN ||--o{ WALLET_BALANCE : ""
     WALLET ||--o{ TRANSFER : "from"

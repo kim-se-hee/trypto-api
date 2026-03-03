@@ -5,22 +5,24 @@
 | 도메인 | Aggregate Root | Entity | Value Object |
 |--------|---------------|--------|--------------|
 | Identity | User | — | Email, Password |
-| Wallet | Wallet, Transfer | WalletBalance | WalletAddress, TransferStatus, Chain |
+| Wallet | Wallet | WalletBalance, DepositAddress | Chain |
+| Transfer | Transfer | — | TransferStatus, TransferFailureReason |
 | Trading | Order, Swap | Holding, RuleViolation | Side, OrderType, OrderStatus, Fee, Slippage, ViolationReason, OrderAmountPolicy, TradingVenue, ViolationRule |
-| MarketData | Coin, Exchange | ExchangeCoin, PriceCandle, WithdrawalFee | — |
+| MarketData | Coin, Exchange | ExchangeCoin, ExchangeCoinChain, PriceCandle, WithdrawalFee | — |
 | Ranking | Ranking, PortfolioSnapshot | SnapshotDetail | ProfitRate, RankingPeriod |
 | InvestmentRound | InvestmentRound | RuleSetting, EmergencyFunding | SeedPolicy, RoundStatus, RuleValue |
 | RegretAnalysis | RegretReport | RuleImpact, ViolationDetail, ViolationDetails, AssetSnapshot | ImpactGap, ThresholdUnit, AssetTimeline, BtcBenchmark, CumulativeLossTimeline, ViolationMarkers |
 | Common (Shared Kernel) | — | — | RuleType |
 
 **소유 관계:**
-- WalletBalance → WalletAddress
-- Transfer → TransferStatus, Chain
+- Wallet → DepositAddress
+- DepositAddress → Chain
+- Transfer → TransferStatus, TransferFailureReason, Chain
 - TradingVenue → OrderAmountPolicy
 - Order → Side, OrderType, OrderStatus, Fee, RuleViolation
 - RuleViolation → ViolationReason
 - Exchange → ExchangeCoin, WithdrawalFee
-- ExchangeCoin → PriceCandle
+- ExchangeCoin → ExchangeCoinChain, PriceCandle
 - Swap → Fee, Slippage
 - SnapshotDetail → AvgBuyPrice, TotalBuyAmount
 - RuleSetting → RuleType, RuleValue
@@ -32,7 +34,9 @@
 | From → To | 참조 ID | 용도 |
 |-----------|---------|------|
 | InvestmentRound → Wallet | roundId | InvestmentRound 1:N Wallet |
-| Wallet → MarketData | exchangeId, coinId | 출금 수수료 조회 |
+| Wallet → MarketData | exchangeId, coinId | 거래소-코인-체인 지원 확인 |
+| Transfer → Wallet | walletId | 잔고 차감/추가/잠금, 입금 주소 역조회 |
+| Transfer → MarketData | exchangeId, coinId | 수수료 조회, 체인 지원 확인 |
 | Trading → Wallet | walletId | 잔고 검증, 잔고 반영 |
 | Trading → MarketData | — | 현재가 조회 |
 | Trading → Ranking | walletId, coinId | 평균 매수가 조회, 보유 수량 갱신 |
