@@ -34,7 +34,7 @@ public class GetDepositAddressService implements GetDepositAddressUseCase {
     @Transactional
     public DepositAddress getDepositAddress(GetDepositAddressQuery query) {
         WalletInfo wallet = getWallet(query.walletId());
-        validateNotBaseCurrency(wallet.exchangeId(), query.coinId());
+        validateNotFiatCurrency(wallet.exchangeId(), query.coinId());
         DepositAddressChainInfo chainInfo = chainPort.getExchangeCoinChain(
             wallet.exchangeId(), query.coinId(), query.chain());
 
@@ -47,11 +47,15 @@ public class GetDepositAddressService implements GetDepositAddressUseCase {
             .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
     }
 
-    private void validateNotBaseCurrency(Long exchangeId, Long coinId) {
+    private void validateNotFiatCurrency(Long exchangeId, Long coinId) {
         DepositAddressExchangeInfo exchangeInfo = exchangePort.getExchangeDetail(exchangeId);
-        if (exchangeInfo.baseCurrencyCoinId().equals(coinId)) {
+        if (isFiatCurrency(exchangeInfo) && exchangeInfo.baseCurrencyCoinId().equals(coinId)) {
             throw new CustomException(ErrorCode.BASE_CURRENCY_NOT_TRANSFERABLE);
         }
+    }
+
+    private boolean isFiatCurrency(DepositAddressExchangeInfo exchangeInfo) {
+        return "KRW".equals(exchangeInfo.currency());
     }
 
     private DepositAddress createDepositAddress(Long walletId, String chain, boolean tagRequired) {
