@@ -1,8 +1,8 @@
 package ksh.tryptobackend.wallet.application.port.out;
 
-import ksh.tryptobackend.wallet.application.port.out.dto.DepositAddressExchangeInfo;
+import ksh.tryptobackend.wallet.domain.vo.DepositTargetExchange;
 
 public interface DepositAddressExchangePort {
 
-    DepositAddressExchangeInfo getExchangeDetail(Long exchangeId);
+    DepositTargetExchange getExchange(Long exchangeId);
 }

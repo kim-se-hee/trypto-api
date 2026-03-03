@@ -9,9 +9,9 @@ import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangePort;
 import ksh.tryptobackend.wallet.application.port.out.DepositAddressPersistencePort;
 import ksh.tryptobackend.wallet.application.port.out.WalletQueryPort;
 import ksh.tryptobackend.wallet.application.port.out.dto.DepositAddressChainInfo;
-import ksh.tryptobackend.wallet.application.port.out.dto.DepositAddressExchangeInfo;
 import ksh.tryptobackend.wallet.application.port.out.dto.WalletInfo;
 import ksh.tryptobackend.wallet.domain.model.DepositAddress;
+import ksh.tryptobackend.wallet.domain.vo.DepositTargetExchange;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +34,9 @@ public class GetDepositAddressService implements GetDepositAddressUseCase {
     @Transactional
     public DepositAddress getDepositAddress(GetDepositAddressQuery query) {
         WalletInfo wallet = getWallet(query.walletId());
-        validateNotFiatCurrency(wallet.exchangeId(), query.coinId());
+        DepositTargetExchange exchange = exchangePort.getExchange(wallet.exchangeId());
+        exchange.validateTransferable(query.coinId());
+
         DepositAddressChainInfo chainInfo = chainPort.getExchangeCoinChain(
             wallet.exchangeId(), query.coinId(), query.chain());
 
@@ -45,17 +47,6 @@ public class GetDepositAddressService implements GetDepositAddressUseCase {
     private WalletInfo getWallet(Long walletId) {
         return walletQueryPort.findById(walletId)
             .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
-    }
-
-    private void validateNotFiatCurrency(Long exchangeId, Long coinId) {
-        DepositAddressExchangeInfo exchangeInfo = exchangePort.getExchangeDetail(exchangeId);
-        if (isFiatCurrency(exchangeInfo) && exchangeInfo.baseCurrencyCoinId().equals(coinId)) {
-            throw new CustomException(ErrorCode.BASE_CURRENCY_NOT_TRANSFERABLE);
-        }
-    }
-
-    private boolean isFiatCurrency(DepositAddressExchangeInfo exchangeInfo) {
-        return "KRW".equals(exchangeInfo.currency());
     }
 
     private DepositAddress createDepositAddress(Long walletId, String chain, boolean tagRequired) {
