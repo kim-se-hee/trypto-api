@@ -1,4 +1,4 @@
-package ksh.tryptobackend.ranking.adapter.in.batch;
+package ksh.tryptobackend.batch.snapshot;
 
 import java.math.BigDecimal;
 

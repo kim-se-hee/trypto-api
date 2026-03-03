@@ -1,4 +1,4 @@
-package ksh.tryptobackend.ranking.adapter.in.batch;
+package ksh.tryptobackend.batch.snapshot;
 
 import ksh.tryptobackend.ranking.application.port.out.BalanceQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.EmergencyFundingSnapshotPort;
