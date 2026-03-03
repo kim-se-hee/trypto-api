@@ -1,6 +1,6 @@
 package ksh.tryptobackend.batch.ranking;
 
-import ksh.tryptobackend.ranking.application.port.out.dto.RoundKey;
+import ksh.tryptobackend.ranking.domain.vo.RoundKey;
 import ksh.tryptobackend.ranking.application.port.out.dto.UserSnapshotSummary;
 import ksh.tryptobackend.ranking.domain.vo.ProfitRate;
 

@@ -1,5 +1,7 @@
 package ksh.tryptobackend.ranking.application.port.out.dto;
 
+import ksh.tryptobackend.ranking.domain.vo.RoundKey;
+
 import java.time.LocalDateTime;
 
 public record ActiveRoundInfo(Long roundId, Long userId, LocalDateTime startedAt) {

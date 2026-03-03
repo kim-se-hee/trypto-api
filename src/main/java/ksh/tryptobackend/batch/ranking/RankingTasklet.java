@@ -5,7 +5,7 @@ import ksh.tryptobackend.ranking.application.port.out.RankingWritePort;
 import ksh.tryptobackend.ranking.application.port.out.SnapshotAggregationPort;
 import ksh.tryptobackend.ranking.application.port.out.TradeCountPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.ActiveRoundInfo;
-import ksh.tryptobackend.ranking.application.port.out.dto.RoundKey;
+import ksh.tryptobackend.ranking.domain.vo.RoundKey;
 import ksh.tryptobackend.ranking.domain.model.Ranking;
 import ksh.tryptobackend.ranking.domain.vo.RankingCandidate;
 import ksh.tryptobackend.ranking.domain.vo.RankingCandidates;
