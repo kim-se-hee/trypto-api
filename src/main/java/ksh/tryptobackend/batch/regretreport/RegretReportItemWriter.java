@@ -8,6 +8,8 @@ import org.springframework.batch.infrastructure.item.Chunk;
 import org.springframework.batch.infrastructure.item.ItemWriter;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+
 @Component
 @StepScope
 @RequiredArgsConstructor
@@ -17,8 +19,6 @@ public class RegretReportItemWriter implements ItemWriter<RegretReport> {
 
     @Override
     public void write(Chunk<? extends RegretReport> chunk) {
-        for (RegretReport report : chunk) {
-            regretReportPersistencePort.save(report);
-        }
+        regretReportPersistencePort.saveAll(new ArrayList<>(chunk.getItems()));
     }
 }
