@@ -40,10 +40,10 @@ public class CalculateRankingService implements CalculateRankingUseCase {
             return;
         }
 
-        SnapshotSummaries todaySummaries = loadSummaries(snapshotDate);
+        SnapshotSummaries todaySummaries = loadSummariesOf(snapshotDate);
 
         for (RankingPeriod period : RankingPeriod.values()) {
-            SnapshotSummaries comparison = loadSummaries(snapshotDate.minusDays(period.getWindowDays()));
+            SnapshotSummaries comparison = loadSummariesOf(snapshotDate.minusDays(period.getWindowDays()));
             RankingCandidates candidates = eligibleRounds.toCandidates(todaySummaries, comparison);
             List<Ranking> rankings = candidates.toRankings(period, snapshotDate);
             saveForPeriod(rankings, period, snapshotDate);
@@ -54,7 +54,7 @@ public class CalculateRankingService implements CalculateRankingUseCase {
         return EligibleRounds.of(eligibleRoundQueryPort.findAll(), snapshotDate);
     }
 
-    private SnapshotSummaries loadSummaries(LocalDate date) {
+    private SnapshotSummaries loadSummariesOf(LocalDate date) {
         List<UserSnapshotSummary> summaries = snapshotAggregationPort.findLatestSummaries(date);
 
         Map<RoundKey, BigDecimal> totalAssetMap = summaries.stream()

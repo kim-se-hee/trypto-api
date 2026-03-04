@@ -12,14 +12,14 @@ public class SnapshotSummaries {
         this.totalAssetMap = totalAssetMap;
     }
 
-    public Optional<ProfitRate> calculateProfitRate(RoundKey key, SnapshotSummaries base) {
+    public Optional<ProfitRate> calculateProfitRate(RoundKey key, SnapshotSummaries previous) {
         BigDecimal current = totalAssetMap.get(key);
-        BigDecimal baseline = base.totalAssetMap.get(key);
+        BigDecimal previousAsset = previous.totalAssetMap.get(key);
 
-        if (current == null || baseline == null) {
+        if (current == null || previousAsset == null) {
             return Optional.empty();
         }
 
-        return Optional.of(ProfitRate.fromAssetChange(current, baseline));
+        return Optional.of(ProfitRate.fromAssetChange(current, previousAsset));
     }
 }
