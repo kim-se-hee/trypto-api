@@ -2,14 +2,11 @@ package ksh.tryptobackend.ranking.application.service;
 
 import ksh.tryptobackend.ranking.application.port.in.CalculateRankingUseCase;
 import ksh.tryptobackend.ranking.application.port.in.dto.command.CalculateRankingCommand;
-import ksh.tryptobackend.ranking.application.port.out.ActiveRoundQueryPort;
+import ksh.tryptobackend.ranking.application.port.out.EligibleRoundQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.RankingWritePort;
 import ksh.tryptobackend.ranking.application.port.out.SnapshotAggregationPort;
-import ksh.tryptobackend.ranking.application.port.out.TradeCountPort;
-import ksh.tryptobackend.ranking.application.port.out.dto.ActiveRoundInfo;
 import ksh.tryptobackend.ranking.application.port.out.dto.UserSnapshotSummary;
 import ksh.tryptobackend.ranking.domain.model.Ranking;
-import ksh.tryptobackend.ranking.domain.vo.EligibleRound;
 import ksh.tryptobackend.ranking.domain.vo.EligibleRounds;
 import ksh.tryptobackend.ranking.domain.vo.RankingCandidates;
 import ksh.tryptobackend.ranking.domain.vo.RankingPeriod;
@@ -29,8 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CalculateRankingService implements CalculateRankingUseCase {
 
-    private final ActiveRoundQueryPort activeRoundQueryPort;
-    private final TradeCountPort tradeCountPort;
+    private final EligibleRoundQueryPort eligibleRoundQueryPort;
     private final SnapshotAggregationPort snapshotAggregationPort;
     private final RankingWritePort rankingWritePort;
 
@@ -55,18 +51,7 @@ public class CalculateRankingService implements CalculateRankingUseCase {
     }
 
     private EligibleRounds findEligibleRounds(LocalDate snapshotDate) {
-        List<ActiveRoundInfo> activeRounds = activeRoundQueryPort.findAllActiveRounds();
-        List<Long> roundIds = activeRounds.stream().map(ActiveRoundInfo::roundId).toList();
-        Map<Long, Integer> tradeCountMap = tradeCountPort.countFilledOrdersByRoundIds(roundIds);
-
-        List<EligibleRound> candidates = activeRounds.stream()
-            .map(round -> new EligibleRound(
-                round.userId(), round.roundId(),
-                tradeCountMap.getOrDefault(round.roundId(), 0), round.startedAt()
-            ))
-            .toList();
-
-        return EligibleRounds.of(candidates, snapshotDate);
+        return EligibleRounds.of(eligibleRoundQueryPort.findAll(), snapshotDate);
     }
 
     private SnapshotSummaries loadSummaries(LocalDate date) {
