@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -93,15 +94,36 @@ public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshot
             .fetch();
     }
 
+    @Override
     public PortfolioSnapshot save(PortfolioSnapshot domain) {
         PortfolioSnapshotJpaEntity entity = PortfolioSnapshotJpaEntity.fromDomain(domain);
         PortfolioSnapshotJpaEntity saved = snapshotRepository.save(entity);
         return saved.toDomain();
     }
 
+    @Override
     public void saveDetails(Long snapshotId, List<SnapshotDetail> details) {
         List<SnapshotDetailJpaEntity> entities = details.stream()
             .map(d -> SnapshotDetailJpaEntity.fromDomain(d, snapshotId))
+            .toList();
+        detailRepository.saveAll(entities);
+    }
+
+    @Override
+    public List<PortfolioSnapshot> saveAll(List<PortfolioSnapshot> snapshots) {
+        List<PortfolioSnapshotJpaEntity> entities = snapshots.stream()
+            .map(PortfolioSnapshotJpaEntity::fromDomain)
+            .toList();
+        return snapshotRepository.saveAll(entities).stream()
+            .map(PortfolioSnapshotJpaEntity::toDomain)
+            .toList();
+    }
+
+    @Override
+    public void saveAllDetails(Map<Long, List<SnapshotDetail>> snapshotDetailsMap) {
+        List<SnapshotDetailJpaEntity> entities = snapshotDetailsMap.entrySet().stream()
+            .flatMap(entry -> entry.getValue().stream()
+                .map(d -> SnapshotDetailJpaEntity.fromDomain(d, entry.getKey())))
             .toList();
         detailRepository.saveAll(entities);
     }
