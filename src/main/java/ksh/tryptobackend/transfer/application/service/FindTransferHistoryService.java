@@ -26,9 +26,9 @@ public class FindTransferHistoryService implements FindTransferHistoryUseCase {
 
         List<Transfer> transfers = fetchTransfersWithOverflow(query);
         boolean hasNext = transfers.size() > query.size();
-        List<Transfer> trimmed = hasNext ? transfers.subList(0, query.size()) : transfers;
+        List<Transfer> pagedTransfers = hasNext ? transfers.subList(0, query.size()) : transfers;
 
-        return buildCursorResult(trimmed, hasNext);
+        return buildCursorResult(pagedTransfers, hasNext);
     }
 
     private List<Transfer> fetchTransfersWithOverflow(FindTransferHistoryQuery query) {

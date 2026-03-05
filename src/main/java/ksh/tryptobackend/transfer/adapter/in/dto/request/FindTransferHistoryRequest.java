@@ -9,7 +9,7 @@ import ksh.tryptobackend.transfer.domain.vo.TransferType;
 public record FindTransferHistoryRequest(
     @NotNull Long userId,
     TransferType type,
-    Long cursor,
+    Long cursorTransferId,
     @Min(1) @Max(50) Integer size
 ) {
 
@@ -23,6 +23,6 @@ public record FindTransferHistoryRequest(
     }
 
     public FindTransferHistoryQuery toQuery(Long walletId) {
-        return new FindTransferHistoryQuery(walletId, userId, type, cursor, size);
+        return new FindTransferHistoryQuery(walletId, userId, type, cursorTransferId, size);
     }
 }
