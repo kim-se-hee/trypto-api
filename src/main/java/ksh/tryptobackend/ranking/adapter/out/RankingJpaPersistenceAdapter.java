@@ -99,7 +99,10 @@ public class RankingJpaPersistenceAdapter implements RankingPersistencePort, Ran
     @Override
     @Transactional
     public void replaceByPeriodAndDate(List<Ranking> rankings, RankingPeriod period, LocalDate referenceDate) {
-        rankingJpaRepository.deleteByPeriodAndReferenceDate(period, referenceDate);
+        queryFactory.delete(ranking)
+            .where(ranking.period.eq(period)
+                .and(ranking.referenceDate.eq(referenceDate)))
+            .execute();
         List<RankingJpaEntity> entities = rankings.stream()
             .map(RankingJpaEntity::fromDomain)
             .toList();
