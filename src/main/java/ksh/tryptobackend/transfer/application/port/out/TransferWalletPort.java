@@ -6,6 +6,8 @@ import java.math.BigDecimal;
 
 public interface TransferWalletPort {
 
+    void validateOwnership(Long walletId, Long userId);
+
     TransferWalletInfo getWallet(Long walletId);
 
     BigDecimal getAvailableBalance(Long walletId, Long coinId);
