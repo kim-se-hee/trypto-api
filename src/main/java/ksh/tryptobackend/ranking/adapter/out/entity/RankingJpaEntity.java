@@ -39,7 +39,7 @@ public class RankingJpaEntity {
     @Column(name = "period", nullable = false, length = 10)
     private RankingPeriod period;
 
-    @Column(name = "rank", nullable = false)
+    @Column(name = "`rank`", nullable = false)
     private int rank;
 
     @Column(name = "profit_rate", nullable = false, precision = 10, scale = 4)
