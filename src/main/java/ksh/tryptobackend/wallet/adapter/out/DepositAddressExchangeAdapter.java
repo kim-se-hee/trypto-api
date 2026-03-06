@@ -2,7 +2,7 @@ package ksh.tryptobackend.wallet.adapter.out;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
-import ksh.tryptobackend.marketdata.application.port.out.ExchangeQueryPort;
+import ksh.tryptobackend.marketdata.application.port.in.FindExchangeDetailUseCase;
 import ksh.tryptobackend.wallet.application.port.out.DepositAddressExchangePort;
 import ksh.tryptobackend.wallet.domain.vo.DepositTargetExchange;
 import lombok.RequiredArgsConstructor;
@@ -12,13 +12,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DepositAddressExchangeAdapter implements DepositAddressExchangePort {
 
-    private final ExchangeQueryPort exchangeQueryPort;
+    private final FindExchangeDetailUseCase findExchangeDetailUseCase;
 
     @Override
     public DepositTargetExchange getExchange(Long exchangeId) {
-        return exchangeQueryPort.findExchangeDetailById(exchangeId)
+        return findExchangeDetailUseCase.findExchangeDetail(exchangeId)
             .map(detail -> DepositTargetExchange.of(
-                detail.baseCurrencyCoinId(), "KRW".equals(detail.currency())))
+                detail.baseCurrencyCoinId(), detail.domestic()))
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
     }
 }
