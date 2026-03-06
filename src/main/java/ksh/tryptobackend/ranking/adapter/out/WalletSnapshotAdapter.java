@@ -2,7 +2,8 @@ package ksh.tryptobackend.ranking.adapter.out;
 
 import ksh.tryptobackend.ranking.application.port.out.WalletSnapshotPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.WalletSnapshotInfo;
-import ksh.tryptobackend.wallet.application.port.out.WalletQueryPort;
+import ksh.tryptobackend.wallet.application.port.in.FindWalletUseCase;
+import ksh.tryptobackend.wallet.application.port.in.dto.result.WalletResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -12,23 +13,23 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WalletSnapshotAdapter implements WalletSnapshotPort {
 
-    private final WalletQueryPort walletQueryPort;
+    private final FindWalletUseCase findWalletUseCase;
 
     @Override
     public List<WalletSnapshotInfo> findByRoundId(Long roundId) {
-        return walletQueryPort.findByRoundId(roundId).stream()
+        return findWalletUseCase.findByRoundId(roundId).stream()
             .map(this::toWalletSnapshotInfo)
             .toList();
     }
 
     @Override
     public List<WalletSnapshotInfo> findByRoundIds(List<Long> roundIds) {
-        return walletQueryPort.findByRoundIds(roundIds).stream()
+        return findWalletUseCase.findByRoundIds(roundIds).stream()
             .map(this::toWalletSnapshotInfo)
             .toList();
     }
 
-    private WalletSnapshotInfo toWalletSnapshotInfo(ksh.tryptobackend.wallet.application.port.out.dto.WalletInfo info) {
-        return new WalletSnapshotInfo(info.walletId(), info.roundId(), info.exchangeId(), info.seedAmount());
+    private WalletSnapshotInfo toWalletSnapshotInfo(WalletResult result) {
+        return new WalletSnapshotInfo(result.walletId(), result.roundId(), result.exchangeId(), result.seedAmount());
     }
 }
