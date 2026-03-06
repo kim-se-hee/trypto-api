@@ -2,12 +2,10 @@ package ksh.tryptobackend.regretanalysis.adapter.out;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
-import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundQueryPort;
-import ksh.tryptobackend.investmentround.application.port.out.dto.InvestmentRoundInfo;
-import ksh.tryptobackend.investmentround.domain.vo.RoundStatus;
+import ksh.tryptobackend.investmentround.application.port.in.FindRoundInfoUseCase;
+import ksh.tryptobackend.investmentround.application.port.in.dto.result.RoundInfoResult;
 import ksh.tryptobackend.regretanalysis.application.port.out.InvestmentRoundPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.dto.AnalysisRoundStatus;
-import ksh.tryptobackend.regretanalysis.application.port.out.dto.RoundInfoResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,24 +13,20 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class InvestmentRoundAdapter implements InvestmentRoundPort {
 
-    private final InvestmentRoundQueryPort investmentRoundQueryPort;
+    private final FindRoundInfoUseCase findRoundInfoUseCase;
 
     @Override
-    public RoundInfoResult getRound(Long roundId) {
-        InvestmentRoundInfo info = investmentRoundQueryPort.findRoundInfoById(roundId)
+    public ksh.tryptobackend.regretanalysis.application.port.out.dto.RoundInfoResult getRound(Long roundId) {
+        RoundInfoResult result = findRoundInfoUseCase.findById(roundId)
             .orElseThrow(() -> new CustomException(ErrorCode.ROUND_NOT_FOUND));
 
-        return new RoundInfoResult(
-            info.roundId(), info.userId(), info.initialSeed(),
-            toAnalysisRoundStatus(info.status()), info.startedAt(), info.endedAt()
+        return new ksh.tryptobackend.regretanalysis.application.port.out.dto.RoundInfoResult(
+            result.roundId(), result.userId(), result.initialSeed(),
+            toAnalysisRoundStatus(result.status()), result.startedAt(), result.endedAt()
         );
     }
 
-    private AnalysisRoundStatus toAnalysisRoundStatus(RoundStatus status) {
-        return switch (status) {
-            case ACTIVE -> AnalysisRoundStatus.ACTIVE;
-            case BANKRUPT -> AnalysisRoundStatus.BANKRUPT;
-            case ENDED -> AnalysisRoundStatus.ENDED;
-        };
+    private AnalysisRoundStatus toAnalysisRoundStatus(String status) {
+        return AnalysisRoundStatus.valueOf(status);
     }
 }
