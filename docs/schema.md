@@ -39,14 +39,14 @@ erDiagram
         id round_id FK "라운드 ID"
         id exchange_id FK "거래소 ID"
         number amount "투입 금액"
-        uuid idempotency_key UK "멱등 키"
+        uuid idempotency_key UK "멱등 키 (round_id + idempotency_key 복합 유니크)"
         datetime created_at "투입 시각"
     }
 
-    EXCHANGE {
+    EXCHANGE_MARKET {
         id exchange_id PK "주 식별자"
         string name "거래소명"
-        string market_type "CEX DEX"
+        string market_type "DOMESTIC OVERSEAS"
         id base_currency_coin_id FK "기축통화 코인 ID"
         number fee_rate "기본 수수료율"
     }
@@ -54,9 +54,6 @@ erDiagram
     COIN {
         id coin_id PK "주 식별자"
         string symbol UK "티커"
-        string name "코인 이름"
-        string chain "메인 체인"
-        string coin_type "레이어1"
     }
 
     EXCHANGE_COIN {
@@ -83,14 +80,18 @@ erDiagram
 
     WALLET {
         id wallet_id PK "주 식별자"
-        id round_id FK "라운드 ID"
+        id round_id FK "라운드 ID (round_id + exchange_id 복합 유니크)"
         id exchange_id FK "거래소 ID"
+        number seed_amount "시드머니"
+        string wallet_address "지갑 주소 (nullable)"
+        string wallet_tag "지갑 태그 (nullable)"
+        string chain "체인 (nullable)"
         datetime created_at "생성일"
     }
 
     DEPOSIT_ADDRESS {
         id deposit_address_id PK "주 식별자"
-        id wallet_id FK "지갑 ID"
+        id wallet_id FK "지갑 ID (wallet_id + chain 복합 유니크)"
         string chain "체인"
         string address "입금 주소"
         string tag "태그 메모 (nullable)"
@@ -110,10 +111,10 @@ erDiagram
         id from_wallet_id FK "출발 지갑 ID"
         id to_wallet_id FK "도착 지갑 ID (nullable)"
         id coin_id FK "송금 코인 ID"
-        number amount "송금 수량"
         string chain "사용 체인"
         string to_address "입력한 도착 주소"
         string to_tag "입력한 태그"
+        number amount "송금 수량"
         number fee "송금 수수료 (적용된 결과)"
         string status "SUCCESS FROZEN REFUNDED"
         string failure_reason "WRONG_ADDRESS WRONG_CHAIN MISSING_TAG (nullable)"
@@ -133,18 +134,20 @@ erDiagram
 
     ORDERS {
         id order_id PK "주 식별자"
+        string idempotency_key UK "멱등 키"
         id wallet_id FK "주문 지갑 ID"
         id exchange_coin_id FK "거래소-코인 ID"
-        string order_type "시장가 지정가"
-        string side "매수 매도"
+        string order_type "MARKET LIMIT"
+        string side "BUY SELL"
         number order_amount "주문 금액"
         number quantity "주문 수량"
-        number price "주문 가격 (지정가)"
-        number filled_price "실제 체결가"
-        number fee "수수료 (적용된 결과)"
-        string status "체결완료 미체결 실패 취소"
+        number price "주문 가격 (지정가, nullable)"
+        number filled_price "실제 체결가 (nullable)"
+        number fee "수수료 (nullable)"
+        number fee_rate "수수료율"
+        string status "FILLED PENDING CANCELLED FAILED"
         datetime created_at "주문 시각"
-        datetime filled_at "체결 시각"
+        datetime filled_at "체결 시각 (nullable)"
     }
 
     RULE_VIOLATION {
@@ -152,6 +155,7 @@ erDiagram
         id order_id FK "주문 ID (nullable)"
         id swap_id FK "스왑 ID (nullable)"
         id rule_id FK "위반 투자 원칙 ID"
+        string violation_reason "위반 사유"
         datetime created_at "위반 시각"
     }
 
@@ -180,6 +184,7 @@ erDiagram
         number total_asset "총 자산 (거래소 기축통화 단위)"
         number total_asset_krw "총 자산 (원화 환산)"
         number total_investment "총 투입금 (거래소 기축통화 단위)"
+        number total_investment_krw "총 투입금 (원화 환산)"
         number total_profit "수익금 (거래소 기축통화 단위)"
         number total_profit_rate "총 수익률"
         date snapshot_date "스냅샷 날짜"
@@ -204,7 +209,7 @@ erDiagram
         number rank "순위"
         number profit_rate "수익률"
         number trade_count "거래 횟수"
-        datetime reference_date "기준 날짜"
+        date reference_date "기준 날짜"
         datetime created_at "집계 시각"
     }
 
@@ -250,17 +255,17 @@ erDiagram
     USER ||--o{ REGRET_REPORT : ""
     INVESTMENT_ROUND ||--|{ INVESTMENT_RULE : ""
     INVESTMENT_ROUND ||--o{ EMERGENCY_FUNDING : ""
-    EXCHANGE ||--o{ EMERGENCY_FUNDING : ""
+    EXCHANGE_MARKET ||--o{ EMERGENCY_FUNDING : ""
     INVESTMENT_ROUND ||--o{ PORTFOLIO_SNAPSHOT : ""
     INVESTMENT_ROUND ||--o{ RANKING : ""
     INVESTMENT_ROUND ||--o{ REGRET_REPORT : ""
-    EXCHANGE ||--|{ EXCHANGE_COIN : ""
-    COIN ||--o| EXCHANGE : "base_currency"
+    EXCHANGE_MARKET ||--|{ EXCHANGE_COIN : ""
+    COIN ||--o| EXCHANGE_MARKET : "base_currency"
     COIN ||--|{ EXCHANGE_COIN : ""
     EXCHANGE_COIN ||--o{ EXCHANGE_COIN_CHAIN : ""
-    EXCHANGE ||--|{ WITHDRAWAL_FEE : ""
+    EXCHANGE_MARKET ||--|{ WITHDRAWAL_FEE : ""
     COIN ||--|{ WITHDRAWAL_FEE : ""
-    EXCHANGE ||--o{ WALLET : ""
+    EXCHANGE_MARKET ||--o{ WALLET : ""
     WALLET ||--o{ DEPOSIT_ADDRESS : ""
     WALLET ||--o{ WALLET_BALANCE : ""
     COIN ||--o{ WALLET_BALANCE : ""
@@ -275,13 +280,13 @@ erDiagram
     SWAP ||--o{ RULE_VIOLATION : ""
     INVESTMENT_RULE ||--o{ RULE_VIOLATION : ""
     WALLET ||--o{ SWAP : ""
-    EXCHANGE ||--o{ SWAP : ""
+    EXCHANGE_MARKET ||--o{ SWAP : ""
     COIN ||--o{ SWAP : "from"
     COIN ||--o{ SWAP : "to"
     PORTFOLIO_SNAPSHOT ||--|{ PORTFOLIO_SNAPSHOT_DETAIL : ""
-    EXCHANGE ||--o{ PORTFOLIO_SNAPSHOT : ""
+    EXCHANGE_MARKET ||--o{ PORTFOLIO_SNAPSHOT : ""
     COIN ||--o{ PORTFOLIO_SNAPSHOT_DETAIL : ""
-    EXCHANGE ||--o{ REGRET_REPORT : ""
+    EXCHANGE_MARKET ||--o{ REGRET_REPORT : ""
     REGRET_REPORT ||--|{ RULE_IMPACT : ""
     REGRET_REPORT ||--|{ VIOLATION_DETAIL : ""
     INVESTMENT_RULE ||--o{ RULE_IMPACT : ""
