@@ -3,7 +3,7 @@ package ksh.tryptobackend.regretanalysis.domain.vo;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public record TradeRecord(
+public record OrderExecution(
     Long orderId,
     Long walletId,
     Long exchangeCoinId,

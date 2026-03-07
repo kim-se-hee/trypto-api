@@ -28,8 +28,8 @@ import java.util.List;
 public class PlaceOrderService implements PlaceOrderUseCase {
 
     private final OrderCommandPort orderCommandPort;
-    private final WalletBalanceQueryPort walletBalanceQueryPort;
-    private final WalletBalanceCommandPort walletBalanceCommandPort;
+    private final TradingBalanceQueryPort tradingBalanceQueryPort;
+    private final TradingBalanceCommandPort tradingBalanceCommandPort;
     private final LivePriceQueryPort livePriceQueryPort;
     private final TradingVenueQueryPort tradingVenueQueryPort;
     private final ListedCoinQueryPort listedCoinQueryPort;
@@ -87,7 +87,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     private void validateBalance(OrderPlacementStrategy strategy, Order order,
                                   Long walletId, TradingVenue venue, Long coinId) {
         Long balanceCoinId = strategy.resolveBalanceCoinId(venue, coinId);
-        BigDecimal available = walletBalanceQueryPort.getAvailableBalance(walletId, balanceCoinId);
+        BigDecimal available = tradingBalanceQueryPort.getAvailableBalance(walletId, balanceCoinId);
         order.validateSufficientBalance(available);
     }
 
@@ -133,9 +133,9 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 
     private void applyBalanceChange(Long walletId, BalanceChange change) {
         switch (change) {
-            case BalanceChange.Deduct d -> walletBalanceCommandPort.deductBalance(walletId, d.coinId(), d.amount());
-            case BalanceChange.Add a -> walletBalanceCommandPort.addBalance(walletId, a.coinId(), a.amount());
-            case BalanceChange.Lock l -> walletBalanceCommandPort.lockBalance(walletId, l.coinId(), l.amount());
+            case BalanceChange.Deduct d -> tradingBalanceCommandPort.deductBalance(walletId, d.coinId(), d.amount());
+            case BalanceChange.Add a -> tradingBalanceCommandPort.addBalance(walletId, a.coinId(), a.amount());
+            case BalanceChange.Lock l -> tradingBalanceCommandPort.lockBalance(walletId, l.coinId(), l.amount());
         }
     }
 

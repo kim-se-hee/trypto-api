@@ -1,10 +1,9 @@
-package ksh.tryptobackend.marketdata.application.port.out;
+package ksh.tryptobackend.marketdata.application.port.in;
 
 import java.util.Map;
 import java.util.Set;
 
-public interface CoinQueryPort {
+public interface FindCoinSymbolsUseCase {
 
     Map<Long, String> findSymbolsByIds(Set<Long> coinIds);
-
 }

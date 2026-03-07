@@ -4,11 +4,11 @@ import ksh.tryptobackend.regretanalysis.application.port.in.GenerateRegretReport
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.command.GenerateRegretReportCommand;
 import ksh.tryptobackend.regretanalysis.application.port.out.LivePriceQueryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.AssetSnapshotQueryPort;
-import ksh.tryptobackend.regretanalysis.application.port.out.TradeViolationQueryPort;
+import ksh.tryptobackend.regretanalysis.application.port.out.ViolatedOrderQueryPort;
 import ksh.tryptobackend.regretanalysis.domain.model.AssetSnapshot;
 import ksh.tryptobackend.regretanalysis.domain.model.RegretReport;
 import ksh.tryptobackend.regretanalysis.domain.model.RuleImpact;
-import ksh.tryptobackend.regretanalysis.domain.model.TradeViolation;
+import ksh.tryptobackend.regretanalysis.domain.model.ViolatedOrder;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetail;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetails;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +27,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GenerateRegretReportService implements GenerateRegretReportUseCase {
 
-    private final TradeViolationQueryPort tradeViolationQueryPort;
+    private final ViolatedOrderQueryPort violatedOrderQueryPort;
     private final LivePriceQueryPort livePriceQueryPort;
     private final AssetSnapshotQueryPort assetSnapshotQueryPort;
     private final Clock clock;
 
     @Override
     public Optional<RegretReport> generateReport(GenerateRegretReportCommand command) {
-        List<TradeViolation> violations = findViolations(command);
+        List<ViolatedOrder> violations = findViolations(command);
         if (violations.isEmpty()) {
             return Optional.empty();
         }
@@ -52,11 +52,11 @@ public class GenerateRegretReportService implements GenerateRegretReportUseCase 
         ));
     }
 
-    private List<TradeViolation> findViolations(GenerateRegretReportCommand command) {
-        return tradeViolationQueryPort.findByRoundIdAndExchangeId(command.roundId(), command.exchangeId());
+    private List<ViolatedOrder> findViolations(GenerateRegretReportCommand command) {
+        return violatedOrderQueryPort.findByRoundIdAndExchangeId(command.roundId(), command.exchangeId());
     }
 
-    private List<ViolationDetail> calculateViolationDetails(List<TradeViolation> violations) {
+    private List<ViolationDetail> calculateViolationDetails(List<ViolatedOrder> violations) {
         Map<Long, BigDecimal> currentPrices = resolveCurrentPrices(violations);
         return violations.stream()
             .map(v -> {
@@ -68,9 +68,9 @@ public class GenerateRegretReportService implements GenerateRegretReportUseCase 
             .toList();
     }
 
-    private Map<Long, BigDecimal> resolveCurrentPrices(List<TradeViolation> violations) {
+    private Map<Long, BigDecimal> resolveCurrentPrices(List<ViolatedOrder> violations) {
         return violations.stream()
-            .map(TradeViolation::getExchangeCoinId)
+            .map(ViolatedOrder::getExchangeCoinId)
             .distinct()
             .collect(Collectors.toMap(id -> id, livePriceQueryPort::getCurrentPrice));
     }

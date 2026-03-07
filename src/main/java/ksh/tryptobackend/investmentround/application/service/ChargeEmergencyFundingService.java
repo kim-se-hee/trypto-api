@@ -6,11 +6,11 @@ import ksh.tryptobackend.investmentround.application.port.in.ChargeEmergencyFund
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.ChargeEmergencyFundingCommand;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.ChargeEmergencyFundingResult;
 import ksh.tryptobackend.investmentround.application.port.out.EmergencyFundingQueryPort;
-import ksh.tryptobackend.investmentround.application.port.out.ExchangeInfoQueryPort;
+import ksh.tryptobackend.investmentround.application.port.out.SeedFundingSpecQueryPort;
 import ksh.tryptobackend.investmentround.application.port.out.FundingWalletCommandPort;
 import ksh.tryptobackend.investmentround.application.port.out.FundingWalletQueryPort;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundCommandPort;
-import ksh.tryptobackend.investmentround.application.port.out.dto.ExchangeInfo;
+import ksh.tryptobackend.investmentround.domain.vo.SeedFundingSpec;
 import ksh.tryptobackend.investmentround.domain.model.EmergencyFunding;
 import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class ChargeEmergencyFundingService implements ChargeEmergencyFundingUseC
 
     private final InvestmentRoundCommandPort investmentRoundCommandPort;
     private final EmergencyFundingQueryPort emergencyFundingQueryPort;
-    private final ExchangeInfoQueryPort exchangeInfoPort;
+    private final SeedFundingSpecQueryPort seedFundingSpecQueryPort;
     private final FundingWalletQueryPort fundingWalletQueryPort;
     private final FundingWalletCommandPort fundingWalletCommandPort;
     private final Clock clock;
@@ -47,7 +47,7 @@ public class ChargeEmergencyFundingService implements ChargeEmergencyFundingUseC
         round.chargeEmergencyFunding(command.amount());
 
         Long walletId = getWalletId(command.roundId(), command.exchangeId());
-        ExchangeInfo exchange = getExchange(command.exchangeId());
+        SeedFundingSpec exchange = getExchange(command.exchangeId());
 
         LocalDateTime now = LocalDateTime.now(clock);
         EmergencyFunding funding = EmergencyFunding.create(
@@ -75,8 +75,8 @@ public class ChargeEmergencyFundingService implements ChargeEmergencyFundingUseC
             .orElseThrow(() -> new CustomException(ErrorCode.WALLET_NOT_FOUND));
     }
 
-    private ExchangeInfo getExchange(Long exchangeId) {
-        return exchangeInfoPort.findById(exchangeId)
+    private SeedFundingSpec getExchange(Long exchangeId) {
+        return seedFundingSpecQueryPort.findById(exchangeId)
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
     }
 

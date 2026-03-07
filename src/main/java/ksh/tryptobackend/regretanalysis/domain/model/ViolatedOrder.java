@@ -15,7 +15,7 @@ import java.util.List;
 
 @Getter
 @Builder(access = AccessLevel.PRIVATE)
-public class TradeViolation {
+public class ViolatedOrder {
 
     private final Long orderId;
     private final Long ruleId;
@@ -29,12 +29,12 @@ public class TradeViolation {
     private final List<SoldPortion> soldPortions;
     private final ViolationLossStrategy lossStrategy;
 
-    public static TradeViolation create(Long orderId, Long ruleId, RuleType ruleType,
-                                         TradeSide side, BigDecimal filledPrice,
-                                         BigDecimal quantity, BigDecimal amount,
-                                         Long exchangeCoinId, LocalDateTime violatedAt,
-                                         List<SoldPortion> soldPortions) {
-        return TradeViolation.builder()
+    public static ViolatedOrder create(Long orderId, Long ruleId, RuleType ruleType,
+                                        TradeSide side, BigDecimal filledPrice,
+                                        BigDecimal quantity, BigDecimal amount,
+                                        Long exchangeCoinId, LocalDateTime violatedAt,
+                                        List<SoldPortion> soldPortions) {
+        return ViolatedOrder.builder()
             .orderId(orderId)
             .ruleId(ruleId)
             .ruleType(ruleType)

@@ -8,7 +8,7 @@ import ksh.tryptobackend.trading.application.port.in.dto.result.OrderAvailabilit
 import ksh.tryptobackend.trading.application.port.out.ListedCoinQueryPort;
 import ksh.tryptobackend.trading.application.port.out.LivePriceQueryPort;
 import ksh.tryptobackend.trading.application.port.out.TradingVenueQueryPort;
-import ksh.tryptobackend.trading.application.port.out.WalletBalanceQueryPort;
+import ksh.tryptobackend.trading.application.port.out.TradingBalanceQueryPort;
 import ksh.tryptobackend.trading.domain.vo.ListedCoinRef;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
@@ -22,7 +22,7 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class GetOrderAvailabilityService implements GetOrderAvailabilityUseCase {
 
-    private final WalletBalanceQueryPort walletBalanceQueryPort;
+    private final TradingBalanceQueryPort tradingBalanceQueryPort;
     private final LivePriceQueryPort livePriceQueryPort;
     private final TradingVenueQueryPort tradingVenueQueryPort;
     private final ListedCoinQueryPort listedCoinQueryPort;
@@ -54,6 +54,6 @@ public class GetOrderAvailabilityService implements GetOrderAvailabilityUseCase 
         Long targetCoinId = side == Side.BUY
             ? venue.baseCurrencyCoinId()
             : listedCoin.coinId();
-        return walletBalanceQueryPort.getAvailableBalance(walletId, targetCoinId);
+        return tradingBalanceQueryPort.getAvailableBalance(walletId, targetCoinId);
     }
 }

@@ -1,6 +1,6 @@
 package ksh.tryptobackend.trading.adapter.out;
 
-import ksh.tryptobackend.trading.application.port.out.WalletBalanceQueryPort;
+import ksh.tryptobackend.trading.application.port.out.TradingBalanceQueryPort;
 import ksh.tryptobackend.wallet.application.port.in.GetAvailableBalanceUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 
 @Component
 @RequiredArgsConstructor
-public class WalletBalanceQueryAdapter implements WalletBalanceQueryPort {
+public class TradingBalanceQueryAdapter implements TradingBalanceQueryPort {
 
     private final GetAvailableBalanceUseCase getAvailableBalanceUseCase;
 

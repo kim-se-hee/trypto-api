@@ -2,7 +2,7 @@ package ksh.tryptobackend.trading.application.port.out;
 
 import java.math.BigDecimal;
 
-public interface WalletBalanceCommandPort {
+public interface TradingBalanceCommandPort {
 
     void deductBalance(Long walletId, Long coinId, BigDecimal amount);
 

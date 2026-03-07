@@ -7,7 +7,7 @@ import ksh.tryptobackend.trading.application.port.in.dto.command.CancelOrderComm
 import ksh.tryptobackend.trading.application.port.out.ListedCoinQueryPort;
 import ksh.tryptobackend.trading.application.port.out.OrderCommandPort;
 import ksh.tryptobackend.trading.application.port.out.TradingVenueQueryPort;
-import ksh.tryptobackend.trading.application.port.out.WalletBalanceCommandPort;
+import ksh.tryptobackend.trading.application.port.out.TradingBalanceCommandPort;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.vo.ListedCoinRef;
 import ksh.tryptobackend.trading.domain.vo.Side;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CancelOrderService implements CancelOrderUseCase {
 
     private final OrderCommandPort orderCommandPort;
-    private final WalletBalanceCommandPort walletBalanceCommandPort;
+    private final TradingBalanceCommandPort tradingBalanceCommandPort;
     private final TradingVenueQueryPort tradingVenueQueryPort;
     private final ListedCoinQueryPort listedCoinQueryPort;
 
@@ -52,9 +52,9 @@ public class CancelOrderService implements CancelOrderUseCase {
         if (order.getSide() == Side.BUY) {
             TradingVenue venue = tradingVenueQueryPort.findByExchangeId(listedCoin.exchangeId())
                 .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
-            walletBalanceCommandPort.unlockBalance(order.getWalletId(), venue.baseCurrencyCoinId(), order.getSettlementDebit());
+            tradingBalanceCommandPort.unlockBalance(order.getWalletId(), venue.baseCurrencyCoinId(), order.getSettlementDebit());
         } else {
-            walletBalanceCommandPort.unlockBalance(order.getWalletId(), listedCoin.coinId(), order.getQuantity().value());
+            tradingBalanceCommandPort.unlockBalance(order.getWalletId(), listedCoin.coinId(), order.getQuantity().value());
         }
     }
 }

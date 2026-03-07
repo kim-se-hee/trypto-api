@@ -5,7 +5,6 @@ import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.regretanalysis.application.port.in.GetRegretReportUseCase;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.query.GetRegretReportQuery;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretReportResult;
-import ksh.tryptobackend.marketdata.application.port.out.CoinQueryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.AnalysisExchangeQueryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.AnalysisRoundQueryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.AnalysisRuleQueryPort;
@@ -28,7 +27,6 @@ public class GetRegretReportService implements GetRegretReportUseCase {
     private final RegretReportQueryPort regretReportQueryPort;
     private final AnalysisRuleQueryPort analysisRuleQueryPort;
     private final AnalysisExchangeQueryPort analysisExchangeQueryPort;
-    private final CoinQueryPort coinQueryPort;
 
     @Override
     public RegretReportResult getRegretReport(GetRegretReportQuery query) {
@@ -59,7 +57,7 @@ public class GetRegretReportService implements GetRegretReportUseCase {
     private RegretReportResult toResult(RegretReport report, AnalysisExchange exchange,
                                         AnalysisRules rules) {
         Map<Long, AnalysisRule> ruleMap = rules.toMap();
-        Map<Long, String> coinSymbols = coinQueryPort.findSymbolsByIds(
+        Map<Long, String> coinSymbols = analysisExchangeQueryPort.findCoinSymbolsByIds(
             report.getViolationDetails().extractCoinIds());
 
         return RegretReportResult.from(report, exchange, ruleMap, coinSymbols);

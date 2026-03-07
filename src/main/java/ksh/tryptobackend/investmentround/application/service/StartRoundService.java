@@ -8,9 +8,9 @@ import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRo
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRoundSeedCommand;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundResult;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundRuleResult;
-import ksh.tryptobackend.investmentround.application.port.out.ExchangeInfoQueryPort;
+import ksh.tryptobackend.investmentround.application.port.out.SeedFundingSpecQueryPort;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundCommandPort;
-import ksh.tryptobackend.investmentround.application.port.out.dto.ExchangeInfo;
+import ksh.tryptobackend.investmentround.domain.vo.SeedFundingSpec;
 import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
 import ksh.tryptobackend.investmentround.domain.model.RuleSetting;
 import ksh.tryptobackend.investmentround.domain.vo.SeedAllocation;
@@ -30,7 +30,7 @@ import java.util.List;
 public class StartRoundService implements StartRoundUseCase {
 
     private final InvestmentRoundCommandPort investmentRoundCommandPort;
-    private final ExchangeInfoQueryPort exchangeInfoPort;
+    private final SeedFundingSpecQueryPort seedFundingSpecQueryPort;
     private final WalletCommandPort walletCommandPort;
     private final Clock clock;
 
@@ -65,11 +65,11 @@ public class StartRoundService implements StartRoundUseCase {
     }
 
     private SeedAllocation toSeedAllocation(StartRoundSeedCommand seed) {
-        ExchangeInfo exchange = exchangeInfoPort.findById(seed.exchangeId())
+        SeedFundingSpec spec = seedFundingSpecQueryPort.findById(seed.exchangeId())
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
         return SeedAllocation.create(
-            seed.exchangeId(), exchange.baseCurrencyCoinId(),
-            seed.amount(), exchange.seedAmountPolicy());
+            seed.exchangeId(), spec.baseCurrencyCoinId(),
+            seed.amount(), spec.seedAmountPolicy());
     }
 
     private InvestmentRound createRound(Long userId, BigDecimal emergencyFundingLimit,
