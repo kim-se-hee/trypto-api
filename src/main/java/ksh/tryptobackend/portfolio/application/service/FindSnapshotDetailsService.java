@@ -24,7 +24,7 @@ public class FindSnapshotDetailsService implements FindSnapshotDetailsUseCase {
 
     private SnapshotDetailResult toResult(SnapshotDetailProjection projection) {
         return new SnapshotDetailResult(
-            projection.coinSymbol(), projection.exchangeName(),
+            projection.coinId(), projection.exchangeId(),
             projection.assetRatio(), projection.profitRate()
         );
     }

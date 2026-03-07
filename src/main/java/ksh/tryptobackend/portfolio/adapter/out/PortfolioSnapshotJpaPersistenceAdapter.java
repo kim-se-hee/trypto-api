@@ -5,8 +5,6 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import ksh.tryptobackend.portfolio.adapter.out.entity.PortfolioSnapshotJpaEntity;
-import ksh.tryptobackend.portfolio.adapter.out.entity.QPortfolioCoinJpaEntity;
-import ksh.tryptobackend.portfolio.adapter.out.entity.QPortfolioExchangeJpaEntity;
 import ksh.tryptobackend.portfolio.adapter.out.entity.QPortfolioSnapshotJpaEntity;
 import ksh.tryptobackend.portfolio.adapter.out.entity.QSnapshotDetailJpaEntity;
 import ksh.tryptobackend.portfolio.adapter.out.repository.PortfolioSnapshotJpaRepository;
@@ -32,8 +30,6 @@ public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshot
 
     private static final QPortfolioSnapshotJpaEntity snapshot = QPortfolioSnapshotJpaEntity.portfolioSnapshotJpaEntity;
     private static final QSnapshotDetailJpaEntity detail = QSnapshotDetailJpaEntity.snapshotDetailJpaEntity;
-    private static final QPortfolioCoinJpaEntity coin = QPortfolioCoinJpaEntity.portfolioCoinJpaEntity;
-    private static final QPortfolioExchangeJpaEntity exchange = QPortfolioExchangeJpaEntity.portfolioExchangeJpaEntity;
 
     @Override
     public PortfolioSnapshot save(PortfolioSnapshot domain) {
@@ -56,14 +52,12 @@ public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshot
     public List<SnapshotDetailProjection> findLatestSnapshotDetails(Long userId, Long roundId) {
         return queryFactory
             .select(Projections.constructor(SnapshotDetailProjection.class,
-                coin.symbol,
-                exchange.name,
+                detail.coinId,
+                snapshot.exchangeId,
                 detail.assetRatio,
                 detail.profitRate))
             .from(detail)
             .join(snapshot).on(detail.snapshotId.eq(snapshot.id))
-            .join(coin).on(detail.coinId.eq(coin.id))
-            .join(exchange).on(snapshot.exchangeId.eq(exchange.id))
             .where(snapshot.userId.eq(userId)
                 .and(snapshot.roundId.eq(roundId))
                 .and(snapshot.snapshotDate.eq(latestSnapshotDate(userId, roundId))))

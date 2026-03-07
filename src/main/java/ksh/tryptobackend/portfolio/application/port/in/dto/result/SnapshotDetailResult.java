@@ -3,8 +3,8 @@ package ksh.tryptobackend.portfolio.application.port.in.dto.result;
 import java.math.BigDecimal;
 
 public record SnapshotDetailResult(
-    String coinSymbol,
-    String exchangeName,
+    Long coinId,
+    Long exchangeId,
     BigDecimal assetRatio,
     BigDecimal profitRate
 ) {
