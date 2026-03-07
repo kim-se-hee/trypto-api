@@ -1,8 +1,8 @@
-package ksh.tryptobackend.trading.application.port.out.dto;
+package ksh.tryptobackend.trading.domain.vo;
 
 import java.time.LocalDateTime;
 
-public record ViolationInfo(
+public record RecordedViolation(
     Long violationId,
     Long orderId,
     Long ruleId,

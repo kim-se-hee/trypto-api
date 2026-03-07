@@ -2,7 +2,7 @@ package ksh.tryptobackend.trading.application.service;
 
 import ksh.tryptobackend.trading.application.port.in.FindViolationsUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.result.ViolationResult;
-import ksh.tryptobackend.trading.application.port.out.RuleViolationQueryPort;
+import ksh.tryptobackend.trading.application.port.out.RecordedViolationQueryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,12 +12,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FindViolationsService implements FindViolationsUseCase {
 
-    private final RuleViolationQueryPort ruleViolationQueryPort;
+    private final RecordedViolationQueryPort recordedViolationQueryPort;
 
     @Override
     public List<ViolationResult> findByRuleIdsAndExchangeId(List<Long> ruleIds, Long exchangeId) {
-        return ruleViolationQueryPort.findByRuleIdsAndExchangeId(ruleIds, exchangeId).stream()
-            .map(info -> new ViolationResult(info.violationId(), info.orderId(), info.ruleId(), info.createdAt()))
+        return recordedViolationQueryPort.findByRuleIdsAndExchangeId(ruleIds, exchangeId).stream()
+            .map(v -> new ViolationResult(v.violationId(), v.orderId(), v.ruleId(), v.createdAt()))
             .toList();
     }
 }
