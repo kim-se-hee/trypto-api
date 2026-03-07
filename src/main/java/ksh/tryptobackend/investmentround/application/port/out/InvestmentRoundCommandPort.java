@@ -4,7 +4,7 @@ import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
 
 import java.util.Optional;
 
-public interface InvestmentRoundPersistencePort {
+public interface InvestmentRoundCommandPort {
 
     boolean existsActiveRoundByUserId(Long userId);
 

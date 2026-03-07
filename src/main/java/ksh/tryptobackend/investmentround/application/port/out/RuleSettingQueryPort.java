@@ -4,7 +4,7 @@ import ksh.tryptobackend.investmentround.application.port.out.dto.InvestmentRule
 
 import java.util.List;
 
-public interface InvestmentRuleQueryPort {
+public interface RuleSettingQueryPort {
 
     List<InvestmentRuleInfo> findByRoundId(Long roundId);
 }
