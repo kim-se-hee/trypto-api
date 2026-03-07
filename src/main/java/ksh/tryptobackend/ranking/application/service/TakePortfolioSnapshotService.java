@@ -34,13 +34,13 @@ public class TakePortfolioSnapshotService implements TakePortfolioSnapshotUseCas
         BigDecimal totalAsset = calculateTotalAsset(command, exchangeSnapshot, evaluatedHoldings);
         BigDecimal totalInvestment = calculateTotalInvestment(command);
 
-        PortfolioSnapshot snapshot = PortfolioSnapshot.create(
-            command.userId(), command.roundId(), command.exchangeId(),
-            totalAsset, totalInvestment, exchangeSnapshot.conversionRate(), command.snapshotDate());
-
         List<SnapshotDetail> details = evaluatedHoldings.toSnapshotDetails(totalAsset);
 
-        return new SnapshotResult(snapshot, details);
+        PortfolioSnapshot snapshot = PortfolioSnapshot.create(
+            command.userId(), command.roundId(), command.exchangeId(),
+            totalAsset, totalInvestment, exchangeSnapshot.conversionRate(), command.snapshotDate(), details);
+
+        return new SnapshotResult(snapshot);
     }
 
     private BigDecimal calculateTotalAsset(TakeSnapshotCommand command, ExchangeSnapshot exchangeSnapshot,

@@ -24,7 +24,7 @@ public class SnapshotDetailJpaEntity {
     @Column(name = "detail_id")
     private Long id;
 
-    @Column(name = "snapshot_id", nullable = false)
+    @Column(name = "snapshot_id", insertable = false, updatable = false)
     private Long snapshotId;
 
     @Column(name = "coin_id", nullable = false)
@@ -45,9 +45,8 @@ public class SnapshotDetailJpaEntity {
     @Column(name = "asset_ratio", nullable = false, precision = 10, scale = 4)
     private BigDecimal assetRatio;
 
-    public static SnapshotDetailJpaEntity fromDomain(SnapshotDetail detail, Long snapshotId) {
+    public static SnapshotDetailJpaEntity fromDomain(SnapshotDetail detail) {
         SnapshotDetailJpaEntity entity = new SnapshotDetailJpaEntity();
-        entity.snapshotId = snapshotId;
         entity.coinId = detail.getCoinId();
         entity.quantity = detail.getQuantity();
         entity.avgBuyPrice = detail.getAvgBuyPrice();
@@ -55,5 +54,17 @@ public class SnapshotDetailJpaEntity {
         entity.profitRate = detail.getProfitRate();
         entity.assetRatio = detail.getAssetRatio();
         return entity;
+    }
+
+    public SnapshotDetail toDomain() {
+        return SnapshotDetail.builder()
+            .id(id)
+            .coinId(coinId)
+            .quantity(quantity)
+            .avgBuyPrice(avgBuyPrice)
+            .currentPrice(currentPrice)
+            .profitRate(profitRate)
+            .assetRatio(assetRatio)
+            .build();
     }
 }

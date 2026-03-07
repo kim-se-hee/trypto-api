@@ -9,9 +9,7 @@ import ksh.tryptobackend.ranking.adapter.out.entity.QPortfolioSnapshotJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.entity.QRankingCoinJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.entity.QRankingExchangeJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.entity.QSnapshotDetailJpaEntity;
-import ksh.tryptobackend.ranking.adapter.out.entity.SnapshotDetailJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.repository.PortfolioSnapshotJpaRepository;
-import ksh.tryptobackend.ranking.adapter.out.repository.SnapshotDetailJpaRepository;
 import ksh.tryptobackend.ranking.application.port.out.PortfolioSnapshotPort;
 import ksh.tryptobackend.ranking.application.port.out.SnapshotAggregationPort;
 import ksh.tryptobackend.ranking.application.port.out.SnapshotPersistencePort;
@@ -20,13 +18,11 @@ import ksh.tryptobackend.ranking.application.port.out.dto.SnapshotDetailProjecti
 import ksh.tryptobackend.ranking.application.port.out.dto.SnapshotInfo;
 import ksh.tryptobackend.ranking.application.port.out.dto.UserSnapshotSummary;
 import ksh.tryptobackend.ranking.domain.model.PortfolioSnapshot;
-import ksh.tryptobackend.ranking.domain.model.SnapshotDetail;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -35,7 +31,6 @@ public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshot
 
     private final JPAQueryFactory queryFactory;
     private final PortfolioSnapshotJpaRepository snapshotRepository;
-    private final SnapshotDetailJpaRepository detailRepository;
 
     private static final QPortfolioSnapshotJpaEntity snapshot = QPortfolioSnapshotJpaEntity.portfolioSnapshotJpaEntity;
     private static final QSnapshotDetailJpaEntity detail = QSnapshotDetailJpaEntity.snapshotDetailJpaEntity;
@@ -102,14 +97,6 @@ public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshot
     }
 
     @Override
-    public void saveDetails(Long snapshotId, List<SnapshotDetail> details) {
-        List<SnapshotDetailJpaEntity> entities = details.stream()
-            .map(d -> SnapshotDetailJpaEntity.fromDomain(d, snapshotId))
-            .toList();
-        detailRepository.saveAll(entities);
-    }
-
-    @Override
     public List<PortfolioSnapshot> saveAll(List<PortfolioSnapshot> snapshots) {
         List<PortfolioSnapshotJpaEntity> entities = snapshots.stream()
             .map(PortfolioSnapshotJpaEntity::fromDomain)
@@ -117,15 +104,6 @@ public class PortfolioSnapshotJpaPersistenceAdapter implements PortfolioSnapshot
         return snapshotRepository.saveAll(entities).stream()
             .map(PortfolioSnapshotJpaEntity::toDomain)
             .toList();
-    }
-
-    @Override
-    public void saveAllDetails(Map<Long, List<SnapshotDetail>> snapshotDetailsMap) {
-        List<SnapshotDetailJpaEntity> entities = snapshotDetailsMap.entrySet().stream()
-            .flatMap(entry -> entry.getValue().stream()
-                .map(d -> SnapshotDetailJpaEntity.fromDomain(d, entry.getKey())))
-            .toList();
-        detailRepository.saveAll(entities);
     }
 
     @Override

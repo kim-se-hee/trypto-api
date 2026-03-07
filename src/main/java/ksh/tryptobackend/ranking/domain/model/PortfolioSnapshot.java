@@ -7,6 +7,8 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Builder
@@ -23,10 +25,13 @@ public class PortfolioSnapshot {
     private final BigDecimal totalProfit;
     private final BigDecimal totalProfitRate;
     private final LocalDate snapshotDate;
+    @Builder.Default
+    private final List<SnapshotDetail> details = new ArrayList<>();
 
     public static PortfolioSnapshot create(Long userId, Long roundId, Long exchangeId,
                                            BigDecimal totalAsset, BigDecimal totalInvestment,
-                                           KrwConversionRate conversionRate, LocalDate snapshotDate) {
+                                           KrwConversionRate conversionRate, LocalDate snapshotDate,
+                                           List<SnapshotDetail> details) {
         BigDecimal totalAssetKrw = conversionRate.convert(totalAsset);
         BigDecimal totalInvestmentKrw = conversionRate.convert(totalInvestment);
         BigDecimal totalProfit = totalAsset.subtract(totalInvestment);
@@ -43,6 +48,7 @@ public class PortfolioSnapshot {
             .totalProfit(totalProfit)
             .totalProfitRate(totalProfitRate)
             .snapshotDate(snapshotDate)
+            .details(details)
             .build();
     }
 }
