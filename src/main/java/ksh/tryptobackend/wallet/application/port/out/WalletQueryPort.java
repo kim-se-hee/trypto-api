@@ -2,6 +2,7 @@ package ksh.tryptobackend.wallet.application.port.out;
 
 import ksh.tryptobackend.wallet.application.port.out.dto.WalletInfo;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,4 +15,6 @@ public interface WalletQueryPort {
     List<WalletInfo> findByRoundId(Long roundId);
 
     List<WalletInfo> findByRoundIds(List<Long> roundIds);
+
+    BigDecimal getAvailableBalance(Long walletId, Long coinId);
 }
