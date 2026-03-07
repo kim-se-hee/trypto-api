@@ -1,6 +1,9 @@
 package ksh.tryptobackend.wallet.adapter.out;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import ksh.tryptobackend.wallet.adapter.out.entity.DepositAddressJpaEntity;
+import ksh.tryptobackend.wallet.adapter.out.entity.QDepositAddressJpaEntity;
+import ksh.tryptobackend.wallet.adapter.out.entity.QWalletJpaEntity;
 import ksh.tryptobackend.wallet.adapter.out.repository.DepositAddressJpaRepository;
 import ksh.tryptobackend.wallet.application.port.out.DepositAddressPersistencePort;
 import ksh.tryptobackend.wallet.application.port.out.DepositAddressQueryPort;
@@ -16,6 +19,7 @@ import java.util.Optional;
 public class DepositAddressJpaPersistenceAdapter implements DepositAddressPersistencePort, DepositAddressQueryPort {
 
     private final DepositAddressJpaRepository repository;
+    private final JPAQueryFactory queryFactory;
 
     @Override
     public Optional<DepositAddress> findByWalletIdAndChain(Long walletId, String chain) {
@@ -33,9 +37,22 @@ public class DepositAddressJpaPersistenceAdapter implements DepositAddressPersis
     @Override
     public Optional<DepositAddressInfo> findByRoundIdAndChainAndAddress(
         Long roundId, String chain, String address) {
-        return repository.findByRoundIdAndChainAndAddress(roundId, chain, address)
-            .map(entity -> new DepositAddressInfo(
-                entity.getId(), entity.getWalletId(), entity.getChain(),
-                entity.getAddress(), entity.getTag()));
+        QDepositAddressJpaEntity da = QDepositAddressJpaEntity.depositAddressJpaEntity;
+        QWalletJpaEntity w = QWalletJpaEntity.walletJpaEntity;
+
+        DepositAddressJpaEntity entity = queryFactory
+            .selectFrom(da)
+            .join(w).on(da.walletId.eq(w.id))
+            .where(
+                w.roundId.eq(roundId),
+                da.chain.eq(chain),
+                da.address.eq(address)
+            )
+            .fetchOne();
+
+        return Optional.ofNullable(entity)
+            .map(e -> new DepositAddressInfo(
+                e.getId(), e.getWalletId(), e.getChain(),
+                e.getAddress(), e.getTag()));
     }
 }
