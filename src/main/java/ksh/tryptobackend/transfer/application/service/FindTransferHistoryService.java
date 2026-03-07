@@ -5,7 +5,7 @@ import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.transfer.application.port.in.FindTransferHistoryUseCase;
 import ksh.tryptobackend.transfer.application.port.in.dto.query.FindTransferHistoryQuery;
 import ksh.tryptobackend.transfer.application.port.in.dto.result.TransferHistoryCursorResult;
-import ksh.tryptobackend.transfer.application.port.out.TransferPersistencePort;
+import ksh.tryptobackend.transfer.application.port.out.TransferQueryPort;
 import ksh.tryptobackend.transfer.application.port.out.TransferWalletPort;
 import ksh.tryptobackend.transfer.domain.model.Transfer;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ import java.util.List;
 public class FindTransferHistoryService implements FindTransferHistoryUseCase {
 
     private final TransferWalletPort transferWalletPort;
-    private final TransferPersistencePort transferPersistencePort;
+    private final TransferQueryPort transferQueryPort;
 
     @Override
     @Transactional(readOnly = true)
@@ -41,7 +41,7 @@ public class FindTransferHistoryService implements FindTransferHistoryUseCase {
     }
 
     private List<Transfer> fetchTransfersWithOverflow(FindTransferHistoryQuery query) {
-        return transferPersistencePort.findByCursor(
+        return transferQueryPort.findByCursor(
             query.walletId(), query.type(), query.cursorTransferId(), query.size() + 1);
     }
 

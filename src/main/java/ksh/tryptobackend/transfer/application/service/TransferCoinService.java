@@ -7,7 +7,7 @@ import ksh.tryptobackend.transfer.application.port.in.dto.command.TransferCoinCo
 import ksh.tryptobackend.transfer.application.port.out.TransferDepositPort;
 import ksh.tryptobackend.transfer.application.port.out.TransferExchangeCoinChainPort;
 import ksh.tryptobackend.transfer.application.port.out.TransferExchangePort;
-import ksh.tryptobackend.transfer.application.port.out.TransferPersistencePort;
+import ksh.tryptobackend.transfer.application.port.out.TransferCommandPort;
 import ksh.tryptobackend.transfer.application.port.out.TransferWalletPort;
 import ksh.tryptobackend.transfer.application.port.out.TransferWithdrawalFeePort;
 import ksh.tryptobackend.transfer.domain.vo.TransferDepositAddress;
@@ -31,7 +31,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TransferCoinService implements TransferCoinUseCase {
 
-    private final TransferPersistencePort transferPersistencePort;
+    private final TransferCommandPort transferCommandPort;
     private final TransferWalletPort walletPort;
     private final TransferDepositPort depositPort;
     private final TransferWithdrawalFeePort withdrawalFeePort;
@@ -42,7 +42,7 @@ public class TransferCoinService implements TransferCoinUseCase {
     @Override
     @Transactional
     public Transfer transferCoin(TransferCoinCommand command) {
-        return transferPersistencePort.findByIdempotencyKey(command.idempotencyKey())
+        return transferCommandPort.findByIdempotencyKey(command.idempotencyKey())
             .orElseGet(() -> executeTransfer(command));
     }
 
@@ -69,7 +69,7 @@ public class TransferCoinService implements TransferCoinUseCase {
             coinId, chain, command.toAddress(), command.toTag(),
             command.amount(), condition.fee(), destination, LocalDateTime.now(clock));
         applyBalanceChanges(transfer);
-        return transferPersistencePort.save(transfer);
+        return transferCommandPort.save(transfer);
     }
 
     private void validateSourceChainSupport(Long exchangeId, Long coinId, String chain) {
