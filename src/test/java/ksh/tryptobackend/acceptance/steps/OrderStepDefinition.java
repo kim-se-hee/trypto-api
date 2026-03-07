@@ -5,17 +5,16 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import ksh.tryptobackend.acceptance.mock.MockHoldingAdapter;
-import ksh.tryptobackend.acceptance.mock.MockListedCoinAdapter;
-import ksh.tryptobackend.acceptance.mock.MockViolationRuleAdapter;
 import ksh.tryptobackend.acceptance.mock.MockLivePriceAdapter;
 import ksh.tryptobackend.acceptance.mock.MockPriceChangeRateAdapter;
-import ksh.tryptobackend.acceptance.mock.MockTradingVenueAdapter;
-import ksh.tryptobackend.acceptance.mock.MockWalletBalanceAdapter;
 import ksh.tryptobackend.acceptance.testclient.CommonApiClient;
+import ksh.tryptobackend.marketdata.adapter.out.entity.ExchangeJpaEntity;
+import ksh.tryptobackend.marketdata.adapter.out.repository.ExchangeJpaRepository;
+import ksh.tryptobackend.marketdata.domain.model.ExchangeMarketType;
 import ksh.tryptobackend.trading.adapter.out.repository.OrderJpaRepository;
-import ksh.tryptobackend.trading.domain.vo.ListedCoinRef;
-import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
-import ksh.tryptobackend.trading.domain.vo.TradingVenue;
+import ksh.tryptobackend.wallet.adapter.out.entity.WalletBalanceJpaEntity;
+import ksh.tryptobackend.wallet.adapter.out.repository.WalletBalanceJpaRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -32,48 +31,44 @@ public class OrderStepDefinition {
     private static final Long KRW_COIN_ID = 1L;
     private static final Long BTC_COIN_ID = 2L;
     private final CommonApiClient apiClient;
-    private final MockWalletBalanceAdapter walletBalanceAdapter;
     private final MockLivePriceAdapter livePriceAdapter;
-    private final MockTradingVenueAdapter tradingVenueAdapter;
-    private final MockListedCoinAdapter listedCoinAdapter;
     private final MockHoldingAdapter holdingAdapter;
-    private final MockViolationRuleAdapter violationRuleAdapter;
     private final MockPriceChangeRateAdapter priceChangeRateAdapter;
     private final OrderJpaRepository orderJpaRepository;
+    private final WalletBalanceJpaRepository walletBalanceJpaRepository;
+    private final ExchangeJpaRepository exchangeJpaRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     private Long lastOrderId;
     private String savedIdempotencyKey;
     private Long firstOrderId;
 
     public OrderStepDefinition(CommonApiClient apiClient,
-                               MockWalletBalanceAdapter walletBalanceAdapter,
                                MockLivePriceAdapter livePriceAdapter,
-                               MockTradingVenueAdapter tradingVenueAdapter,
-                               MockListedCoinAdapter listedCoinAdapter,
                                MockHoldingAdapter holdingAdapter,
-                               MockViolationRuleAdapter violationRuleAdapter,
                                MockPriceChangeRateAdapter priceChangeRateAdapter,
-                               OrderJpaRepository orderJpaRepository) {
+                               OrderJpaRepository orderJpaRepository,
+                               WalletBalanceJpaRepository walletBalanceJpaRepository,
+                               ExchangeJpaRepository exchangeJpaRepository,
+                               JdbcTemplate jdbcTemplate) {
         this.apiClient = apiClient;
-        this.walletBalanceAdapter = walletBalanceAdapter;
         this.livePriceAdapter = livePriceAdapter;
-        this.tradingVenueAdapter = tradingVenueAdapter;
-        this.listedCoinAdapter = listedCoinAdapter;
         this.holdingAdapter = holdingAdapter;
-        this.violationRuleAdapter = violationRuleAdapter;
         this.priceChangeRateAdapter = priceChangeRateAdapter;
         this.orderJpaRepository = orderJpaRepository;
+        this.walletBalanceJpaRepository = walletBalanceJpaRepository;
+        this.exchangeJpaRepository = exchangeJpaRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Before
     public void setUp() {
         orderJpaRepository.deleteAll();
-        walletBalanceAdapter.clear();
+        walletBalanceJpaRepository.deleteAllInBatch();
+        exchangeJpaRepository.deleteAllInBatch();
+        jdbcTemplate.update("DELETE FROM exchange_coin");
         livePriceAdapter.clear();
-        tradingVenueAdapter.clear();
-        listedCoinAdapter.clear();
         holdingAdapter.clear();
-        violationRuleAdapter.clear();
         priceChangeRateAdapter.clear();
         lastOrderId = null;
         savedIdempotencyKey = null;
@@ -82,13 +77,16 @@ public class OrderStepDefinition {
 
     @Given("업비트 거래소가 등록되어 있다")
     public void 업비트_거래소가_등록되어_있다() {
-        tradingVenueAdapter.addVenue(EXCHANGE_ID,
-            new TradingVenue(new BigDecimal("0.0005"), KRW_COIN_ID, OrderAmountPolicy.DOMESTIC));
+        exchangeJpaRepository.save(new ExchangeJpaEntity(
+            EXCHANGE_ID, "Upbit", ExchangeMarketType.DOMESTIC,
+            KRW_COIN_ID, new BigDecimal("0.0005")));
     }
 
     @Given("업비트에 BTC가 상장되어 있다")
     public void 업비트에_BTC가_상장되어_있다() {
-        listedCoinAdapter.addListedCoin(new ListedCoinRef(EXCHANGE_COIN_ID, EXCHANGE_ID, BTC_COIN_ID));
+        jdbcTemplate.update(
+            "INSERT INTO exchange_coin (exchange_coin_id, exchange_id, coin_id) VALUES (?, ?, ?)",
+            EXCHANGE_COIN_ID, EXCHANGE_ID, BTC_COIN_ID);
     }
 
     @Given("BTC 현재가는 {long}원이다")
@@ -98,12 +96,14 @@ public class OrderStepDefinition {
 
     @Given("지갑에 KRW 잔고가 {long}원이다")
     public void 지갑에_KRW_잔고가_원이다(long amount) {
-        walletBalanceAdapter.setBalance(WALLET_ID, KRW_COIN_ID, new BigDecimal(amount));
+        walletBalanceJpaRepository.save(
+            new WalletBalanceJpaEntity(WALLET_ID, KRW_COIN_ID, new BigDecimal(amount), BigDecimal.ZERO));
     }
 
     @Given("지갑에 BTC 잔고가 {double}개이다")
     public void 지갑에_BTC_잔고가_개이다(double amount) {
-        walletBalanceAdapter.setBalance(WALLET_ID, BTC_COIN_ID, new BigDecimal(String.valueOf(amount)));
+        walletBalanceJpaRepository.save(
+            new WalletBalanceJpaEntity(WALLET_ID, BTC_COIN_ID, new BigDecimal(String.valueOf(amount)), BigDecimal.ZERO));
     }
 
     @When("시장가 매수 주문을 {long}원으로 요청한다")
