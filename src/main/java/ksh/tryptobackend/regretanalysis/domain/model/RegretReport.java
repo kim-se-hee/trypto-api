@@ -33,7 +33,8 @@ public class RegretReport {
                                         BigDecimal actualProfitRate, BigDecimal totalInvestment,
                                         List<RuleImpact> ruleImpacts,
                                         List<ViolationDetail> violationDetails,
-                                        LocalDate analysisStart, LocalDate analysisEnd) {
+                                        LocalDate analysisStart, LocalDate analysisEnd,
+                                        LocalDateTime createdAt) {
         BigDecimal missedProfit = sumLossAmounts(violationDetails);
         BigDecimal ruleFollowedProfitRate = calculateRuleFollowedRate(
             actualProfitRate, missedProfit, totalInvestment);
@@ -48,7 +49,7 @@ public class RegretReport {
             .ruleFollowedProfitRate(ruleFollowedProfitRate)
             .analysisStart(analysisStart)
             .analysisEnd(analysisEnd)
-            .createdAt(LocalDateTime.now())
+            .createdAt(createdAt)
             .ruleImpacts(ruleImpacts)
             .violationDetails(new ViolationDetails(violationDetails))
             .build();

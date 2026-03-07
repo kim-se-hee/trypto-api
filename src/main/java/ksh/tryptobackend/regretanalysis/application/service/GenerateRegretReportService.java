@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +30,7 @@ public class GenerateRegretReportService implements GenerateRegretReportUseCase 
     private final TradeViolationQueryPort tradeViolationQueryPort;
     private final LivePricePort livePricePort;
     private final PortfolioSnapshotPort portfolioSnapshotPort;
+    private final Clock clock;
 
     @Override
     public Optional<RegretReport> generateReport(GenerateRegretReportCommand command) {
@@ -44,7 +47,8 @@ public class GenerateRegretReportService implements GenerateRegretReportUseCase 
             command.userId(), command.roundId(), command.exchangeId(),
             snapshot.getTotalProfitRate(), snapshot.getTotalInvestment(),
             impacts, details,
-            command.startedAt().toLocalDate(), LocalDate.now()
+            command.startedAt().toLocalDate(), LocalDate.now(clock),
+            LocalDateTime.now(clock)
         ));
     }
 
