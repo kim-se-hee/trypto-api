@@ -4,7 +4,6 @@ import io.cucumber.datatable.DataTable;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import ksh.tryptobackend.acceptance.mock.MockEligibleRoundQueryAdapter;
 import ksh.tryptobackend.ranking.adapter.out.entity.RankingJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.repository.PortfolioSnapshotJpaRepository;
 import ksh.tryptobackend.ranking.adapter.out.repository.RankingJpaRepository;
@@ -35,7 +34,6 @@ public class RankingBatchStepDefinition {
     private final RankingJpaRepository rankingRepository;
     private final PortfolioSnapshotJpaRepository snapshotRepository;
     private final SnapshotDetailJpaRepository detailRepository;
-    private final MockEligibleRoundQueryAdapter eligibleRoundQueryAdapter;
     private final JdbcTemplate jdbcTemplate;
 
     private List<RankingJpaEntity> savedRankings;
@@ -45,14 +43,12 @@ public class RankingBatchStepDefinition {
                                       RankingJpaRepository rankingRepository,
                                       PortfolioSnapshotJpaRepository snapshotRepository,
                                       SnapshotDetailJpaRepository detailRepository,
-                                      MockEligibleRoundQueryAdapter eligibleRoundQueryAdapter,
                                       JdbcTemplate jdbcTemplate) {
         this.jobOperator = jobOperator;
         this.rankingJob = rankingJob;
         this.rankingRepository = rankingRepository;
         this.snapshotRepository = snapshotRepository;
         this.detailRepository = detailRepository;
-        this.eligibleRoundQueryAdapter = eligibleRoundQueryAdapter;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -61,7 +57,8 @@ public class RankingBatchStepDefinition {
         rankingRepository.deleteAllInBatch();
         detailRepository.deleteAllInBatch();
         snapshotRepository.deleteAllInBatch();
-        eligibleRoundQueryAdapter.clear();
+        jdbcTemplate.update("DELETE FROM orders");
+        jdbcTemplate.update("DELETE FROM wallet WHERE round_id IN (SELECT round_id FROM investment_round WHERE status = 'ACTIVE')");
     }
 
     @Given("랭킹 대상 라운드가 존재한다")
@@ -70,8 +67,10 @@ public class RankingBatchStepDefinition {
             Long userId = Long.valueOf(row.get("userId"));
             Long roundId = Long.valueOf(row.get("roundId"));
             int tradeCount = Integer.parseInt(row.get("tradeCount"));
-            eligibleRoundQueryAdapter.addEligibleRound(
-                userId, roundId, tradeCount, LocalDateTime.of(2026, 1, 1, 0, 0));
+
+            ensureActiveRound(roundId, userId);
+            Long walletId = insertWalletAndGetId(roundId);
+            insertFilledOrders(walletId, tradeCount);
         }
     }
 
@@ -126,6 +125,41 @@ public class RankingBatchStepDefinition {
 
         assertThat(ranking.getProfitRate())
             .isEqualByComparingTo(new BigDecimal(String.valueOf(profitRate)));
+    }
+
+    private void ensureActiveRound(Long roundId, Long userId) {
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM investment_round WHERE round_id = ?", Integer.class, roundId);
+        if (count == null || count == 0) {
+            jdbcTemplate.update(
+                "INSERT INTO investment_round (round_id, version, user_id, round_number, initial_seed, " +
+                    "emergency_funding_limit, emergency_charge_count, status, started_at) " +
+                    "VALUES (?, 0, ?, 1, 10000000, 1000000, 0, 'ACTIVE', ?)",
+                roundId, userId, LocalDateTime.of(2026, 1, 1, 0, 0));
+        }
+    }
+
+    private Long insertWalletAndGetId(Long roundId) {
+        Long walletId = roundId * 1000;
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM wallet WHERE wallet_id = ?", Integer.class, walletId);
+        if (count == null || count == 0) {
+            jdbcTemplate.update(
+                "INSERT INTO wallet (wallet_id, round_id, exchange_id, seed_amount, created_at) " +
+                    "VALUES (?, ?, 1, 10000000, ?)",
+                walletId, roundId, LocalDateTime.now());
+        }
+        return walletId;
+    }
+
+    private void insertFilledOrders(Long walletId, int count) {
+        for (int i = 0; i < count; i++) {
+            jdbcTemplate.update(
+                "INSERT INTO orders (idempotency_key, wallet_id, exchange_coin_id, order_type, side, " +
+                    "order_amount, quantity, price, filled_price, fee, fee_rate, status, created_at, filled_at) " +
+                    "VALUES (?, ?, 1, 'MARKET', 'BUY', 100000, 0.001, 50000000, 50000000, 50, 0.0005, 'FILLED', ?, ?)",
+                java.util.UUID.randomUUID().toString(), walletId, LocalDateTime.now(), LocalDateTime.now());
+        }
     }
 
     private void insertSnapshot(Map<String, String> row, LocalDate snapshotDate) {

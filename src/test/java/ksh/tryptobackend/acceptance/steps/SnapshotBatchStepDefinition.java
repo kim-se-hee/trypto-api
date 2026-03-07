@@ -4,22 +4,18 @@ import io.cucumber.datatable.DataTable;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import ksh.tryptobackend.acceptance.mock.MockActiveRoundQueryAdapter;
-import ksh.tryptobackend.acceptance.mock.MockBalanceQueryAdapter;
-import ksh.tryptobackend.acceptance.mock.MockEmergencyFundingSnapshotAdapter;
-import ksh.tryptobackend.acceptance.mock.MockExchangeInfoQueryAdapter;
-import ksh.tryptobackend.acceptance.mock.MockSnapshotHoldingQueryAdapter;
-import ksh.tryptobackend.acceptance.mock.MockWalletSnapshotAdapter;
+import ksh.tryptobackend.acceptance.mock.MockHoldingAdapter;
+import ksh.tryptobackend.acceptance.mock.MockLivePriceAdapter;
 import ksh.tryptobackend.ranking.adapter.out.entity.PortfolioSnapshotJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.entity.SnapshotDetailJpaEntity;
 import ksh.tryptobackend.ranking.adapter.out.repository.PortfolioSnapshotJpaRepository;
 import ksh.tryptobackend.ranking.adapter.out.repository.SnapshotDetailJpaRepository;
-import ksh.tryptobackend.ranking.domain.vo.KrwConversionRate;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.parameters.JobParameters;
 import org.springframework.batch.core.job.parameters.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -38,12 +34,9 @@ public class SnapshotBatchStepDefinition {
     private final JobRepository jobRepository;
     private final PortfolioSnapshotJpaRepository snapshotRepository;
     private final SnapshotDetailJpaRepository detailRepository;
-    private final MockActiveRoundQueryAdapter activeRoundQueryAdapter;
-    private final MockWalletSnapshotAdapter walletSnapshotAdapter;
-    private final MockExchangeInfoQueryAdapter exchangeInfoQueryAdapter;
-    private final MockSnapshotHoldingQueryAdapter holdingQueryAdapter;
-    private final MockBalanceQueryAdapter balanceQueryAdapter;
-    private final MockEmergencyFundingSnapshotAdapter emergencyFundingAdapter;
+    private final MockHoldingAdapter holdingAdapter;
+    private final MockLivePriceAdapter livePriceAdapter;
+    private final JdbcTemplate jdbcTemplate;
 
     private List<PortfolioSnapshotJpaEntity> savedSnapshots;
 
@@ -52,35 +45,31 @@ public class SnapshotBatchStepDefinition {
                                         JobRepository jobRepository,
                                         PortfolioSnapshotJpaRepository snapshotRepository,
                                         SnapshotDetailJpaRepository detailRepository,
-                                        MockActiveRoundQueryAdapter activeRoundQueryAdapter,
-                                        MockWalletSnapshotAdapter walletSnapshotAdapter,
-                                        MockExchangeInfoQueryAdapter exchangeInfoQueryAdapter,
-                                        MockSnapshotHoldingQueryAdapter holdingQueryAdapter,
-                                        MockBalanceQueryAdapter balanceQueryAdapter,
-                                        MockEmergencyFundingSnapshotAdapter emergencyFundingAdapter) {
+                                        MockHoldingAdapter holdingAdapter,
+                                        MockLivePriceAdapter livePriceAdapter,
+                                        JdbcTemplate jdbcTemplate) {
         this.jobOperator = jobOperator;
         this.snapshotJob = snapshotJob;
         this.jobRepository = jobRepository;
         this.snapshotRepository = snapshotRepository;
         this.detailRepository = detailRepository;
-        this.activeRoundQueryAdapter = activeRoundQueryAdapter;
-        this.walletSnapshotAdapter = walletSnapshotAdapter;
-        this.exchangeInfoQueryAdapter = exchangeInfoQueryAdapter;
-        this.holdingQueryAdapter = holdingQueryAdapter;
-        this.balanceQueryAdapter = balanceQueryAdapter;
-        this.emergencyFundingAdapter = emergencyFundingAdapter;
+        this.holdingAdapter = holdingAdapter;
+        this.livePriceAdapter = livePriceAdapter;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Given("스냅샷 배치 데이터를 초기화한다")
     public void 스냅샷_배치_데이터를_초기화한다() {
         detailRepository.deleteAllInBatch();
         snapshotRepository.deleteAllInBatch();
-        activeRoundQueryAdapter.clear();
-        walletSnapshotAdapter.clear();
-        exchangeInfoQueryAdapter.clear();
-        holdingQueryAdapter.clear();
-        balanceQueryAdapter.clear();
-        emergencyFundingAdapter.clear();
+        jdbcTemplate.update("DELETE FROM holding");
+        jdbcTemplate.update("DELETE FROM wallet_balance");
+        jdbcTemplate.update("DELETE FROM emergency_funding");
+        jdbcTemplate.update("DELETE FROM wallet WHERE round_id IN (SELECT round_id FROM investment_round WHERE status = 'ACTIVE')");
+        jdbcTemplate.update("DELETE FROM exchange_coin");
+        jdbcTemplate.update("DELETE FROM exchange_market");
+        holdingAdapter.clear();
+        livePriceAdapter.clear();
     }
 
     @Given("스냅샷용 활성 라운드가 존재한다")
@@ -92,8 +81,8 @@ public class SnapshotBatchStepDefinition {
             Long walletId = Long.valueOf(row.get("walletId"));
             BigDecimal seedAmount = new BigDecimal(row.get("seedAmount"));
 
-            activeRoundQueryAdapter.addActiveRound(roundId, userId, LocalDateTime.of(2026, 1, 1, 0, 0));
-            walletSnapshotAdapter.addWallet(walletId, roundId, exchangeId, seedAmount);
+            ensureActiveRound(roundId, userId);
+            insertWallet(walletId, roundId, exchangeId, seedAmount);
         }
     }
 
@@ -102,8 +91,9 @@ public class SnapshotBatchStepDefinition {
         for (Map<String, String> row : table.asMaps()) {
             Long exchangeId = Long.valueOf(row.get("exchangeId"));
             Long baseCurrencyCoinId = Long.valueOf(row.get("baseCurrencyCoinId"));
-            KrwConversionRate rate = KrwConversionRate.valueOf(row.get("conversionRate"));
-            exchangeInfoQueryAdapter.addExchange(exchangeId, baseCurrencyCoinId, rate);
+            String conversionRate = row.get("conversionRate");
+            String marketType = "DOMESTIC".equals(conversionRate) ? "DOMESTIC" : "OVERSEAS";
+            insertExchange(exchangeId, baseCurrencyCoinId, marketType);
         }
     }
 
@@ -113,7 +103,9 @@ public class SnapshotBatchStepDefinition {
             Long walletId = Long.valueOf(row.get("walletId"));
             Long coinId = Long.valueOf(row.get("coinId"));
             BigDecimal balance = new BigDecimal(row.get("balance"));
-            balanceQueryAdapter.setBalance(walletId, coinId, balance);
+            jdbcTemplate.update(
+                "INSERT INTO wallet_balance (wallet_id, coin_id, available, locked) VALUES (?, ?, ?, 0)",
+                walletId, coinId, balance);
         }
     }
 
@@ -126,7 +118,15 @@ public class SnapshotBatchStepDefinition {
             BigDecimal avgBuyPrice = new BigDecimal(row.get("avgBuyPrice"));
             BigDecimal quantity = new BigDecimal(row.get("quantity"));
             BigDecimal currentPrice = new BigDecimal(row.get("currentPrice"));
-            holdingQueryAdapter.addHolding(walletId, exchangeId, coinId, avgBuyPrice, quantity, currentPrice);
+
+            holdingAdapter.setHolding(walletId, coinId, avgBuyPrice, quantity, 0);
+
+            Long exchangeCoinId = exchangeId * 100 + coinId;
+            jdbcTemplate.update(
+                "INSERT IGNORE INTO exchange_coin (exchange_coin_id, exchange_id, coin_id) VALUES (?, ?, ?)",
+                exchangeCoinId, exchangeId, coinId);
+
+            livePriceAdapter.setPrice(exchangeCoinId, currentPrice);
         }
     }
 
@@ -135,7 +135,10 @@ public class SnapshotBatchStepDefinition {
         for (Map<String, String> row : table.asMaps()) {
             Long roundId = Long.valueOf(row.get("roundId"));
             Long exchangeId = Long.valueOf(row.get("exchangeId"));
-            emergencyFundingAdapter.setFunding(roundId, exchangeId, new BigDecimal(amount));
+            jdbcTemplate.update(
+                "INSERT INTO emergency_funding (round_id, exchange_id, amount, idempotency_key, created_at) " +
+                    "VALUES (?, ?, ?, ?, ?)",
+                roundId, exchangeId, new BigDecimal(amount), java.util.UUID.randomUUID().toString(), LocalDateTime.now());
         }
     }
 
@@ -196,5 +199,35 @@ public class SnapshotBatchStepDefinition {
         List<SnapshotDetailJpaEntity> details = detailRepository.findBySnapshotId(snapshotId);
         assertThat(details.get(0).getProfitRate())
             .isEqualByComparingTo(new BigDecimal(String.valueOf(profitRate)));
+    }
+
+    private void ensureActiveRound(Long roundId, Long userId) {
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM investment_round WHERE round_id = ?", Integer.class, roundId);
+        if (count == null || count == 0) {
+            jdbcTemplate.update(
+                "INSERT INTO investment_round (round_id, version, user_id, round_number, initial_seed, " +
+                    "emergency_funding_limit, emergency_charge_count, status, started_at) " +
+                    "VALUES (?, 0, ?, 1, 10000000, 1000000, 0, 'ACTIVE', ?)",
+                roundId, userId, LocalDateTime.of(2026, 1, 1, 0, 0));
+        }
+    }
+
+    private void insertWallet(Long walletId, Long roundId, Long exchangeId, BigDecimal seedAmount) {
+        jdbcTemplate.update(
+            "INSERT INTO wallet (wallet_id, round_id, exchange_id, seed_amount, created_at) " +
+                "VALUES (?, ?, ?, ?, ?)",
+            walletId, roundId, exchangeId, seedAmount, LocalDateTime.now());
+    }
+
+    private void insertExchange(Long exchangeId, Long baseCurrencyCoinId, String marketType) {
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM exchange_market WHERE exchange_id = ?", Integer.class, exchangeId);
+        if (count == null || count == 0) {
+            jdbcTemplate.update(
+                "INSERT INTO exchange_market (exchange_id, name, market_type, base_currency_coin_id, fee_rate) " +
+                    "VALUES (?, ?, ?, ?, 0.0005)",
+                exchangeId, "Exchange-" + exchangeId, marketType, baseCurrencyCoinId);
+        }
     }
 }

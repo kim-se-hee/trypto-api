@@ -4,13 +4,13 @@ import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import ksh.tryptobackend.acceptance.mock.MockTransferWalletAdapter;
 import ksh.tryptobackend.acceptance.testclient.CommonApiClient;
 import ksh.tryptobackend.transfer.adapter.out.entity.TransferJpaEntity;
 import ksh.tryptobackend.transfer.adapter.out.repository.TransferJpaRepository;
 import ksh.tryptobackend.transfer.domain.model.Transfer;
 import ksh.tryptobackend.transfer.domain.vo.TransferFailureReason;
 import ksh.tryptobackend.transfer.domain.vo.TransferStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,34 +26,36 @@ public class TransferHistoryStepDefinition {
     private static final Long WALLET_ID = 100L;
     private static final Long OTHER_WALLET_ID = 200L;
     private static final Long COIN_ID = 1L;
+    private static final Long EXCHANGE_ID = 1L;
 
     private final CommonApiClient apiClient;
-    private final MockTransferWalletAdapter transferWalletAdapter;
     private final TransferJpaRepository transferJpaRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     private Long walletId;
 
     public TransferHistoryStepDefinition(
         CommonApiClient apiClient,
-        MockTransferWalletAdapter transferWalletAdapter,
-        TransferJpaRepository transferJpaRepository
+        TransferJpaRepository transferJpaRepository,
+        JdbcTemplate jdbcTemplate
     ) {
         this.apiClient = apiClient;
-        this.transferWalletAdapter = transferWalletAdapter;
         this.transferJpaRepository = transferJpaRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Before("@transfer-history")
     public void setUp() {
         transferJpaRepository.deleteAllInBatch();
-        transferWalletAdapter.clear();
+        jdbcTemplate.update("DELETE FROM wallet WHERE wallet_id IN (?, ?)", WALLET_ID, OTHER_WALLET_ID);
+        jdbcTemplate.update("DELETE FROM investment_round WHERE round_id IN (?, ?)", WALLET_ID, OTHER_WALLET_ID);
         walletId = null;
     }
 
     @Given("송금 내역 조회용 지갑과 송금 데이터가 준비되어 있다")
     public void 송금_내역_조회용_지갑과_송금_데이터가_준비되어_있다() {
-        transferWalletAdapter.setOwnerUserId(WALLET_ID, USER_ID);
-        transferWalletAdapter.setOwnerUserId(OTHER_WALLET_ID, OTHER_USER_ID);
+        createWalletWithOwner(WALLET_ID, USER_ID);
+        createWalletWithOwner(OTHER_WALLET_ID, OTHER_USER_ID);
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -154,6 +156,19 @@ public class TransferHistoryStepDefinition {
             .expectBody().returnResult().getResponseBody();
         List<String> types = com.jayway.jsonpath.JsonPath.read(new String(body), "$.data.content[*].type");
         assertThat(types).isNotEmpty().allMatch(type -> type.equals(expectedType));
+    }
+
+    private void createWalletWithOwner(Long walletIdToCreate, Long userId) {
+        Long roundId = walletIdToCreate;
+        jdbcTemplate.update(
+            "INSERT INTO investment_round (round_id, version, user_id, round_number, initial_seed, " +
+                "emergency_funding_limit, emergency_charge_count, status, started_at) " +
+                "VALUES (?, 0, ?, 1, 10000000, 1000000, 0, 'ACTIVE', ?)",
+            roundId, userId, LocalDateTime.now());
+        jdbcTemplate.update(
+            "INSERT INTO wallet (wallet_id, round_id, exchange_id, seed_amount, created_at) " +
+                "VALUES (?, ?, ?, 10000000, ?)",
+            walletIdToCreate, roundId, EXCHANGE_ID, LocalDateTime.now());
     }
 
     private void saveTransfer(Transfer transfer) {
