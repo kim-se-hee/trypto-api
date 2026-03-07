@@ -1,8 +1,8 @@
 package ksh.tryptobackend.batch.snapshot;
 
-import ksh.tryptobackend.ranking.application.port.in.TakePortfolioSnapshotUseCase;
-import ksh.tryptobackend.ranking.application.port.in.dto.command.TakeSnapshotCommand;
-import ksh.tryptobackend.ranking.application.port.in.dto.result.SnapshotResult;
+import ksh.tryptobackend.portfolio.application.port.in.TakePortfolioSnapshotUseCase;
+import ksh.tryptobackend.portfolio.application.port.in.dto.command.TakeSnapshotCommand;
+import ksh.tryptobackend.portfolio.application.port.in.dto.result.SnapshotResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.infrastructure.item.ItemProcessor;

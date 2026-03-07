@@ -2,8 +2,8 @@ package ksh.tryptobackend.regretanalysis.adapter.out;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
-import ksh.tryptobackend.ranking.application.port.in.FindSnapshotsUseCase;
-import ksh.tryptobackend.ranking.application.port.in.dto.result.SnapshotInfoResult;
+import ksh.tryptobackend.portfolio.application.port.in.FindSnapshotsUseCase;
+import ksh.tryptobackend.portfolio.application.port.in.dto.result.SnapshotInfoResult;
 import ksh.tryptobackend.regretanalysis.application.port.out.AssetSnapshotQueryPort;
 import ksh.tryptobackend.regretanalysis.domain.model.AssetSnapshot;
 import lombok.RequiredArgsConstructor;

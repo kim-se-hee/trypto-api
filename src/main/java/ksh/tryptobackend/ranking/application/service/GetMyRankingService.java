@@ -5,7 +5,7 @@ import ksh.tryptobackend.ranking.application.port.in.dto.query.GetMyRankingQuery
 import ksh.tryptobackend.ranking.application.port.in.dto.result.MyRankingResult;
 import ksh.tryptobackend.ranking.application.port.out.RankingQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.RankingWithUserProjection;
-import ksh.tryptobackend.ranking.domain.vo.ProfitRate;
+import ksh.tryptobackend.common.domain.vo.ProfitRate;
 import ksh.tryptobackend.ranking.domain.vo.RankingPeriod;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

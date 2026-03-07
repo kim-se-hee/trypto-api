@@ -1,5 +1,7 @@
 package ksh.tryptobackend.ranking.domain.vo;
 
+import ksh.tryptobackend.common.domain.vo.ProfitRate;
+
 import java.time.LocalDateTime;
 import java.util.Comparator;
 

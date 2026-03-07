@@ -1,9 +1,9 @@
 package ksh.tryptobackend.batch.snapshot;
 
-import ksh.tryptobackend.ranking.application.port.out.ActiveRoundQueryPort;
-import ksh.tryptobackend.ranking.application.port.out.WalletSnapshotQueryPort;
-import ksh.tryptobackend.ranking.domain.vo.ActiveRound;
-import ksh.tryptobackend.ranking.domain.vo.WalletSnapshot;
+import ksh.tryptobackend.portfolio.application.port.out.ActiveRoundQueryPort;
+import ksh.tryptobackend.portfolio.application.port.out.WalletSnapshotQueryPort;
+import ksh.tryptobackend.portfolio.domain.vo.ActiveRound;
+import ksh.tryptobackend.portfolio.domain.vo.WalletSnapshot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.infrastructure.item.ItemReader;
 import org.springframework.batch.core.configuration.annotation.StepScope;

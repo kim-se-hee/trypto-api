@@ -1,7 +1,7 @@
 package ksh.tryptobackend.batch.snapshot;
 
 import ksh.tryptobackend.batch.common.LoggingSkipListener;
-import ksh.tryptobackend.ranking.application.port.in.dto.result.SnapshotResult;
+import ksh.tryptobackend.portfolio.application.port.in.dto.result.SnapshotResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;

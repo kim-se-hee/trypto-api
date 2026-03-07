@@ -6,12 +6,12 @@ import ksh.tryptobackend.ranking.application.port.in.GetRankerPortfolioUseCase;
 import ksh.tryptobackend.ranking.application.port.in.dto.query.GetRankerPortfolioQuery;
 import ksh.tryptobackend.ranking.application.port.in.dto.result.PortfolioHoldingResult;
 import ksh.tryptobackend.ranking.application.port.in.dto.result.RankerPortfolioResult;
-import ksh.tryptobackend.ranking.application.port.out.ActiveRoundQueryPort;
-import ksh.tryptobackend.ranking.application.port.out.PortfolioSnapshotQueryPort;
+import ksh.tryptobackend.ranking.application.port.out.RankerHoldingQueryPort;
+import ksh.tryptobackend.ranking.application.port.out.RankerRoundQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.RankingQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.RankingWithUserProjection;
 import ksh.tryptobackend.ranking.domain.model.Ranking;
-import ksh.tryptobackend.ranking.domain.vo.ActiveRound;
+import ksh.tryptobackend.ranking.domain.vo.RankerHolding;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,8 +24,8 @@ import java.util.List;
 public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
 
     private final RankingQueryPort rankingQueryPort;
-    private final ActiveRoundQueryPort activeRoundQueryPort;
-    private final PortfolioSnapshotQueryPort portfolioSnapshotQueryPort;
+    private final RankerRoundQueryPort rankerRoundQueryPort;
+    private final RankerHoldingQueryPort rankerHoldingQueryPort;
 
     @Override
     @Transactional(readOnly = true)
@@ -34,8 +34,8 @@ public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
         RankingWithUserProjection ranking = findRanking(query, latestDate);
         validateTop100(ranking);
         validatePortfolioPublic(ranking);
-        ActiveRound round = findActiveRound(query.userId());
-        List<PortfolioHoldingResult> holdings = findHoldings(query.userId(), round.roundId());
+        Long roundId = findActiveRoundId(query.userId());
+        List<PortfolioHoldingResult> holdings = findHoldings(query.userId(), roundId);
         return buildResult(ranking, holdings);
     }
 
@@ -62,15 +62,22 @@ public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
         }
     }
 
-    private ActiveRound findActiveRound(Long userId) {
-        return activeRoundQueryPort.findActiveRoundByUserId(userId)
+    private Long findActiveRoundId(Long userId) {
+        return rankerRoundQueryPort.findActiveRoundIdByUserId(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.ROUND_NOT_ACTIVE));
     }
 
     private List<PortfolioHoldingResult> findHoldings(Long userId, Long roundId) {
-        return portfolioSnapshotQueryPort.findLatestSnapshotDetails(userId, roundId).stream()
-            .map(p -> new PortfolioHoldingResult(p.coinSymbol(), p.exchangeName(), p.assetRatio(), p.profitRate()))
+        return rankerHoldingQueryPort.findLatestHoldings(userId, roundId).stream()
+            .map(this::toResult)
             .toList();
+    }
+
+    private PortfolioHoldingResult toResult(RankerHolding holding) {
+        return new PortfolioHoldingResult(
+            holding.coinSymbol(), holding.exchangeName(),
+            holding.assetRatio(), holding.profitRate()
+        );
     }
 
     private RankerPortfolioResult buildResult(RankingWithUserProjection ranking,

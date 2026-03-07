@@ -1,6 +1,6 @@
 package ksh.tryptobackend.ranking.domain.model;
 
-import ksh.tryptobackend.ranking.domain.vo.ProfitRate;
+import ksh.tryptobackend.common.domain.vo.ProfitRate;
 import ksh.tryptobackend.ranking.domain.vo.RankingPeriod;
 import lombok.Builder;
 import lombok.Getter;

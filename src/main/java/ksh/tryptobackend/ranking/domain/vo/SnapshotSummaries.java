@@ -1,5 +1,7 @@
 package ksh.tryptobackend.ranking.domain.vo;
 
+import ksh.tryptobackend.common.domain.vo.ProfitRate;
+
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
