@@ -4,8 +4,8 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import ksh.tryptobackend.trading.adapter.out.entity.QOrderJpaEntity;
 import ksh.tryptobackend.trading.adapter.out.entity.QRuleViolationJpaEntity;
-import ksh.tryptobackend.trading.application.port.out.RecordedViolationQueryPort;
-import ksh.tryptobackend.trading.domain.vo.RecordedViolation;
+import ksh.tryptobackend.trading.application.port.out.RuleViolationQueryPort;
+import ksh.tryptobackend.trading.domain.vo.RuleViolationRef;
 import ksh.tryptobackend.wallet.adapter.out.entity.QWalletJpaEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class RecordedViolationQueryAdapter implements RecordedViolationQueryPort {
+public class RuleViolationQueryAdapter implements RuleViolationQueryPort {
 
     private final JPAQueryFactory queryFactory;
 
@@ -24,13 +24,13 @@ public class RecordedViolationQueryAdapter implements RecordedViolationQueryPort
     private static final QWalletJpaEntity wallet = QWalletJpaEntity.walletJpaEntity;
 
     @Override
-    public List<RecordedViolation> findByRuleIdsAndExchangeId(List<Long> ruleIds, Long exchangeId) {
+    public List<RuleViolationRef> findByRuleIdsAndExchangeId(List<Long> ruleIds, Long exchangeId) {
         if (ruleIds.isEmpty()) {
             return Collections.emptyList();
         }
 
         return queryFactory
-            .select(Projections.constructor(RecordedViolation.class,
+            .select(Projections.constructor(RuleViolationRef.class,
                 violation.id,
                 violation.orderId,
                 violation.ruleId,
