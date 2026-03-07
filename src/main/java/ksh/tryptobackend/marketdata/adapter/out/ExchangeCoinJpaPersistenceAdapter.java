@@ -3,6 +3,7 @@ package ksh.tryptobackend.marketdata.adapter.out;
 import ksh.tryptobackend.marketdata.adapter.out.entity.ExchangeCoinJpaEntity;
 import ksh.tryptobackend.marketdata.adapter.out.repository.ExchangeCoinJpaRepository;
 import ksh.tryptobackend.marketdata.application.port.out.ExchangeCoinQueryPort;
+import ksh.tryptobackend.marketdata.application.port.out.dto.ExchangeCoinMapping;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,12 @@ import java.util.stream.Collectors;
 public class ExchangeCoinJpaPersistenceAdapter implements ExchangeCoinQueryPort {
 
     private final ExchangeCoinJpaRepository repository;
+
+    @Override
+    public Optional<ExchangeCoinMapping> findById(Long exchangeCoinId) {
+        return repository.findById(exchangeCoinId)
+            .map(e -> new ExchangeCoinMapping(e.getId(), e.getExchangeId(), e.getCoinId()));
+    }
 
     @Override
     public Optional<Long> findExchangeCoinId(Long exchangeId, Long coinId) {

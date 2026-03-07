@@ -21,6 +21,7 @@ public class Exchange {
     private final String name;
     private final ExchangeMarketType marketType;
     private final Long baseCurrencyCoinId;
+    private final BigDecimal feeRate;
 
     public void validateSeedAmount(BigDecimal amount) {
         if (amount.compareTo(ZERO) < 0) {

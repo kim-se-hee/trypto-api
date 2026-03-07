@@ -12,6 +12,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "exchange_market")
 @Getter
@@ -32,11 +34,16 @@ public class ExchangeJpaEntity {
     @Column(name = "base_currency_coin_id", nullable = false)
     private Long baseCurrencyCoinId;
 
-    public ExchangeJpaEntity(Long id, String name, ExchangeMarketType marketType, Long baseCurrencyCoinId) {
+    @Column(name = "fee_rate", nullable = false, precision = 10, scale = 6)
+    private BigDecimal feeRate;
+
+    public ExchangeJpaEntity(Long id, String name, ExchangeMarketType marketType,
+                              Long baseCurrencyCoinId, BigDecimal feeRate) {
         this.id = id;
         this.name = name;
         this.marketType = marketType;
         this.baseCurrencyCoinId = baseCurrencyCoinId;
+        this.feeRate = feeRate;
     }
 
     public Exchange toDomain() {
@@ -45,6 +52,7 @@ public class ExchangeJpaEntity {
             .name(name)
             .marketType(marketType)
             .baseCurrencyCoinId(baseCurrencyCoinId)
+            .feeRate(feeRate)
             .build();
     }
 }
