@@ -16,7 +16,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,6 +30,7 @@ public class CalculateRankingService implements CalculateRankingUseCase {
     private final EligibleRoundQueryPort eligibleRoundQueryPort;
     private final SnapshotAggregationPort snapshotAggregationPort;
     private final RankingWritePort rankingWritePort;
+    private final Clock clock;
 
     @Override
     public void calculateRanking(CalculateRankingCommand command) {
@@ -43,7 +46,7 @@ public class CalculateRankingService implements CalculateRankingUseCase {
         for (RankingPeriod period : RankingPeriod.values()) {
             SnapshotSummaries comparison = loadSummariesOf(snapshotDate.minusDays(period.getWindowDays()));
             RankingCandidates candidates = eligibleRounds.toCandidates(todaySummaries, comparison);
-            List<Ranking> rankings = candidates.toRankings(period, snapshotDate);
+            List<Ranking> rankings = candidates.toRankings(period, snapshotDate, LocalDateTime.now(clock));
             rankingWritePort.replaceByPeriodAndDate(rankings, period, snapshotDate);
         }
     }

@@ -26,7 +26,7 @@ public class Ranking {
 
     public static Ranking create(Long userId, Long roundId, RankingPeriod period,
                                   int rank, ProfitRate profitRate, int tradeCount,
-                                  LocalDate referenceDate) {
+                                  LocalDate referenceDate, LocalDateTime createdAt) {
         return Ranking.builder()
             .userId(userId)
             .roundId(roundId)
@@ -35,7 +35,7 @@ public class Ranking {
             .profitRate(profitRate)
             .tradeCount(tradeCount)
             .referenceDate(referenceDate)
-            .createdAt(LocalDateTime.now())
+            .createdAt(createdAt)
             .build();
     }
 
