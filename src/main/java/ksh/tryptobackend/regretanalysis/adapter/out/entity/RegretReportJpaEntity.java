@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import ksh.tryptobackend.regretanalysis.domain.model.RegretReport;
@@ -62,10 +63,12 @@ public class RegretReportJpaEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "report_id")
     private List<RuleImpactJpaEntity> ruleImpacts = new ArrayList<>();
 
-    @OneToMany(mappedBy = "report", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "report_id")
     private List<ViolationDetailJpaEntity> violationDetails = new ArrayList<>();
 
     public static RegretReportJpaEntity fromDomain(RegretReport report) {
@@ -84,11 +87,11 @@ public class RegretReportJpaEntity {
 
         if (report.getRuleImpacts() != null) {
             report.getRuleImpacts().forEach(ri ->
-                entity.ruleImpacts.add(RuleImpactJpaEntity.fromDomain(ri, entity)));
+                entity.ruleImpacts.add(RuleImpactJpaEntity.fromDomain(ri)));
         }
         if (report.getViolationDetails() != null) {
             report.getViolationDetails().toList().forEach(vd ->
-                entity.violationDetails.add(ViolationDetailJpaEntity.fromDomain(vd, entity)));
+                entity.violationDetails.add(ViolationDetailJpaEntity.fromDomain(vd)));
         }
 
         return entity;

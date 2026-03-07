@@ -2,12 +2,9 @@ package ksh.tryptobackend.regretanalysis.adapter.out.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetail;
 import lombok.AccessLevel;
@@ -28,9 +25,8 @@ public class ViolationDetailJpaEntity {
     @Column(name = "violation_detail_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "report_id", nullable = false)
-    private RegretReportJpaEntity report;
+    @Column(name = "report_id", insertable = false, updatable = false)
+    private Long reportId;
 
     @Column(name = "order_id")
     private Long orderId;
@@ -50,10 +46,9 @@ public class ViolationDetailJpaEntity {
     @Column(name = "occurred_at", nullable = false)
     private LocalDateTime occurredAt;
 
-    static ViolationDetailJpaEntity fromDomain(ViolationDetail detail, RegretReportJpaEntity report) {
+    static ViolationDetailJpaEntity fromDomain(ViolationDetail detail) {
         ViolationDetailJpaEntity entity = new ViolationDetailJpaEntity();
         entity.id = detail.getViolationDetailId();
-        entity.report = report;
         entity.orderId = detail.getOrderId();
         entity.ruleId = detail.getRuleId();
         entity.coinId = detail.getCoinId();
@@ -65,7 +60,7 @@ public class ViolationDetailJpaEntity {
 
     public ViolationDetail toDomain() {
         return ViolationDetail.reconstitute(
-            id, report.getId(), orderId, ruleId,
+            id, reportId, orderId, ruleId,
             coinId, lossAmount, profitLoss, occurredAt
         );
     }

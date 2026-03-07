@@ -52,9 +52,10 @@ public class RegretReportJpaPersistenceAdapter implements RegretReportPersistenc
     public List<ViolationDetail> findViolationDetailsByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
         List<ViolationDetailJpaEntity> entities = queryFactory
             .selectFrom(violationDetail)
+            .join(report).on(violationDetail.reportId.eq(report.id))
             .where(
-                violationDetail.report.roundId.eq(roundId),
-                violationDetail.report.exchangeId.eq(exchangeId)
+                report.roundId.eq(roundId),
+                report.exchangeId.eq(exchangeId)
             )
             .fetch();
 
