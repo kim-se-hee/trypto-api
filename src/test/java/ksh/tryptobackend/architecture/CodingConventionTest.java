@@ -80,11 +80,11 @@ class CodingConventionTest {
     }
 
     @ArchTest
-    void services_should_implement_usecase(JavaClasses classes) {
+    void services_should_implement_exactly_one_usecase(JavaClasses classes) {
         classes()
             .that().resideInAnyPackage(allContextPackages(SERVICE))
-            .should(implementAtLeastOneUseCase())
-            .as("Services should implement at least one UseCase")
+            .should(implementExactlyOneUseCase())
+            .as("Services should implement exactly one UseCase")
             .check(classes);
     }
 
@@ -97,16 +97,22 @@ class CodingConventionTest {
             .check(classes);
     }
 
-    private static ArchCondition<JavaClass> implementAtLeastOneUseCase() {
-        return new ArchCondition<>("implement at least one UseCase interface") {
+    private static ArchCondition<JavaClass> implementExactlyOneUseCase() {
+        return new ArchCondition<>("implement exactly one UseCase interface") {
             @Override
             public void check(JavaClass javaClass, ConditionEvents events) {
-                boolean implementsUseCase = javaClass.getAllRawInterfaces().stream()
-                    .anyMatch(i -> i.getSimpleName().endsWith("UseCase"));
-                if (!implementsUseCase) {
+                long useCaseCount = javaClass.getAllRawInterfaces().stream()
+                    .filter(i -> i.getSimpleName().endsWith("UseCase"))
+                    .count();
+                if (useCaseCount == 0) {
                     events.add(SimpleConditionEvent.violated(
                         javaClass,
                         javaClass.getFullName() + " does not implement any UseCase interface"));
+                } else if (useCaseCount > 1) {
+                    events.add(SimpleConditionEvent.violated(
+                        javaClass,
+                        javaClass.getFullName() + " implements " + useCaseCount
+                            + " UseCase interfaces, but should implement exactly one"));
                 }
             }
         };

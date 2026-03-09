@@ -11,17 +11,9 @@ import static ksh.tryptobackend.architecture.ArchitectureConstants.*;
 @AnalyzeClasses(packages = "ksh.tryptobackend", importOptions = ImportOption.DoNotIncludeTests.class)
 class BoundedContextIsolationTest {
 
-    // TODO: RuleViolationQueryAdapter가 wallet의 QWalletJpaEntity를 직접 사용 중 — 크로스 컨텍스트 어댑터로 분리 필요
-    private static final String RULE_VIOLATION_QUERY_ADAPTER =
-        "ksh.tryptobackend.trading.adapter.out.RuleViolationQueryAdapter";
-
-    // TODO: StartRoundService가 wallet의 WalletCommandPort(Output Port)를 직접 사용 중 — Input Port(UseCase)로 전환 필요
-    private static final String START_ROUND_SERVICE =
-        "ksh.tryptobackend.investmentround.application.service.StartRoundService";
-
     @ArchTest
     void trading_isolation(JavaClasses classes) {
-        assertContextIsolation("trading", classes, RULE_VIOLATION_QUERY_ADAPTER);
+        assertContextIsolation("trading", classes);
     }
 
     @ArchTest
@@ -36,7 +28,7 @@ class BoundedContextIsolationTest {
 
     @ArchTest
     void investmentround_isolation(JavaClasses classes) {
-        assertContextIsolation("investmentround", classes, START_ROUND_SERVICE);
+        assertContextIsolation("investmentround", classes);
     }
 
     @ArchTest
@@ -70,27 +62,22 @@ class BoundedContextIsolationTest {
     }
 
     @ArchTest
-    void batch_should_not_depend_on_context_adapters(JavaClasses classes) {
+    void batch_should_only_depend_on_context_use_cases(JavaClasses classes) {
         noClasses()
             .that().resideInAPackage(BATCH + "..")
             .should().dependOnClassesThat()
-            .resideInAnyPackage(allContextPackages(ADAPTER))
-            .as("Batch should not depend on adapter layer of bounded contexts")
+            .resideInAnyPackage(allContextForbiddenPackages())
+            .as("Batch should only depend on UseCase (port.in) of bounded contexts")
             .check(classes);
     }
 
-    private void assertContextIsolation(String context, JavaClasses classes, String... excludedClasses) {
+    private void assertContextIsolation(String context, JavaClasses classes) {
         for (String other : BOUNDED_CONTEXTS) {
             if (other.equals(context)) continue;
 
-            var rule = noClasses()
-                .that().resideInAPackage(contextPkg(context, ".."));
-
-            for (String excluded : excludedClasses) {
-                rule = rule.and().doNotHaveFullyQualifiedName(excluded);
-            }
-
-            rule.should().dependOnClassesThat()
+            noClasses()
+                .that().resideInAPackage(contextPkg(context, ".."))
+                .should().dependOnClassesThat()
                 .resideInAnyPackage(forbiddenPackagesOf(other))
                 .as(context + " should not access forbidden packages of " + other)
                 .check(classes);

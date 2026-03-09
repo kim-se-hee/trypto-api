@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.web.bind.annotation.RestController;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static ksh.tryptobackend.architecture.ArchitectureConstants.*;
 
 @AnalyzeClasses(packages = "ksh.tryptobackend", importOptions = ImportOption.DoNotIncludeTests.class)
@@ -69,6 +70,14 @@ class PackagePlacementTest {
             .and().areInterfaces()
             .should().resideInAnyPackage(allContextDirectPackages(PORT_OUT))
             .as("Port interfaces should reside in application.port.out")
+            .check(classes);
+    }
+
+    @ArchTest
+    void no_classes_should_reside_directly_in_domain_root(JavaClasses classes) {
+        noClasses()
+            .should().resideInAnyPackage(allContextDirectPackages(".domain"))
+            .as("Domain classes should reside in domain.model or domain.vo, not in domain root")
             .check(classes);
     }
 }

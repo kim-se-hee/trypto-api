@@ -6,6 +6,11 @@ import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.lang.ArchCondition;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static ksh.tryptobackend.architecture.ArchitectureConstants.*;
 
@@ -129,5 +134,85 @@ class NamingConventionTest {
             .should().haveSimpleNameEndingWith("Response")
             .as("Response DTOs should end with 'Response'")
             .check(classes);
+    }
+
+    @ArchTest
+    void output_ports_should_end_with_QueryPort_or_CommandPort(JavaClasses classes) {
+        classes()
+            .that().resideInAnyPackage(allContextDirectPackages(PORT_OUT))
+            .and().areInterfaces()
+            .should(endWithQueryPortOrCommandPort())
+            .as("Output Port interfaces should end with 'QueryPort' or 'CommandPort'")
+            .check(classes);
+    }
+
+    @ArchTest
+    void services_should_match_usecase_naming(JavaClasses classes) {
+        classes()
+            .that().resideInAnyPackage(allContextPackages(SERVICE))
+            .should(matchUseCaseNaming())
+            .as("Service name should be UseCase name with 'UseCase' replaced by 'Service'")
+            .check(classes);
+    }
+
+    @ArchTest
+    void adapters_should_match_port_naming(JavaClasses classes) {
+        classes()
+            .that().resideInAnyPackage(allContextDirectPackages(".adapter.out"))
+            .and().areNotInterfaces()
+            .and().areTopLevelClasses()
+            .should(matchPortNaming())
+            .as("Adapter name should be Port name with 'Port' replaced by 'Adapter'")
+            .check(classes);
+    }
+
+    private static ArchCondition<JavaClass> endWithQueryPortOrCommandPort() {
+        return new ArchCondition<>("end with 'QueryPort' or 'CommandPort'") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                String name = javaClass.getSimpleName();
+                if (!name.endsWith("QueryPort") && !name.endsWith("CommandPort")) {
+                    events.add(SimpleConditionEvent.violated(javaClass,
+                        name + " should end with 'QueryPort' or 'CommandPort'"));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> matchUseCaseNaming() {
+        return new ArchCondition<>("have name matching implemented UseCase") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                javaClass.getAllRawInterfaces().stream()
+                    .filter(i -> i.getSimpleName().endsWith("UseCase"))
+                    .forEach(useCase -> {
+                        String expected = useCase.getSimpleName().replace("UseCase", "Service");
+                        if (!javaClass.getSimpleName().equals(expected)) {
+                            events.add(SimpleConditionEvent.violated(javaClass,
+                                javaClass.getSimpleName() + " implements " + useCase.getSimpleName()
+                                    + " but should be named " + expected));
+                        }
+                    });
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> matchPortNaming() {
+        return new ArchCondition<>("have name matching implemented Port") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                javaClass.getAllRawInterfaces().stream()
+                    .filter(i -> i.getSimpleName().endsWith("Port"))
+                    .forEach(port -> {
+                        String portName = port.getSimpleName();
+                        String expected = portName.substring(0, portName.length() - 4) + "Adapter";
+                        if (!javaClass.getSimpleName().equals(expected)) {
+                            events.add(SimpleConditionEvent.violated(javaClass,
+                                javaClass.getSimpleName() + " implements " + portName
+                                    + " but should be named " + expected));
+                        }
+                    });
+            }
+        };
     }
 }
