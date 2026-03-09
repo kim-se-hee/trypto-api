@@ -164,7 +164,9 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 - 쓰기 작업에 `@Transactional`을 선언한다
 - 생성 시 검증은 도메인 모델이나 VO의 팩토리 메서드(`create`, `of` 등)에서 수행한다. 서비스에서 검증 후 생성하지 않는다
 - 컬렉션에 대한 검증이나 계산(`stream`으로 합산, 중복 체크 등)은 일급 컬렉션으로 캡슐화한다
-- 다른 바운디드 컨텍스트의 도메인 모델을 직접 import하지 않는다. Output Port를 통해 필요한 정보만 가져온다
+- 다른 바운디드 컨텍스트의 도메인 모델을 직접 import하지 않는다
+- 크로스 컨텍스트 의존: 서비스가 다른 컨텍스트의 UseCase(Input Port)를 직접 주입받아 Result DTO를 수신한다. 소비자 쪽에 크로스 컨텍스트 전용 Output Port나 Adapter를 만들지 않는다
+- 크로스 컨텍스트 Result DTO를 자기 컨텍스트의 도메인 VO로 변환하는 책임은 서비스에 있다
 
 **Domain**
 - 비즈니스 로직은 도메인 객체 안에 위치한다
@@ -188,16 +190,10 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 - `adapter/out/` 하위에 `entity/`, `repository/` 패키지로 분리한다. Adapter 클래스는 `adapter/out/`에 그대로 둔다
   - `adapter/out/entity/`: JPA 엔티티 클래스 (`{도메인}JpaEntity`)
   - `adapter/out/repository/`: Spring Data JPA 리포지토리 인터페이스 (`{도메인}JpaRepository`)
-  - `adapter/out/`: Persistence Adapter, 외부 API Adapter, 크로스 컨텍스트 Adapter
+  - `adapter/out/`: Persistence Adapter, 외부 API Adapter
 - Persistence 클래스명: `{도메인}JpaPersistenceAdapter` (예: `OrderJpaPersistenceAdapter`)
 - External API 클래스명: `{외부서비스}ApiAdapter` (예: `JupiterApiAdapter`)
-- 크로스 컨텍스트 Adapter 클래스명: `{소비하는 컨텍스트의 도메인 모델명}Adapter` (예: `ListedCoinAdapter`, `TradingVenueAdapter`)
-  - 다른 컨텍스트의 포트나 리포지토리에 직접 의존하지 않는다. 생산자 컨텍스트가 노출하는 UseCase(Input Port)를 주입받아 소비자의 Output Port를 구현한다
-  - 여러 컨텍스트의 정보가 필요하면 여러 UseCase를 주입받는다
-  - 타 모듈의 도메인 모델, Output Port, JPA 엔티티(Q 클래스)를 직접 의존하지 않는다
-  - 생산자의 Result DTO를 이용해 소비자의 도메인 모델(`domain/vo/`)을 조립하는 책임은 이 어댑터에 있다
-  - 소비자의 도메인 모델은 단순 데이터 홀더가 아닌 비즈니스 로직을 가질 수 있다 (예: `ExchangeSnapshot.convertToKrw()`)
-  - 소비하는 컨텍스트의 Port/VO는 자기 컨텍스트의 유비쿼터스 언어로 이름을 짓는다. 생산하는 컨텍스트의 이름을 그대로 복사하지 않는다 (예: marketdata의 `ExchangeCoin`을 trading에서 소비할 때 → `ListedCoinRef`)
+- Adapter는 자기 컨텍스트의 인프라(DB, 외부 API)만 담당한다. 크로스 컨텍스트 전용 Adapter를 만들지 않는다
 - 메서드명은 비즈니스 로직을 드러내지 않고 데이터 조회 조건을 표현한다 (예: `findByUserIdAndCoin()`, `saveOrder()`)
 - 조건이 2개 이하인 단순 조회는 Spring Data JPA 쿼리 메서드를 활용한다
 - 조건이 복잡하거나 동적 쿼리가 필요한 경우 반드시 QueryDSL을 사용한다
