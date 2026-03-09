@@ -64,4 +64,11 @@ public final class ArchitectureConstants {
             .map(ctx -> BASE + "." + ctx + "..")
             .toArray(String[]::new);
     }
+
+    static String[] otherContextPortInPackages(String context) {
+        return Arrays.stream(BOUNDED_CONTEXTS)
+            .filter(ctx -> !ctx.equals(context))
+            .map(ctx -> contextPkg(ctx, ".application.port.in.."))
+            .toArray(String[]::new);
+    }
 }

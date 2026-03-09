@@ -72,6 +72,8 @@ class BoundedContextIsolationTest {
     }
 
     private void assertContextIsolation(String context, JavaClasses classes) {
+        String[] otherPortInPackages = otherContextPortInPackages(context);
+
         for (String other : BOUNDED_CONTEXTS) {
             if (other.equals(context)) continue;
 
@@ -82,5 +84,13 @@ class BoundedContextIsolationTest {
                 .as(context + " should not access forbidden packages of " + other)
                 .check(classes);
         }
+
+        noClasses()
+            .that().resideInAPackage(contextPkg(context, ".."))
+            .and().resideOutsideOfPackage(contextPkg(context, SERVICE))
+            .should().dependOnClassesThat()
+            .resideInAnyPackage(otherPortInPackages)
+            .as(context + " non-service classes should not depend on other context UseCases")
+            .check(classes);
     }
 }

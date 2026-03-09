@@ -2,20 +2,24 @@ package ksh.tryptobackend.regretanalysis.application.service;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
+import ksh.tryptobackend.investmentround.application.port.in.FindRoundInfoUseCase;
+import ksh.tryptobackend.investmentround.application.port.in.dto.result.RoundInfoResult;
+import ksh.tryptobackend.marketdata.application.port.in.FindExchangeDetailUseCase;
+import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeDetailResult;
+import ksh.tryptobackend.portfolio.application.port.in.FindSnapshotsUseCase;
+import ksh.tryptobackend.portfolio.application.port.in.dto.result.SnapshotInfoResult;
 import ksh.tryptobackend.regretanalysis.application.port.in.GetRegretChartUseCase;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.query.GetRegretChartQuery;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.DailyComparison;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.ViolationMarkerPoint;
-import ksh.tryptobackend.regretanalysis.application.port.out.AnalysisExchangeQueryPort;
-import ksh.tryptobackend.regretanalysis.application.port.out.AnalysisRoundQueryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryQueryPort;
-import ksh.tryptobackend.regretanalysis.application.port.out.AssetSnapshotQueryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.RegretReportQueryPort;
 import ksh.tryptobackend.regretanalysis.domain.model.AssetSnapshot;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetail;
 import ksh.tryptobackend.regretanalysis.domain.vo.AnalysisExchange;
 import ksh.tryptobackend.regretanalysis.domain.vo.AnalysisRound;
+import ksh.tryptobackend.regretanalysis.domain.vo.AnalysisRoundStatus;
 import ksh.tryptobackend.regretanalysis.domain.vo.AssetTimeline;
 import ksh.tryptobackend.regretanalysis.domain.vo.BtcBenchmark;
 import ksh.tryptobackend.regretanalysis.domain.vo.BtcDailyPrice;
@@ -35,11 +39,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GetRegretChartService implements GetRegretChartUseCase {
 
-    private final AnalysisRoundQueryPort analysisRoundQueryPort;
+    private final FindRoundInfoUseCase findRoundInfoUseCase;
+    private final FindExchangeDetailUseCase findExchangeDetailUseCase;
+    private final FindSnapshotsUseCase findSnapshotsUseCase;
     private final RegretReportQueryPort regretReportQueryPort;
-    private final AssetSnapshotQueryPort assetSnapshotQueryPort;
     private final BtcPriceHistoryQueryPort btcPriceHistoryQueryPort;
-    private final AnalysisExchangeQueryPort analysisExchangeQueryPort;
 
     @Override
     @Transactional(readOnly = true)
@@ -65,10 +69,23 @@ public class GetRegretChartService implements GetRegretChartUseCase {
     }
 
     private void getRoundAndValidateOwner(GetRegretChartQuery query) {
-        AnalysisRound round = analysisRoundQueryPort.getRound(query.roundId());
+        AnalysisRound round = getRound(query.roundId());
         if (!round.userId().equals(query.userId())) {
             throw new CustomException(ErrorCode.ROUND_ACCESS_DENIED);
         }
+    }
+
+    private AnalysisRound getRound(Long roundId) {
+        RoundInfoResult result = findRoundInfoUseCase.findById(roundId)
+            .orElseThrow(() -> new CustomException(ErrorCode.ROUND_NOT_FOUND));
+        return toAnalysisRound(result);
+    }
+
+    private AnalysisRound toAnalysisRound(RoundInfoResult result) {
+        return new AnalysisRound(
+            result.roundId(), result.userId(), result.initialSeed(),
+            AnalysisRoundStatus.valueOf(result.status()),
+            result.startedAt(), result.endedAt());
     }
 
     private void validateReportExists(GetRegretChartQuery query) {
@@ -83,13 +100,25 @@ public class GetRegretChartService implements GetRegretChartUseCase {
     }
 
     private AnalysisExchange getExchangeInfo(Long exchangeId) {
-        return analysisExchangeQueryPort.getExchangeInfo(exchangeId);
+        ExchangeDetailResult result = findExchangeDetailUseCase.findExchangeDetail(exchangeId)
+            .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
+        String currency = result.domestic() ? "KRW" : "USD";
+        return new AnalysisExchange(exchangeId, result.name(), currency);
     }
 
     private AssetTimeline getAssetTimeline(GetRegretChartQuery query) {
-        List<AssetSnapshot> snapshots = assetSnapshotQueryPort.findAllByRoundIdAndExchangeId(
-            query.roundId(), query.exchangeId());
+        List<AssetSnapshot> snapshots = findSnapshotsUseCase.findAllByRoundIdAndExchangeId(
+                query.roundId(), query.exchangeId()).stream()
+            .map(this::toAssetSnapshot)
+            .toList();
         return AssetTimeline.of(snapshots);
+    }
+
+    private AssetSnapshot toAssetSnapshot(SnapshotInfoResult result) {
+        return AssetSnapshot.reconstitute(
+            result.snapshotId(), result.roundId(), result.exchangeId(),
+            result.totalAsset(), result.totalInvestment(),
+            result.totalProfitRate(), result.snapshotDate());
     }
 
     private BtcBenchmark buildBtcBenchmark(AssetTimeline timeline, String currency) {
