@@ -2,12 +2,16 @@ package ksh.tryptobackend.ranking.application.service;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
+import ksh.tryptobackend.investmentround.application.port.in.FindRoundInfoUseCase;
+import ksh.tryptobackend.marketdata.application.port.in.FindCoinSymbolsUseCase;
+import ksh.tryptobackend.marketdata.application.port.in.FindExchangeSummaryUseCase;
+import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeSummaryResult;
+import ksh.tryptobackend.portfolio.application.port.in.FindSnapshotDetailsUseCase;
+import ksh.tryptobackend.portfolio.application.port.in.dto.result.SnapshotDetailResult;
 import ksh.tryptobackend.ranking.application.port.in.GetRankerPortfolioUseCase;
 import ksh.tryptobackend.ranking.application.port.in.dto.query.GetRankerPortfolioQuery;
 import ksh.tryptobackend.ranking.application.port.in.dto.result.PortfolioHoldingResult;
 import ksh.tryptobackend.ranking.application.port.in.dto.result.RankerPortfolioResult;
-import ksh.tryptobackend.ranking.application.port.out.RankerHoldingQueryPort;
-import ksh.tryptobackend.ranking.application.port.out.RankerRoundQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.RankingQueryPort;
 import ksh.tryptobackend.ranking.application.port.out.dto.RankingWithUserProjection;
 import ksh.tryptobackend.ranking.domain.model.Ranking;
@@ -18,14 +22,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
 
     private final RankingQueryPort rankingQueryPort;
-    private final RankerRoundQueryPort rankerRoundQueryPort;
-    private final RankerHoldingQueryPort rankerHoldingQueryPort;
+    private final FindRoundInfoUseCase findRoundInfoUseCase;
+    private final FindSnapshotDetailsUseCase findSnapshotDetailsUseCase;
+    private final FindCoinSymbolsUseCase findCoinSymbolsUseCase;
+    private final FindExchangeSummaryUseCase findExchangeSummaryUseCase;
 
     @Override
     @Transactional(readOnly = true)
@@ -63,14 +72,52 @@ public class GetRankerPortfolioService implements GetRankerPortfolioUseCase {
     }
 
     private Long findActiveRoundId(Long userId) {
-        return rankerRoundQueryPort.findActiveRoundIdByUserId(userId)
+        return findRoundInfoUseCase.findActiveByUserId(userId)
+            .map(result -> result.roundId())
             .orElseThrow(() -> new CustomException(ErrorCode.ROUND_NOT_ACTIVE));
     }
 
     private List<PortfolioHoldingResult> findHoldings(Long userId, Long roundId) {
-        return rankerHoldingQueryPort.findLatestHoldings(userId, roundId).stream()
+        List<SnapshotDetailResult> details = findSnapshotDetailsUseCase.findLatestSnapshotDetails(userId, roundId);
+
+        Map<Long, String> coinSymbols = resolveCoinSymbols(details);
+        Map<Long, String> exchangeNames = resolveExchangeNames(details);
+
+        return details.stream()
+            .map(detail -> toRankerHolding(detail, coinSymbols, exchangeNames))
             .map(this::toResult)
             .toList();
+    }
+
+    private Map<Long, String> resolveCoinSymbols(List<SnapshotDetailResult> details) {
+        Set<Long> coinIds = details.stream()
+            .map(SnapshotDetailResult::coinId)
+            .collect(Collectors.toSet());
+        return findCoinSymbolsUseCase.findSymbolsByIds(coinIds);
+    }
+
+    private Map<Long, String> resolveExchangeNames(List<SnapshotDetailResult> details) {
+        Set<Long> exchangeIds = details.stream()
+            .map(SnapshotDetailResult::exchangeId)
+            .collect(Collectors.toSet());
+        return exchangeIds.stream()
+            .collect(Collectors.toMap(
+                id -> id,
+                id -> findExchangeSummaryUseCase.findExchangeSummary(id)
+                    .map(ExchangeSummaryResult::name)
+                    .orElse("")
+            ));
+    }
+
+    private RankerHolding toRankerHolding(SnapshotDetailResult detail,
+                                          Map<Long, String> coinSymbols,
+                                          Map<Long, String> exchangeNames) {
+        return new RankerHolding(
+            coinSymbols.getOrDefault(detail.coinId(), ""),
+            exchangeNames.getOrDefault(detail.exchangeId(), ""),
+            detail.assetRatio(),
+            detail.profitRate()
+        );
     }
 
     private PortfolioHoldingResult toResult(RankerHolding holding) {
