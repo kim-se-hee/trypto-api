@@ -2,16 +2,26 @@ package ksh.tryptobackend.trading.application.service;
 
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
+import ksh.tryptobackend.investmentround.application.port.in.FindInvestmentRulesUseCase;
+import ksh.tryptobackend.marketdata.application.port.in.FindExchangeCoinMappingUseCase;
+import ksh.tryptobackend.marketdata.application.port.in.FindExchangeDetailUseCase;
 import ksh.tryptobackend.trading.application.port.in.PlaceOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.command.PlaceOrderCommand;
-import ksh.tryptobackend.trading.application.port.out.*;
+import ksh.tryptobackend.trading.application.port.out.HoldingCommandPort;
+import ksh.tryptobackend.trading.application.port.out.LivePriceQueryPort;
+import ksh.tryptobackend.trading.application.port.out.OrderCommandPort;
+import ksh.tryptobackend.trading.application.port.out.PriceChangeRateQueryPort;
 import ksh.tryptobackend.trading.application.strategy.OrderPlacementStrategy;
 import ksh.tryptobackend.trading.domain.model.*;
 import ksh.tryptobackend.trading.domain.vo.BalanceChange;
 import ksh.tryptobackend.trading.domain.vo.ListedCoinRef;
+import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
 import ksh.tryptobackend.trading.domain.vo.Side;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
+import ksh.tryptobackend.wallet.application.port.in.FindWalletUseCase;
+import ksh.tryptobackend.wallet.application.port.in.GetAvailableBalanceUseCase;
+import ksh.tryptobackend.wallet.application.port.in.ManageWalletBalanceUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,13 +38,14 @@ import java.util.List;
 public class PlaceOrderService implements PlaceOrderUseCase {
 
     private final OrderCommandPort orderCommandPort;
-    private final TradingBalanceQueryPort tradingBalanceQueryPort;
-    private final TradingBalanceCommandPort tradingBalanceCommandPort;
+    private final GetAvailableBalanceUseCase getAvailableBalanceUseCase;
+    private final ManageWalletBalanceUseCase manageWalletBalanceUseCase;
     private final LivePriceQueryPort livePriceQueryPort;
-    private final TradingVenueQueryPort tradingVenueQueryPort;
-    private final ListedCoinQueryPort listedCoinQueryPort;
+    private final FindExchangeDetailUseCase findExchangeDetailUseCase;
+    private final FindExchangeCoinMappingUseCase findExchangeCoinMappingUseCase;
     private final HoldingCommandPort holdingCommandPort;
-    private final ViolationRuleQueryPort violationRuleQueryPort;
+    private final FindWalletUseCase findWalletUseCase;
+    private final FindInvestmentRulesUseCase findInvestmentRulesUseCase;
     private final PriceChangeRateQueryPort priceChangeRatePort;
     private final List<OrderPlacementStrategy> strategies;
     private final Clock clock;
@@ -68,12 +79,17 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     }
 
     private ListedCoinRef getListedCoin(Long exchangeCoinId) {
-        return listedCoinQueryPort.findById(exchangeCoinId)
+        return findExchangeCoinMappingUseCase.findById(exchangeCoinId)
+            .map(m -> new ListedCoinRef(m.exchangeCoinId(), m.exchangeId(), m.coinId()))
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_COIN_NOT_FOUND));
     }
 
     private TradingVenue getTradingVenue(Long exchangeId) {
-        return tradingVenueQueryPort.findByExchangeId(exchangeId)
+        return findExchangeDetailUseCase.findExchangeDetail(exchangeId)
+            .map(detail -> new TradingVenue(
+                detail.feeRate(),
+                detail.baseCurrencyCoinId(),
+                detail.domestic() ? OrderAmountPolicy.DOMESTIC : OrderAmountPolicy.OVERSEAS))
             .orElseThrow(() -> new CustomException(ErrorCode.EXCHANGE_NOT_FOUND));
     }
 
@@ -87,14 +103,14 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     private void validateBalance(OrderPlacementStrategy strategy, Order order,
                                   Long walletId, TradingVenue venue, Long coinId) {
         Long balanceCoinId = strategy.resolveBalanceCoinId(venue, coinId);
-        BigDecimal available = tradingBalanceQueryPort.getAvailableBalance(walletId, balanceCoinId);
+        BigDecimal available = getAvailableBalanceUseCase.getAvailableBalance(walletId, balanceCoinId);
         order.validateSufficientBalance(available);
     }
 
     private List<RuleViolation> checkOrderViolations(Order order, Long walletId,
                                                       Long exchangeCoinId, Long coinId,
                                                       BigDecimal currentPrice) {
-        List<ViolationRule> rules = violationRuleQueryPort.findByWalletId(walletId);
+        List<ViolationRule> rules = findViolationRules(walletId);
         if (rules.isEmpty()) {
             return List.of();
         }
@@ -102,6 +118,14 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         ViolationCheckContext context = buildViolationContext(
             order, walletId, exchangeCoinId, coinId, currentPrice);
         return new ViolationRules(rules).check(context);
+    }
+
+    private List<ViolationRule> findViolationRules(Long walletId) {
+        return findWalletUseCase.findById(walletId)
+            .map(wallet -> findInvestmentRulesUseCase.findByRoundId(wallet.roundId()).stream()
+                .map(r -> ViolationRule.of(r.ruleId(), r.ruleType(), r.thresholdValue()))
+                .toList())
+            .orElse(List.of());
     }
 
     private ViolationCheckContext buildViolationContext(Order order, Long walletId,
@@ -133,9 +157,9 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 
     private void applyBalanceChange(Long walletId, BalanceChange change) {
         switch (change) {
-            case BalanceChange.Deduct d -> tradingBalanceCommandPort.deductBalance(walletId, d.coinId(), d.amount());
-            case BalanceChange.Add a -> tradingBalanceCommandPort.addBalance(walletId, a.coinId(), a.amount());
-            case BalanceChange.Lock l -> tradingBalanceCommandPort.lockBalance(walletId, l.coinId(), l.amount());
+            case BalanceChange.Deduct d -> manageWalletBalanceUseCase.deductBalance(walletId, d.coinId(), d.amount());
+            case BalanceChange.Add a -> manageWalletBalanceUseCase.addBalance(walletId, a.coinId(), a.amount());
+            case BalanceChange.Lock l -> manageWalletBalanceUseCase.lockBalance(walletId, l.coinId(), l.amount());
         }
     }
 
