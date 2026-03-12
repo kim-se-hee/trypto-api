@@ -1,7 +1,7 @@
-package ksh.tryptobackend.trading.application.service;
+package ksh.tryptobackend.marketdata.application.service;
 
-import ksh.tryptobackend.trading.application.port.in.GetLivePriceUseCase;
-import ksh.tryptobackend.trading.application.port.out.LivePriceQueryPort;
+import ksh.tryptobackend.marketdata.application.port.in.GetLivePriceUseCase;
+import ksh.tryptobackend.marketdata.application.port.out.LivePriceQueryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
