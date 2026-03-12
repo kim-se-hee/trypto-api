@@ -48,6 +48,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation platform('org.testcontainers:testcontainers-bom:1.20.4')
     testImplementation 'org.testcontainers:mysql'
+    testImplementation 'com.redis:testcontainers-redis:2.2.4'
     testImplementation platform('io.cucumber:cucumber-bom:7.20.1')
     testImplementation 'io.cucumber:cucumber-java'
     testImplementation 'io.cucumber:cucumber-spring'
