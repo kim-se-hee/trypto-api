@@ -54,6 +54,7 @@ erDiagram
     COIN {
         id coin_id PK "주 식별자"
         string symbol UK "티커"
+        string name "코인명"
     }
 
     EXCHANGE_COIN {
