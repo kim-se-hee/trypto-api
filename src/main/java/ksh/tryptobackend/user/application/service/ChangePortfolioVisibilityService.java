@@ -23,7 +23,8 @@ public class ChangePortfolioVisibilityService implements ChangePortfolioVisibili
     public User changePortfolioVisibility(ChangePortfolioVisibilityCommand command) {
         User user = getUser(command.userId());
         user.changePortfolioVisibility(command.portfolioPublic());
-        return userCommandPort.save(user);
+        userCommandPort.updatePortfolioVisibility(command.userId(), command.portfolioPublic());
+        return user;
     }
 
     private User getUser(Long userId) {
