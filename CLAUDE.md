@@ -137,7 +137,7 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 
 ## 레이어별 컨벤션
 
-- 베스트 프랙티스: `PlaceOrderService`와 trading 도메인을 참고한다. 서비스는 포트 호출과 도메인 객체 생성/위임만 수행하고, 비즈니스 로직은 도메인 모델(`Order`, `Holding`)과 VO(`BalanceChange`, `OrderAmountPolicy`)에 있다
+- 베스트 프랙티스: `PlaceOrderService`와 trading 도메인을 참고한다. 서비스는 포트 호출과 도메인 객체 생성/위임 등의 오케스트레이션만 수행하고, 비즈니스 로직은 도메인 모델과 VO에 캡슐화한다. 데이터 조합·매핑·필터링 로직이 서비스에 직접 풀어지지 않도록 일급 컬렉션과 VO에 위임한다
 
 **Controller**
 - 클래스명: `{도메인}Controller` (예: `OrderController`, `SwapController`)
@@ -173,6 +173,7 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 - 메서드명은 비즈니스 지식을 담는다 (예: `deductBalance()`, `checkSlippageExceeded()`)
 - Entity에는 `@Getter`만 허용하고 `@Setter`, `@Data` 금지. 상태 변경은 비즈니스 의미를 가진 메서드로만 수행한다
 - 원시 타입이 단위, 제한, 계산 등 비즈니스 규칙을 가지면 VO로 감싼다 (primitive obsession 방지)
+- 원시 타입이나 제네릭 컬렉션(`Map<Long, X>` 등)이 주변 코드의 추상화 수준을 깨뜨리면 VO나 도메인 모델로 감싸서 가독성을 높인다. 비즈니스 규칙이 없더라도 타입 이름이 도메인 의도를 전달하거나 null 처리 같은 사용 패턴을 캡슐화할 수 있다면 감싸는 것이 낫다
 - VO는 불변 객체로 만든다. 모든 필드 `final`, 변경이 필요하면 새 객체를 생성한다
 - VO는 `equals()`/`hashCode()`를 반드시 구현한다
 - 일급 컬렉션을 활용하여 컬렉션 관련 로직을 캡슐화하려고 노력한다
