@@ -7,9 +7,9 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import ksh.tryptobackend.portfolio.adapter.out.entity.QPortfolioSnapshotJpaEntity;
 import ksh.tryptobackend.portfolio.adapter.out.entity.QSnapshotDetailJpaEntity;
 import ksh.tryptobackend.portfolio.application.port.out.PortfolioSnapshotQueryPort;
-import ksh.tryptobackend.portfolio.application.port.out.dto.SnapshotDetailProjection;
-import ksh.tryptobackend.portfolio.application.port.out.dto.SnapshotInfo;
-import ksh.tryptobackend.portfolio.application.port.out.dto.UserSnapshotSummary;
+import ksh.tryptobackend.portfolio.domain.vo.HoldingSummary;
+import ksh.tryptobackend.portfolio.domain.vo.SnapshotOverview;
+import ksh.tryptobackend.portfolio.domain.vo.UserSnapshotSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -27,9 +27,9 @@ public class PortfolioSnapshotQueryAdapter implements PortfolioSnapshotQueryPort
     private static final QSnapshotDetailJpaEntity detail = QSnapshotDetailJpaEntity.snapshotDetailJpaEntity;
 
     @Override
-    public List<SnapshotDetailProjection> findLatestSnapshotDetails(Long userId, Long roundId) {
+    public List<HoldingSummary> findLatestSnapshotDetails(Long userId, Long roundId) {
         return queryFactory
-            .select(Projections.constructor(SnapshotDetailProjection.class,
+            .select(Projections.constructor(HoldingSummary.class,
                 detail.coinId,
                 snapshot.exchangeId,
                 detail.assetRatio,
@@ -43,9 +43,9 @@ public class PortfolioSnapshotQueryAdapter implements PortfolioSnapshotQueryPort
     }
 
     @Override
-    public Optional<SnapshotInfo> findLatestByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
-        SnapshotInfo result = queryFactory
-            .select(Projections.constructor(SnapshotInfo.class,
+    public Optional<SnapshotOverview> findLatestByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
+        SnapshotOverview result = queryFactory
+            .select(Projections.constructor(SnapshotOverview.class,
                 snapshot.id, snapshot.roundId, snapshot.exchangeId,
                 snapshot.totalAsset, snapshot.totalInvestment,
                 snapshot.totalProfitRate, snapshot.snapshotDate))
@@ -61,9 +61,9 @@ public class PortfolioSnapshotQueryAdapter implements PortfolioSnapshotQueryPort
     }
 
     @Override
-    public List<SnapshotInfo> findAllByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
+    public List<SnapshotOverview> findAllByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
         return queryFactory
-            .select(Projections.constructor(SnapshotInfo.class,
+            .select(Projections.constructor(SnapshotOverview.class,
                 snapshot.id, snapshot.roundId, snapshot.exchangeId,
                 snapshot.totalAsset, snapshot.totalInvestment,
                 snapshot.totalProfitRate, snapshot.snapshotDate))

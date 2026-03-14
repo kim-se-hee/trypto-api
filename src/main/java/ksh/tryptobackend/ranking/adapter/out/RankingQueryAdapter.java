@@ -5,9 +5,9 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import ksh.tryptobackend.ranking.adapter.out.entity.QRankingJpaEntity;
 import ksh.tryptobackend.ranking.application.port.out.RankingQueryPort;
-import ksh.tryptobackend.ranking.domain.vo.RankingSummary;
-import ksh.tryptobackend.ranking.application.port.out.dto.RankingStatsProjection;
 import ksh.tryptobackend.ranking.domain.vo.RankingPeriod;
+import ksh.tryptobackend.ranking.domain.vo.RankingStats;
+import ksh.tryptobackend.ranking.domain.vo.RankingSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -70,9 +70,9 @@ public class RankingQueryAdapter implements RankingQueryPort {
     }
 
     @Override
-    public RankingStatsProjection getRankingStats(RankingPeriod period, LocalDate referenceDate) {
+    public RankingStats getRankingStats(RankingPeriod period, LocalDate referenceDate) {
         return queryFactory
-            .select(Projections.constructor(RankingStatsProjection.class,
+            .select(Projections.constructor(RankingStats.class,
                 ranking.count(),
                 ranking.profitRate.max(),
                 ranking.profitRate.avg().castToNum(BigDecimal.class)))

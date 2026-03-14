@@ -3,7 +3,7 @@ package ksh.tryptobackend.investmentround.adapter.out;
 import ksh.tryptobackend.investmentround.adapter.out.entity.InvestmentRoundJpaEntity;
 import ksh.tryptobackend.investmentround.adapter.out.repository.InvestmentRoundJpaRepository;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundQueryPort;
-import ksh.tryptobackend.investmentround.application.port.out.dto.InvestmentRoundInfo;
+import ksh.tryptobackend.investmentround.domain.vo.RoundOverview;
 import ksh.tryptobackend.investmentround.domain.vo.RoundStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,25 +18,25 @@ public class InvestmentRoundQueryAdapter implements InvestmentRoundQueryPort {
     private final InvestmentRoundJpaRepository repository;
 
     @Override
-    public Optional<InvestmentRoundInfo> findActiveRoundByUserId(Long userId) {
+    public Optional<RoundOverview> findActiveRoundByUserId(Long userId) {
         return repository.findByUserIdAndStatus(userId, RoundStatus.ACTIVE)
-            .map(this::toRoundInfo);
+            .map(this::toRoundOverview);
     }
 
     @Override
-    public Optional<InvestmentRoundInfo> findRoundInfoById(Long roundId) {
-        return repository.findById(roundId).map(this::toRoundInfo);
+    public Optional<RoundOverview> findRoundInfoById(Long roundId) {
+        return repository.findById(roundId).map(this::toRoundOverview);
     }
 
     @Override
-    public List<InvestmentRoundInfo> findAllActiveRounds() {
+    public List<RoundOverview> findAllActiveRounds() {
         return repository.findByStatus(RoundStatus.ACTIVE).stream()
-            .map(this::toRoundInfo)
+            .map(this::toRoundOverview)
             .toList();
     }
 
-    private InvestmentRoundInfo toRoundInfo(InvestmentRoundJpaEntity entity) {
-        return new InvestmentRoundInfo(
+    private RoundOverview toRoundOverview(InvestmentRoundJpaEntity entity) {
+        return new RoundOverview(
             entity.getId(),
             entity.getUserId(),
             entity.getRoundNumber(),

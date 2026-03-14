@@ -6,7 +6,6 @@ import ksh.tryptobackend.wallet.adapter.out.entity.QDepositAddressJpaEntity;
 import ksh.tryptobackend.wallet.adapter.out.entity.QWalletJpaEntity;
 import ksh.tryptobackend.wallet.adapter.out.repository.DepositAddressJpaRepository;
 import ksh.tryptobackend.wallet.application.port.out.DepositAddressQueryPort;
-import ksh.tryptobackend.wallet.application.port.out.dto.DepositAddressInfo;
 import ksh.tryptobackend.wallet.domain.model.DepositAddress;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -27,7 +26,7 @@ public class DepositAddressQueryAdapter implements DepositAddressQueryPort {
     }
 
     @Override
-    public Optional<DepositAddressInfo> findByRoundIdAndChainAndAddress(
+    public Optional<DepositAddress> findByRoundIdAndChainAndAddress(
         Long roundId, String chain, String address) {
         QDepositAddressJpaEntity da = QDepositAddressJpaEntity.depositAddressJpaEntity;
         QWalletJpaEntity w = QWalletJpaEntity.walletJpaEntity;
@@ -43,8 +42,6 @@ public class DepositAddressQueryAdapter implements DepositAddressQueryPort {
             .fetchOne();
 
         return Optional.ofNullable(entity)
-            .map(e -> new DepositAddressInfo(
-                e.getId(), e.getWalletId(), e.getChain(),
-                e.getAddress(), e.getTag()));
+            .map(DepositAddressJpaEntity::toDomain);
     }
 }

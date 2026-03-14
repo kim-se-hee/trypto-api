@@ -5,7 +5,7 @@ import ksh.tryptobackend.wallet.adapter.out.entity.WalletJpaEntity;
 import ksh.tryptobackend.wallet.adapter.out.repository.WalletBalanceJpaRepository;
 import ksh.tryptobackend.wallet.adapter.out.repository.WalletJpaRepository;
 import ksh.tryptobackend.wallet.application.port.out.WalletQueryPort;
-import ksh.tryptobackend.wallet.application.port.out.dto.WalletInfo;
+import ksh.tryptobackend.wallet.domain.model.Wallet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -21,38 +21,38 @@ public class WalletQueryAdapter implements WalletQueryPort {
     private final WalletBalanceJpaRepository balanceRepository;
 
     @Override
-    public Optional<WalletInfo> findByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
+    public Optional<Wallet> findByRoundIdAndExchangeId(Long roundId, Long exchangeId) {
         return walletRepository.findByRoundIdAndExchangeId(roundId, exchangeId)
-            .map(this::toWalletInfo);
+            .map(WalletJpaEntity::toDomain);
     }
 
     @Override
-    public Optional<WalletInfo> findById(Long walletId) {
+    public Optional<Wallet> findById(Long walletId) {
         return walletRepository.findById(walletId)
-            .map(this::toWalletInfo);
+            .map(WalletJpaEntity::toDomain);
     }
 
     @Override
-    public List<WalletInfo> findByRoundId(Long roundId) {
+    public List<Wallet> findByRoundId(Long roundId) {
         return walletRepository.findByRoundId(roundId).stream()
-            .map(this::toWalletInfo)
+            .map(WalletJpaEntity::toDomain)
             .toList();
     }
 
     @Override
-    public List<WalletInfo> findByRoundIds(List<Long> roundIds) {
+    public List<Wallet> findByRoundIds(List<Long> roundIds) {
         if (roundIds.isEmpty()) {
             return List.of();
         }
         return walletRepository.findByRoundIdIn(roundIds).stream()
-            .map(this::toWalletInfo)
+            .map(WalletJpaEntity::toDomain)
             .toList();
     }
 
     @Override
-    public List<WalletInfo> findByExchangeId(Long exchangeId) {
+    public List<Wallet> findByExchangeId(Long exchangeId) {
         return walletRepository.findByExchangeId(exchangeId).stream()
-            .map(this::toWalletInfo)
+            .map(WalletJpaEntity::toDomain)
             .toList();
     }
 
@@ -61,10 +61,5 @@ public class WalletQueryAdapter implements WalletQueryPort {
         return balanceRepository.findByWalletIdAndCoinId(walletId, coinId)
             .map(WalletBalanceJpaEntity::getAvailable)
             .orElse(BigDecimal.ZERO);
-    }
-
-    private WalletInfo toWalletInfo(WalletJpaEntity wallet) {
-        return new WalletInfo(wallet.getId(), wallet.getRoundId(), wallet.getExchangeId(),
-            wallet.getSeedAmount());
     }
 }

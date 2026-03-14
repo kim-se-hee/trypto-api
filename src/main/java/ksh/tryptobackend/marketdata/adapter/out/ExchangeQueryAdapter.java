@@ -5,8 +5,8 @@ import ksh.tryptobackend.marketdata.adapter.out.entity.ExchangeJpaEntity;
 import ksh.tryptobackend.marketdata.adapter.out.repository.CoinJpaRepository;
 import ksh.tryptobackend.marketdata.adapter.out.repository.ExchangeJpaRepository;
 import ksh.tryptobackend.marketdata.application.port.out.ExchangeQueryPort;
-import ksh.tryptobackend.marketdata.application.port.out.dto.ExchangeDetail;
-import ksh.tryptobackend.marketdata.application.port.out.dto.ExchangeSummary;
+import ksh.tryptobackend.marketdata.domain.model.Exchange;
+import ksh.tryptobackend.marketdata.domain.vo.ExchangeSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -24,11 +24,9 @@ public class ExchangeQueryAdapter implements ExchangeQueryPort {
     private final CoinJpaRepository coinJpaRepository;
 
     @Override
-    public Optional<ExchangeDetail> findExchangeDetailById(Long exchangeId) {
+    public Optional<Exchange> findExchangeDetailById(Long exchangeId) {
         return repository.findById(exchangeId)
-            .map(entity -> new ExchangeDetail(entity.getName(), entity.getBaseCurrencyCoinId(),
-                entity.getMarketType() == ksh.tryptobackend.marketdata.domain.model.ExchangeMarketType.DOMESTIC,
-                entity.getFeeRate()));
+            .map(ExchangeJpaEntity::toDomain);
     }
 
     @Override

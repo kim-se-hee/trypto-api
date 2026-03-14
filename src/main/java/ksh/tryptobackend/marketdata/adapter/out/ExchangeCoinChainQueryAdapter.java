@@ -5,7 +5,7 @@ import ksh.tryptobackend.marketdata.adapter.out.entity.ExchangeCoinChainJpaEntit
 import ksh.tryptobackend.marketdata.adapter.out.entity.QExchangeCoinChainJpaEntity;
 import ksh.tryptobackend.marketdata.adapter.out.entity.QExchangeCoinJpaEntity;
 import ksh.tryptobackend.marketdata.application.port.out.ExchangeCoinChainQueryPort;
-import ksh.tryptobackend.marketdata.application.port.out.dto.ExchangeCoinChainInfo;
+import ksh.tryptobackend.marketdata.domain.model.ExchangeCoinChain;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +18,7 @@ public class ExchangeCoinChainQueryAdapter implements ExchangeCoinChainQueryPort
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Optional<ExchangeCoinChainInfo> findByExchangeIdAndCoinIdAndChain(
+    public Optional<ExchangeCoinChain> findByExchangeIdAndCoinIdAndChain(
         Long exchangeId, Long coinId, String chain) {
         QExchangeCoinChainJpaEntity ecc = QExchangeCoinChainJpaEntity.exchangeCoinChainJpaEntity;
         QExchangeCoinJpaEntity ec = QExchangeCoinJpaEntity.exchangeCoinJpaEntity;
@@ -34,7 +34,6 @@ public class ExchangeCoinChainQueryAdapter implements ExchangeCoinChainQueryPort
             .fetchOne();
 
         return Optional.ofNullable(entity)
-            .map(e -> new ExchangeCoinChainInfo(
-                e.getId(), e.getExchangeCoinId(), e.getChain(), e.isTagRequired()));
+            .map(ExchangeCoinChainJpaEntity::toDomain);
     }
 }

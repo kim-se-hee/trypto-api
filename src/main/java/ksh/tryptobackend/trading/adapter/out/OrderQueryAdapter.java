@@ -7,7 +7,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import ksh.tryptobackend.trading.adapter.out.entity.OrderJpaEntity;
 import ksh.tryptobackend.trading.adapter.out.entity.QOrderJpaEntity;
 import ksh.tryptobackend.trading.application.port.out.OrderQueryPort;
-import ksh.tryptobackend.trading.application.port.out.dto.OrderInfo;
+import ksh.tryptobackend.trading.domain.vo.FilledOrder;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.vo.FilledOrderCounts;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
@@ -50,14 +50,14 @@ public class OrderQueryAdapter implements OrderQueryPort {
     }
 
     @Override
-    public List<OrderInfo> findFilledByOrderIds(List<Long> orderIds) {
+    public List<FilledOrder> findFilledByOrderIds(List<Long> orderIds) {
         if (orderIds.isEmpty()) {
             return Collections.emptyList();
         }
 
         QOrderJpaEntity o = QOrderJpaEntity.orderJpaEntity;
         return queryFactory
-            .select(Projections.constructor(OrderInfo.class,
+            .select(Projections.constructor(FilledOrder.class,
                 o.id, o.walletId, o.exchangeCoinId, o.side,
                 o.amount, o.quantity, o.filledPrice, o.filledAt))
             .from(o)
@@ -115,10 +115,10 @@ public class OrderQueryAdapter implements OrderQueryPort {
     }
 
     @Override
-    public List<OrderInfo> findFilledSellOrders(Long walletId, Long exchangeCoinId, LocalDateTime after) {
+    public List<FilledOrder> findFilledSellOrders(Long walletId, Long exchangeCoinId, LocalDateTime after) {
         QOrderJpaEntity o = QOrderJpaEntity.orderJpaEntity;
         return queryFactory
-            .select(Projections.constructor(OrderInfo.class,
+            .select(Projections.constructor(FilledOrder.class,
                 o.id, o.walletId, o.exchangeCoinId, o.side,
                 o.amount, o.quantity, o.filledPrice, o.filledAt))
             .from(o)
