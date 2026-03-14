@@ -7,6 +7,7 @@ import { ExchangeTabs } from "@/components/market/ExchangeTabs";
 import { CoinSearchInput } from "@/components/market/CoinSearchInput";
 import { FilterChips } from "@/components/market/FilterChips";
 import { CoinTable } from "@/components/market/CoinTable";
+import { CandleChartPanel } from "@/components/market/CandleChartPanel";
 import { OrderPanel } from "@/components/market/OrderPanel";
 import { EmergencyFundingCard } from "@/components/round/EmergencyFundingCard";
 import { useRound } from "@/contexts/RoundContext";
@@ -130,13 +131,23 @@ export function MarketPage() {
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          {/* Coin table */}
-          <CoinTable
-            coins={filteredCoins}
-            baseCurrency={exchange.baseCurrency}
-            selectedSymbol={selectedCoin?.symbol ?? null}
-            onSelect={setSelectedSymbol}
-          />
+          <div className="space-y-4">
+            {selectedCoin && (
+              <CandleChartPanel
+                exchangeKey={selectedExchange}
+                baseCurrency={exchange.baseCurrency}
+                coin={selectedCoin}
+              />
+            )}
+
+            {/* Coin table */}
+            <CoinTable
+              coins={filteredCoins}
+              baseCurrency={exchange.baseCurrency}
+              selectedSymbol={selectedCoin?.symbol ?? null}
+              onSelect={setSelectedSymbol}
+            />
+          </div>
 
           {/* Side panel */}
           <div className="space-y-4">

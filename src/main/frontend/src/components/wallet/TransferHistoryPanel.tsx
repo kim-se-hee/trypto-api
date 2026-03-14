@@ -52,12 +52,6 @@ function isProgressStatus(status: TransferRecord["status"]): boolean {
   return status === "PENDING" || status === "PROCESSING" || status === "DELAYED";
 }
 
-
-function truncateMiddle(value: string, head = 6, tail = 4): string {
-  if (value.length <= head + tail + 3) return value;
-  return `${value.slice(0, head)}...${value.slice(-tail)}`;
-}
-
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
