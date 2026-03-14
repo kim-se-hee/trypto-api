@@ -7,6 +7,7 @@ import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRo
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRoundRuleCommand;
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRoundSeedCommand;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundResult;
+import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundWalletResult;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundCommandPort;
 import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
 import ksh.tryptobackend.investmentround.domain.model.RuleSetting;
@@ -54,7 +55,7 @@ public class StartRoundService implements StartRoundUseCase {
 
         InvestmentRound savedRound = investmentRoundCommandPort.save(round);
         initializeWallets(savedRound.getRoundId(), seedAllocations);
-        List<WalletResult> wallets = findWalletUseCase.findByRoundId(savedRound.getRoundId());
+        List<StartRoundWalletResult> wallets = toWalletResults(savedRound.getRoundId());
 
         return StartRoundResult.from(savedRound, wallets);
     }
@@ -122,4 +123,13 @@ public class StartRoundService implements StartRoundUseCase {
         }
     }
 
+    private List<StartRoundWalletResult> toWalletResults(Long roundId) {
+        return findWalletUseCase.findByRoundId(roundId).stream()
+            .map(this::toWalletResult)
+            .toList();
+    }
+
+    private StartRoundWalletResult toWalletResult(WalletResult walletResult) {
+        return new StartRoundWalletResult(walletResult.walletId(), walletResult.exchangeId());
+    }
 }

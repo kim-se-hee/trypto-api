@@ -2,7 +2,6 @@ package ksh.tryptobackend.investmentround.application.port.in.dto.result;
 
 import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
 import ksh.tryptobackend.investmentround.domain.vo.RoundStatus;
-import ksh.tryptobackend.wallet.application.port.in.dto.result.WalletResult;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -20,13 +19,9 @@ public record StartRoundResult(
     LocalDateTime startedAt
 ) {
 
-    public static StartRoundResult from(InvestmentRound round, List<WalletResult> walletResults) {
+    public static StartRoundResult from(InvestmentRound round, List<StartRoundWalletResult> wallets) {
         List<StartRoundRuleResult> ruleResults = round.getRules().stream()
             .map(StartRoundRuleResult::from)
-            .toList();
-
-        List<StartRoundWalletResult> wallets = walletResults.stream()
-            .map(StartRoundWalletResult::from)
             .toList();
 
         return new StartRoundResult(

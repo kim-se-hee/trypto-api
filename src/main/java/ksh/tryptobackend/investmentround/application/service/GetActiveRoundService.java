@@ -5,6 +5,7 @@ import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.investmentround.application.port.in.GetActiveRoundUseCase;
 import ksh.tryptobackend.investmentround.application.port.in.dto.query.GetActiveRoundQuery;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.GetActiveRoundResult;
+import ksh.tryptobackend.investmentround.application.port.in.dto.result.GetActiveRoundWalletResult;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundQueryPort;
 import ksh.tryptobackend.investmentround.application.port.out.RuleSettingQueryPort;
 import ksh.tryptobackend.investmentround.domain.model.RuleSetting;
@@ -31,7 +32,7 @@ public class GetActiveRoundService implements GetActiveRoundUseCase {
     public GetActiveRoundResult getActiveRound(GetActiveRoundQuery query) {
         RoundOverview round = getActiveRound(query.userId());
         List<RuleSetting> rules = ruleSettingQueryPort.findByRoundId(round.roundId());
-        List<WalletResult> wallets = findWalletUseCase.findByRoundId(round.roundId());
+        List<GetActiveRoundWalletResult> wallets = toWalletResults(round.roundId());
 
         return GetActiveRoundResult.from(round, rules, wallets);
     }
@@ -39,5 +40,15 @@ public class GetActiveRoundService implements GetActiveRoundUseCase {
     private RoundOverview getActiveRound(Long userId) {
         return investmentRoundQueryPort.findActiveRoundByUserId(userId)
             .orElseThrow(() -> new CustomException(ErrorCode.ROUND_NOT_ACTIVE));
+    }
+
+    private List<GetActiveRoundWalletResult> toWalletResults(Long roundId) {
+        return findWalletUseCase.findByRoundId(roundId).stream()
+            .map(this::toWalletResult)
+            .toList();
+    }
+
+    private GetActiveRoundWalletResult toWalletResult(WalletResult walletResult) {
+        return new GetActiveRoundWalletResult(walletResult.walletId(), walletResult.exchangeId());
     }
 }
