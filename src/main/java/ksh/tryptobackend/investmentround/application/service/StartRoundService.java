@@ -7,6 +7,7 @@ import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRo
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRoundRuleCommand;
 import ksh.tryptobackend.investmentround.application.port.in.dto.command.StartRoundSeedCommand;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundResult;
+import ksh.tryptobackend.investmentround.application.port.in.dto.result.StartRoundWalletResult;
 import ksh.tryptobackend.investmentround.application.port.out.InvestmentRoundCommandPort;
 import ksh.tryptobackend.investmentround.domain.model.InvestmentRound;
 import ksh.tryptobackend.investmentround.domain.model.RuleSetting;
@@ -17,7 +18,9 @@ import ksh.tryptobackend.investmentround.domain.vo.SeedFundingSpec;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeDetailUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeDetailResult;
 import ksh.tryptobackend.wallet.application.port.in.CreateWalletWithBalanceUseCase;
+import ksh.tryptobackend.wallet.application.port.in.FindWalletUseCase;
 import ksh.tryptobackend.wallet.application.port.in.dto.command.CreateWalletWithBalanceCommand;
+import ksh.tryptobackend.wallet.application.port.in.dto.result.WalletResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,8 +35,11 @@ import java.util.List;
 public class StartRoundService implements StartRoundUseCase {
 
     private final InvestmentRoundCommandPort investmentRoundCommandPort;
+
     private final FindExchangeDetailUseCase findExchangeDetailUseCase;
     private final CreateWalletWithBalanceUseCase createWalletWithBalanceUseCase;
+    private final FindWalletUseCase findWalletUseCase;
+
     private final Clock clock;
 
     @Override
@@ -49,8 +55,9 @@ public class StartRoundService implements StartRoundUseCase {
 
         InvestmentRound savedRound = investmentRoundCommandPort.save(round);
         initializeWallets(savedRound.getRoundId(), seedAllocations);
+        List<StartRoundWalletResult> wallets = toWalletResults(savedRound.getRoundId());
 
-        return StartRoundResult.from(savedRound);
+        return StartRoundResult.from(savedRound, wallets);
     }
 
     private void validateActiveRound(Long userId) {
@@ -116,4 +123,13 @@ public class StartRoundService implements StartRoundUseCase {
         }
     }
 
+    private List<StartRoundWalletResult> toWalletResults(Long roundId) {
+        return findWalletUseCase.findByRoundId(roundId).stream()
+            .map(this::toWalletResult)
+            .toList();
+    }
+
+    private StartRoundWalletResult toWalletResult(WalletResult walletResult) {
+        return new StartRoundWalletResult(walletResult.walletId(), walletResult.exchangeId());
+    }
 }

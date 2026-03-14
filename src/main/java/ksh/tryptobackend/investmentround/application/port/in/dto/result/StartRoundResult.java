@@ -15,10 +15,11 @@ public record StartRoundResult(
     BigDecimal emergencyFundingLimit,
     int emergencyChargeCount,
     List<StartRoundRuleResult> rules,
+    List<StartRoundWalletResult> wallets,
     LocalDateTime startedAt
 ) {
 
-    public static StartRoundResult from(InvestmentRound round) {
+    public static StartRoundResult from(InvestmentRound round, List<StartRoundWalletResult> wallets) {
         List<StartRoundRuleResult> ruleResults = round.getRules().stream()
             .map(StartRoundRuleResult::from)
             .toList();
@@ -31,6 +32,7 @@ public record StartRoundResult(
             round.getEmergencyFundingLimit(),
             round.getEmergencyChargeCount(),
             ruleResults,
+            wallets,
             round.getStartedAt()
         );
     }

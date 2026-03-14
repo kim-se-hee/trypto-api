@@ -140,6 +140,13 @@ public class RoundStepDefinition {
             .jsonPath("$.data.rules.length()").isEqualTo(count);
     }
 
+    @Then("지갑 개수는 {int}개이다")
+    public void 지갑_개수는_개이다(int count) {
+        apiClient.getLastResponse()
+            .expectBody()
+            .jsonPath("$.data.wallets.length()").isEqualTo(count);
+    }
+
     @When("라운드 종료 요청을 보낸다")
     public void 라운드_종료_요청을_보낸다() {
         Map<String, Object> body = Map.of("userId", USER_ID);

@@ -18,10 +18,12 @@ public record GetActiveRoundResult(
     int emergencyChargeCount,
     LocalDateTime startedAt,
     LocalDateTime endedAt,
-    List<GetActiveRoundRuleResult> rules
+    List<GetActiveRoundRuleResult> rules,
+    List<GetActiveRoundWalletResult> wallets
 ) {
 
-    public static GetActiveRoundResult from(RoundOverview round, List<RuleSetting> rules) {
+    public static GetActiveRoundResult from(RoundOverview round, List<RuleSetting> rules,
+                                             List<GetActiveRoundWalletResult> wallets) {
         List<GetActiveRoundRuleResult> ruleResults = rules.stream()
             .map(GetActiveRoundRuleResult::from)
             .toList();
@@ -36,7 +38,8 @@ public record GetActiveRoundResult(
             round.emergencyChargeCount(),
             round.startedAt(),
             round.endedAt(),
-            ruleResults
+            ruleResults,
+            wallets
         );
     }
 }
