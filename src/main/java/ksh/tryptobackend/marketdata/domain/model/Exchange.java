@@ -23,6 +23,10 @@ public class Exchange {
     private final Long baseCurrencyCoinId;
     private final BigDecimal feeRate;
 
+    public boolean isDomestic() {
+        return marketType == ExchangeMarketType.DOMESTIC;
+    }
+
     public void validateSeedAmount(BigDecimal amount) {
         if (amount.compareTo(ZERO) < 0) {
             throw new CustomException(ErrorCode.INVALID_SEED_AMOUNT);

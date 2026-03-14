@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import ksh.tryptobackend.marketdata.domain.model.Coin;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,4 +26,8 @@ public class CoinJpaEntity {
 
     @Column(name = "name", nullable = false)
     private String name;
+
+    public Coin toDomain() {
+        return new Coin(id, symbol, name);
+    }
 }

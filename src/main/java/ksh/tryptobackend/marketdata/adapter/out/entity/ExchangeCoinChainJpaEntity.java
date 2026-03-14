@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import ksh.tryptobackend.marketdata.domain.model.ExchangeCoinChain;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,4 +29,13 @@ public class ExchangeCoinChainJpaEntity {
 
     @Column(name = "tag_required", nullable = false)
     private boolean tagRequired;
+
+    public ExchangeCoinChain toDomain() {
+        return ExchangeCoinChain.builder()
+            .exchangeCoinChainId(id)
+            .exchangeCoinId(exchangeCoinId)
+            .chain(chain)
+            .tagRequired(tagRequired)
+            .build();
+    }
 }

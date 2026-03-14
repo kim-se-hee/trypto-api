@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import ksh.tryptobackend.marketdata.domain.model.WithdrawalFee;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,4 +37,15 @@ public class WithdrawalFeeJpaEntity {
 
     @Column(name = "min_withdrawal", nullable = false, precision = 30, scale = 8)
     private BigDecimal minWithdrawal;
+
+    public WithdrawalFee toDomain() {
+        return WithdrawalFee.builder()
+            .withdrawalFeeId(id)
+            .exchangeId(exchangeId)
+            .coinId(coinId)
+            .chain(chain)
+            .fee(fee)
+            .minWithdrawal(minWithdrawal)
+            .build();
+    }
 }

@@ -63,4 +63,14 @@ public class WalletJpaEntity {
         return new WalletJpaEntity(wallet.getRoundId(), wallet.getExchangeId(),
             wallet.getSeedAmount(), wallet.getCreatedAt());
     }
+
+    public Wallet toDomain() {
+        return Wallet.builder()
+            .walletId(id)
+            .roundId(roundId)
+            .exchangeId(exchangeId)
+            .seedAmount(seedAmount)
+            .createdAt(createdAt)
+            .build();
+    }
 }
