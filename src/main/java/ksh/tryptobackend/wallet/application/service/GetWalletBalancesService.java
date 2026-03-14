@@ -21,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
@@ -83,9 +82,7 @@ public class GetWalletBalancesService implements GetWalletBalancesUseCase {
 
     private WalletBalancesResult buildResult(Wallet wallet, String baseCurrencySymbol,
                                               Long baseCurrencyCoinId, WalletBalances balances) {
-        WalletBalance baseCurrency = balances.findBaseCurrency(baseCurrencyCoinId).orElse(null);
-        BigDecimal baseCurrencyAvailable = baseCurrency != null ? baseCurrency.getAvailable() : BigDecimal.ZERO;
-        BigDecimal baseCurrencyLocked = baseCurrency != null ? baseCurrency.getLocked() : BigDecimal.ZERO;
+        WalletBalance baseCurrency = balances.getBaseCurrencyOrZero(baseCurrencyCoinId);
 
         List<CoinBalance> coinBalances = balances.findCoinBalances(baseCurrencyCoinId).stream()
             .map(b -> new CoinBalance(b.getCoinId(), b.getAvailable(), b.getLocked()))
@@ -94,8 +91,8 @@ public class GetWalletBalancesService implements GetWalletBalancesUseCase {
         return new WalletBalancesResult(
             wallet.getExchangeId(),
             baseCurrencySymbol,
-            baseCurrencyAvailable,
-            baseCurrencyLocked,
+            baseCurrency.getAvailable(),
+            baseCurrency.getLocked(),
             coinBalances
         );
     }

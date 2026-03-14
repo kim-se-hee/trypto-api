@@ -11,10 +11,11 @@ public class WalletBalances {
         this.values = List.copyOf(values);
     }
 
-    public Optional<WalletBalance> findBaseCurrency(Long baseCurrencyCoinId) {
+    public WalletBalance getBaseCurrencyOrZero(Long baseCurrencyCoinId) {
         return values.stream()
             .filter(balance -> balance.getCoinId().equals(baseCurrencyCoinId))
-            .findFirst();
+            .findFirst()
+            .orElse(WalletBalance.zero(baseCurrencyCoinId));
     }
 
     public List<WalletBalance> findCoinBalances(Long baseCurrencyCoinId) {
