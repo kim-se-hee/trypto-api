@@ -193,6 +193,12 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 @Where(clause = "is_deleted = false")
 ```
 
+**Output Port**
+- Output Port는 `port.out.dto`를 사용하지 않는다. 도메인 모델 또는 도메인 VO만 반환한다
+- 조회 컬럼이 JPA 엔티티 필드와 대체로 일치하면 도메인 모델을 직접 반환한다 (Adapter에서 `toDomain()` 활용)
+- 집계 쿼리(GROUP BY, COUNT, AVG)나 엔티티와 구조가 크게 다른 프로젝션은 별도 도메인 VO를 만들어 반환한다
+- 도메인 VO 이름은 유비쿼터스 언어를 사용한다. `Info`, `Detail`, `Projection` 같은 기술 접미사 대신 도메인 개념을 표현한다 (예: `FilledOrder`, `HoldingSummary`, `RankingStats`)
+
 **Adapter Out**
 - `adapter/out/` 하위에 `entity/`, `repository/` 패키지로 분리한다. Adapter 클래스는 `adapter/out/`에 그대로 둔다
   - `adapter/out/entity/`: JPA 엔티티 클래스 (`{도메인}JpaEntity`)
