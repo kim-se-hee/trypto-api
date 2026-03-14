@@ -11,36 +11,36 @@ args = ["/c", "npx", "-y", "@executeautomation/playwright-mcp-server"]
 
 [agents.architect]
 description = "Synced role from .claude/agents/architect.md"
-config_file = "agents/architect.toml"
+config_file = "../.agents/agents/architect.toml"
 
 [agents.architecture-reviewer]
 description = "Synced role from .claude/agents/architecture-reviewer.md"
-config_file = "agents/architecture-reviewer.toml"
+config_file = "../.agents/agents/architecture-reviewer.toml"
 
 [agents.blog-writer]
 description = "Synced role from .claude/agents/blog-writer.md"
-config_file = "agents/blog-writer.toml"
+config_file = "../.agents/agents/blog-writer.toml"
 
 [agents.code-quality-reviewer]
 description = "Synced role from .claude/agents/code-quality-reviewer.md"
-config_file = "agents/code-quality-reviewer.toml"
+config_file = "../.agents/agents/code-quality-reviewer.toml"
 
 [agents.concurrency-reviewer]
 description = "Synced role from .claude/agents/concurrency-reviewer.md"
-config_file = "agents/concurrency-reviewer.toml"
+config_file = "../.agents/agents/concurrency-reviewer.toml"
 
 [agents.debugger]
 description = "Synced role from .claude/agents/debugger.md"
-config_file = "agents/debugger.toml"
+config_file = "../.agents/agents/debugger.toml"
 
 [agents.performance-reviewer]
 description = "Synced role from .claude/agents/performance-reviewer.md"
-config_file = "agents/performance-reviewer.toml"
+config_file = "../.agents/agents/performance-reviewer.toml"
 
 [agents.test-automator]
 description = "Synced role from .claude/agents/test-automator.md"
-config_file = "agents/test-automator.toml"
+config_file = "../.agents/agents/test-automator.toml"
 
 [agents.ui-analyst]
 description = "Synced role from .claude/agents/ui-analyst.md"
-config_file = "agents/ui-analyst.toml"
+config_file = "../.agents/agents/ui-analyst.toml"
