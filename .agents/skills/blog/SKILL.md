@@ -1,4 +1,5 @@
 ---
+name: blog
 description: >
   Notion 기술 블로그 포스트 생성. blog-writer 에이전트에 위임하여 현재 대화 맥락에서
   기술 블로그 포스트를 작성하고 Notion에 게시한다. 유형은 '설계'(설계 의사결정),

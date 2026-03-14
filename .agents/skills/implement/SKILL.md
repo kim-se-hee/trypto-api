@@ -1,4 +1,5 @@
 ---
+name: implement
 description: >
   기능 문서 기반 코드 구현. 플랜 모드에서 생성된 docs/{domain}/{feature}.md를 읽고
   CLAUDE.md 컨벤션에 따라 전체 스택을 구현한다.

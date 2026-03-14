@@ -1,4 +1,5 @@
 ---
+name: pr
 description: >
   Issue 생성 → Pull Request 생성 → Squash Merge까지 한 번에 처리한다.
   현재 브랜치의 변경 사항을 분석하여 GitHub Issue를 먼저 생성하고,

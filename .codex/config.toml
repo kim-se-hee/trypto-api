@@ -1,4 +1,5 @@
-﻿# Synced from CLAUDE settings
+#:schema https://developers.openai.com/codex/config-schema.json
+# Project-scoped Codex config
 
 [mcp_servers.shadcn]
 command = "npx"
@@ -43,4 +44,3 @@ config_file = "agents/test-automator.toml"
 [agents.ui-analyst]
 description = "Synced role from .claude/agents/ui-analyst.md"
 config_file = "agents/ui-analyst.toml"
-

@@ -1,4 +1,5 @@
 ---
+name: analyze-ui
 description: >
   프론트엔드 UI 분석으로 백엔드 API 요구사항 도출. ui-analyst 에이전트에 위임하여
   프론트엔드 페이지의 TSX 컴포넌트, mock 데이터, Playwright 스크린샷을 분석하고
