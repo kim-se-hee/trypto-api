@@ -15,6 +15,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,6 +27,7 @@ public class TransferHistoryStepDefinition {
     private static final Long WALLET_ID = 100L;
     private static final Long OTHER_WALLET_ID = 200L;
     private static final Long COIN_ID = 1L;
+    private static final String COIN_SYMBOL = "BTC";
     private static final Long EXCHANGE_ID = 1L;
 
     private final CommonApiClient apiClient;
@@ -49,6 +51,10 @@ public class TransferHistoryStepDefinition {
         transferJpaRepository.deleteAllInBatch();
         jdbcTemplate.update("DELETE FROM wallet WHERE wallet_id IN (?, ?)", WALLET_ID, OTHER_WALLET_ID);
         jdbcTemplate.update("DELETE FROM investment_round WHERE round_id IN (?, ?)", WALLET_ID, OTHER_WALLET_ID);
+        jdbcTemplate.update("DELETE FROM coin WHERE coin_id = ?", COIN_ID);
+        jdbcTemplate.update(
+            "INSERT INTO coin (coin_id, symbol, name) VALUES (?, ?, ?)",
+            COIN_ID, COIN_SYMBOL, "Bitcoin");
         walletId = null;
     }
 
@@ -60,6 +66,7 @@ public class TransferHistoryStepDefinition {
         LocalDateTime now = LocalDateTime.now();
 
         // WITHDRAW: WALLET_ID -> OTHER_WALLET_ID (SUCCESS)
+        LocalDateTime withdrawCreatedAt = now.minusHours(3);
         saveTransfer(Transfer.builder()
             .idempotencyKey(UUID.randomUUID())
             .fromWalletId(WALLET_ID)
@@ -70,10 +77,12 @@ public class TransferHistoryStepDefinition {
             .amount(new BigDecimal("0.01"))
             .fee(new BigDecimal("0.0005"))
             .status(TransferStatus.SUCCESS)
-            .createdAt(now.minusHours(3))
+            .createdAt(withdrawCreatedAt)
+            .completedAt(withdrawCreatedAt)
             .build());
 
         // DEPOSIT: OTHER_WALLET_ID -> WALLET_ID (SUCCESS)
+        LocalDateTime depositCreatedAt = now.minusHours(2);
         saveTransfer(Transfer.builder()
             .idempotencyKey(UUID.randomUUID())
             .fromWalletId(OTHER_WALLET_ID)
@@ -84,7 +93,8 @@ public class TransferHistoryStepDefinition {
             .amount(new BigDecimal("0.005"))
             .fee(new BigDecimal("0.0003"))
             .status(TransferStatus.SUCCESS)
-            .createdAt(now.minusHours(2))
+            .createdAt(depositCreatedAt)
+            .completedAt(depositCreatedAt)
             .build());
 
         // WITHDRAW: WALLET_ID -> (FROZEN)
@@ -156,6 +166,40 @@ public class TransferHistoryStepDefinition {
             .expectBody().returnResult().getResponseBody();
         List<String> types = com.jayway.jsonpath.JsonPath.read(new String(body), "$.data.content[*].type");
         assertThat(types).isNotEmpty().allMatch(type -> type.equals(expectedType));
+    }
+
+    @Then("송금 내역에 coinSymbol이 모두 포함된다")
+    public void 송금_내역에_coinSymbol이_모두_포함된다() {
+        byte[] body = apiClient.getLastResponse()
+            .expectBody().returnResult().getResponseBody();
+        List<String> symbols = com.jayway.jsonpath.JsonPath.read(new String(body), "$.data.content[*].coinSymbol");
+        assertThat(symbols).isNotEmpty().allMatch(symbol -> symbol.equals(COIN_SYMBOL));
+    }
+
+    @Then("SUCCESS 송금의 completedAt이 createdAt과 동일하다")
+    public void SUCCESS_송금의_completedAt이_createdAt과_동일하다() {
+        byte[] body = apiClient.getLastResponse()
+            .expectBody().returnResult().getResponseBody();
+        List<Map<String, Object>> content = com.jayway.jsonpath.JsonPath.read(new String(body), "$.data.content[*]");
+        List<Map<String, Object>> successTransfers = content.stream()
+            .filter(t -> "SUCCESS".equals(t.get("status")))
+            .toList();
+        assertThat(successTransfers).isNotEmpty();
+        successTransfers.forEach(t ->
+            assertThat(t.get("completedAt")).isNotNull().isEqualTo(t.get("createdAt")));
+    }
+
+    @Then("FROZEN 송금의 completedAt이 null이다")
+    public void FROZEN_송금의_completedAt이_null이다() {
+        byte[] body = apiClient.getLastResponse()
+            .expectBody().returnResult().getResponseBody();
+        List<Map<String, Object>> content = com.jayway.jsonpath.JsonPath.read(new String(body), "$.data.content[*]");
+        List<Map<String, Object>> frozenTransfers = content.stream()
+            .filter(t -> "FROZEN".equals(t.get("status")))
+            .toList();
+        assertThat(frozenTransfers).isNotEmpty();
+        frozenTransfers.forEach(t ->
+            assertThat(t.get("completedAt")).isNull());
     }
 
     private void createWalletWithOwner(Long walletIdToCreate, Long userId) {

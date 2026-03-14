@@ -10,6 +10,9 @@
     그러면 응답 상태코드는 200이다
     그리고 송금 내역이 3건 조회된다
     그리고 송금 내역에 DEPOSIT과 WITHDRAW가 모두 포함된다
+    그리고 송금 내역에 coinSymbol이 모두 포함된다
+    그리고 SUCCESS 송금의 completedAt이 createdAt과 동일하다
+    그리고 FROZEN 송금의 completedAt이 null이다
 
   시나리오: DEPOSIT 타입 필터 조회
     만일 지갑의 송금 내역을 DEPOSIT 타입으로 조회한다

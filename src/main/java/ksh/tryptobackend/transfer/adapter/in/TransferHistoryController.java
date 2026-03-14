@@ -29,7 +29,7 @@ public class TransferHistoryController {
         TransferHistoryCursorResult result = findTransferHistoryUseCase.findTransferHistory(request.toQuery(walletId));
         CursorPageResponseDto<TransferHistoryResponse> response = CursorPageResponseDto.of(
             result.transfers().stream()
-                .map(transfer -> TransferHistoryResponse.from(transfer, walletId))
+                .map(transfer -> TransferHistoryResponse.from(transfer, walletId, result.coinSymbolMap()))
                 .toList(),
             result.nextCursor(),
             result.hasNext());

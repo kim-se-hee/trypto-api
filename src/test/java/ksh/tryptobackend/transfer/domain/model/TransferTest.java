@@ -1,13 +1,17 @@
 package ksh.tryptobackend.transfer.domain.model;
 
 import ksh.tryptobackend.transfer.domain.vo.TransferBalanceChange;
+import ksh.tryptobackend.transfer.domain.vo.TransferDestination;
+import ksh.tryptobackend.transfer.domain.vo.TransferFailureReason;
 import ksh.tryptobackend.transfer.domain.vo.TransferStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -117,6 +121,69 @@ class TransferTest {
             assertThatThrownBy(transfer::planBalanceChanges)
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("REFUNDED");
+        }
+    }
+
+    @Nested
+    @DisplayName("완료 시각 (completedAt)")
+    class CompletedAtTest {
+
+        private static final LocalDateTime CREATED_AT = LocalDateTime.of(2026, 3, 10, 14, 0, 0);
+
+        @Test
+        @DisplayName("SUCCESS 송금 — completedAt이 createdAt과 동일하게 설정된다")
+        void create_success_completedAtEqualsCreatedAt() {
+            // given
+            TransferDestination destination = new TransferDestination.Resolved(TO_WALLET_ID);
+
+            // when
+            Transfer transfer = Transfer.create(
+                UUID.randomUUID(), FROM_WALLET_ID,
+                COIN_ID, "ERC-20", "0xabc", null,
+                new BigDecimal("1.0"), new BigDecimal("0.001"),
+                destination, CREATED_AT);
+
+            // then
+            assertThat(transfer.getCompletedAt()).isEqualTo(CREATED_AT);
+            assertThat(transfer.getStatus()).isEqualTo(TransferStatus.SUCCESS);
+        }
+
+        @Test
+        @DisplayName("FROZEN 송금 — completedAt이 null이다")
+        void create_frozen_completedAtIsNull() {
+            // given
+            TransferDestination destination = new TransferDestination.Failed(TransferFailureReason.WRONG_ADDRESS);
+
+            // when
+            Transfer transfer = Transfer.create(
+                UUID.randomUUID(), FROM_WALLET_ID,
+                COIN_ID, "ERC-20", "0xinvalid", null,
+                new BigDecimal("1.0"), new BigDecimal("0.001"),
+                destination, CREATED_AT);
+
+            // then
+            assertThat(transfer.getCompletedAt()).isNull();
+            assertThat(transfer.getStatus()).isEqualTo(TransferStatus.FROZEN);
+        }
+
+        @Test
+        @DisplayName("FROZEN 송금 반환 — completedAt이 반환 시각으로 설정된다")
+        void refund_frozenTransfer_completedAtEqualsRefundedAt() {
+            // given
+            TransferDestination destination = new TransferDestination.Failed(TransferFailureReason.WRONG_CHAIN);
+            Transfer transfer = Transfer.create(
+                UUID.randomUUID(), FROM_WALLET_ID,
+                COIN_ID, "ERC-20", "0xinvalid", null,
+                new BigDecimal("1.0"), new BigDecimal("0.001"),
+                destination, CREATED_AT);
+            LocalDateTime refundedAt = CREATED_AT.plusHours(24);
+
+            // when
+            transfer.refund(refundedAt);
+
+            // then
+            assertThat(transfer.getCompletedAt()).isEqualTo(refundedAt);
+            assertThat(transfer.getStatus()).isEqualTo(TransferStatus.REFUNDED);
         }
     }
 
