@@ -64,16 +64,15 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         Order order = Order.create(command.orderType(), command.side(),
             command.idempotencyKey(), command.walletId(), command.exchangeCoinId(),
             command.amount(), command.price(), venue, currentPrice, LocalDateTime.now(clock));
-        validateBalance(mode, order, command.walletId(), venue, mapping.coinId());
+        validateBalance(mode, order, command, venue, mapping);
 
-        List<RuleViolation> violations = checkOrderViolations(
-            order, command.walletId(), command.exchangeCoinId(), mapping.coinId(), currentPrice);
+        List<RuleViolation> violations = checkOrderViolations(order, command, mapping, currentPrice);
         order.addViolations(violations);
 
-        applyBalanceChanges(mode, order, command.walletId(), venue, mapping.coinId());
+        applyBalanceChanges(mode, order, command, venue, mapping);
 
         Order savedOrder = orderCommandPort.save(order);
-        updateHoldingIfMarketOrder(order, command.walletId(), mapping.coinId(), currentPrice);
+        updateHoldingIfMarketOrder(order, command, mapping, currentPrice);
 
         return savedOrder;
     }
@@ -90,47 +89,48 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     }
 
     private void validateBalance(OrderMode mode, Order order,
-                                  Long walletId, TradingVenue venue, Long coinId) {
-        Long balanceCoinId = mode.resolveBalanceCoinId(venue, coinId);
-        BigDecimal available = getAvailableBalanceUseCase.getAvailableBalance(walletId, balanceCoinId);
+                                  PlaceOrderCommand command, TradingVenue venue,
+                                  ExchangeCoinMappingResult mapping) {
+        Long balanceCoinId = mode.resolveBalanceCoinId(venue, mapping.coinId());
+        BigDecimal available = getAvailableBalanceUseCase.getAvailableBalance(command.walletId(), balanceCoinId);
         order.validateSufficientBalance(available);
     }
 
-    private List<RuleViolation> checkOrderViolations(Order order, Long walletId,
-                                                      Long exchangeCoinId, Long coinId,
+    private List<RuleViolation> checkOrderViolations(Order order, PlaceOrderCommand command,
+                                                      ExchangeCoinMappingResult mapping,
                                                       BigDecimal currentPrice) {
-        CheckRuleViolationsQuery query = buildViolationQuery(
-            order, walletId, exchangeCoinId, coinId, currentPrice);
+        CheckRuleViolationsQuery query = buildViolationQuery(order, command, mapping, currentPrice);
         return checkRuleViolationsUseCase.checkViolations(query).stream()
             .map(r -> new RuleViolation(r.ruleId(), r.violationReason(), r.createdAt()))
             .toList();
     }
 
-    private CheckRuleViolationsQuery buildViolationQuery(Order order, Long walletId,
-                                                          Long exchangeCoinId, Long coinId,
+    private CheckRuleViolationsQuery buildViolationQuery(Order order, PlaceOrderCommand command,
+                                                          ExchangeCoinMappingResult mapping,
                                                           BigDecimal currentPrice) {
         Holding holding = holdingCommandPort
-            .findByWalletIdAndCoinId(walletId, coinId)
-            .orElseGet(() -> Holding.empty(walletId, coinId));
+            .findByWalletIdAndCoinId(command.walletId(), mapping.coinId())
+            .orElseGet(() -> Holding.empty(command.walletId(), mapping.coinId()));
 
         HoldingState holdingState = new HoldingState(
             holding.getAvgBuyPrice(), holding.getTotalQuantity(), holding.getAveragingDownCount());
 
-        BigDecimal changeRate = priceChangeRatePort.getChangeRate(exchangeCoinId);
+        BigDecimal changeRate = priceChangeRatePort.getChangeRate(command.exchangeCoinId());
 
         LocalDate today = LocalDate.now(clock);
         long todayOrderCount = orderCommandPort.countByWalletIdAndCreatedAtBetween(
-            walletId, today.atStartOfDay(), today.atTime(LocalTime.MAX));
+            command.walletId(), today.atStartOfDay(), today.atTime(LocalTime.MAX));
 
         return new CheckRuleViolationsQuery(
-            walletId, order.isBuyOrder(), changeRate,
+            command.walletId(), order.isBuyOrder(), changeRate,
             holdingState, currentPrice, todayOrderCount, LocalDateTime.now(clock));
     }
 
     private void applyBalanceChanges(OrderMode mode, Order order,
-                                      Long walletId, TradingVenue venue, Long coinId) {
-        for (BalanceChange change : mode.planBalanceChanges(order, venue, coinId)) {
-            applyBalanceChange(walletId, change);
+                                      PlaceOrderCommand command, TradingVenue venue,
+                                      ExchangeCoinMappingResult mapping) {
+        for (BalanceChange change : mode.planBalanceChanges(order, venue, mapping.coinId())) {
+            applyBalanceChange(command.walletId(), change);
         }
     }
 
@@ -142,13 +142,14 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         }
     }
 
-    private void updateHoldingIfMarketOrder(Order order, Long walletId, Long coinId,
+    private void updateHoldingIfMarketOrder(Order order, PlaceOrderCommand command,
+                                             ExchangeCoinMappingResult mapping,
                                              BigDecimal currentPrice) {
         if (!order.isMarketOrder()) {
             return;
         }
-        Holding holding = holdingCommandPort.findByWalletIdAndCoinId(walletId, coinId)
-            .orElseGet(() -> Holding.empty(walletId, coinId));
+        Holding holding = holdingCommandPort.findByWalletIdAndCoinId(command.walletId(), mapping.coinId())
+            .orElseGet(() -> Holding.empty(command.walletId(), mapping.coinId()));
         holding.applyOrder(order.getSide(), order.getFilledPrice(), order.getQuantity().value(), currentPrice);
         holdingCommandPort.save(holding);
     }
