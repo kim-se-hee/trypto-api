@@ -179,6 +179,13 @@ ConcurrentHashMap<Long, CopyOnWriteArrayList<PendingOrder>>
   - 포트폴리오 탭: 포트폴리오 API refetch (holdings + 잔고 변동)
   - 입출금 탭: 잔고 API refetch
 
+#### WebSocket 설정 변경
+
+현재 `WebSocketConfig`는 `/topic` 브로커만 등록되어 있다. user destination(`/user/queue/events`)을 사용하려면 다음을 추가한다.
+
+- `enableSimpleBroker("/topic", "/queue")` — `/queue` 브로커 추가
+- `registry.setUserDestinationPrefix("/user")` — user destination 접두사 설정
+
 ## 트랜잭션 범위
 
 하나의 체결 처리(주문 상태 변경 + 잔고 반영 + Holding 갱신)는 단일 트랜잭션으로 묶는다.
