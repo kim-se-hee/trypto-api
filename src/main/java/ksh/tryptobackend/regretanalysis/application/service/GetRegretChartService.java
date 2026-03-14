@@ -4,6 +4,7 @@ import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.investmentround.application.port.in.FindRoundInfoUseCase;
 import ksh.tryptobackend.investmentround.application.port.in.dto.result.RoundInfoResult;
+import ksh.tryptobackend.marketdata.application.port.in.FindBtcDailyPricesUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeDetailUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeDetailResult;
 import ksh.tryptobackend.portfolio.application.port.in.FindSnapshotsUseCase;
@@ -13,7 +14,6 @@ import ksh.tryptobackend.regretanalysis.application.port.in.dto.query.GetRegretC
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.DailyComparison;
 import ksh.tryptobackend.regretanalysis.application.port.in.dto.result.RegretChartResult.ViolationMarkerPoint;
-import ksh.tryptobackend.regretanalysis.application.port.out.BtcPriceHistoryQueryPort;
 import ksh.tryptobackend.regretanalysis.application.port.out.RegretReportQueryPort;
 import ksh.tryptobackend.regretanalysis.domain.model.AssetSnapshot;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetail;
@@ -42,7 +42,7 @@ public class GetRegretChartService implements GetRegretChartUseCase {
     private final FindExchangeDetailUseCase findExchangeDetailUseCase;
     private final FindSnapshotsUseCase findSnapshotsUseCase;
     private final RegretReportQueryPort regretReportQueryPort;
-    private final BtcPriceHistoryQueryPort btcPriceHistoryQueryPort;
+    private final FindBtcDailyPricesUseCase findBtcDailyPricesUseCase;
 
     @Override
     @Transactional(readOnly = true)
@@ -121,8 +121,10 @@ public class GetRegretChartService implements GetRegretChartUseCase {
     }
 
     private BtcBenchmark buildBtcBenchmark(AssetTimeline timeline, String currency) {
-        List<BtcDailyPrice> btcPrices = btcPriceHistoryQueryPort.findBtcDailyPrices(
-            timeline.getStartDate(), timeline.getEndDate(), currency);
+        List<BtcDailyPrice> btcPrices = findBtcDailyPricesUseCase.findBtcDailyPrices(
+                timeline.getStartDate(), timeline.getEndDate(), currency).stream()
+            .map(r -> new BtcDailyPrice(r.date(), r.closePrice()))
+            .toList();
         BtcDailyPrices dailyPrices = BtcDailyPrices.of(btcPrices);
 
         return BtcBenchmark.calculate(timeline.getSeedMoney(), dailyPrices.toMap(), timeline.getDates(), timeline.getStartDate());

@@ -6,12 +6,12 @@ import ksh.tryptobackend.trading.application.port.in.FindActiveHoldingsUseCase;
 import ksh.tryptobackend.trading.application.port.in.FindEvaluatedHoldingsUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.result.EvaluatedHoldingResult;
 import ksh.tryptobackend.trading.application.port.in.dto.result.HoldingInfoResult;
+import ksh.tryptobackend.trading.domain.vo.CoinExchangeMapping;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -28,21 +28,21 @@ public class FindEvaluatedHoldingsService implements FindEvaluatedHoldingsUseCas
             return List.of();
         }
 
-        Map<Long, Long> exchangeCoinIdMap = findExchangeCoinIdMap(exchangeId, holdings);
+        CoinExchangeMapping coinExchangeMapping = findCoinExchangeMapping(exchangeId, holdings);
 
         return holdings.stream()
-            .map(holding -> toEvaluatedHoldingResult(holding, exchangeCoinIdMap))
+            .map(holding -> toEvaluatedHoldingResult(holding, coinExchangeMapping))
             .toList();
     }
 
-    private Map<Long, Long> findExchangeCoinIdMap(Long exchangeId, List<HoldingInfoResult> holdings) {
+    private CoinExchangeMapping findCoinExchangeMapping(Long exchangeId, List<HoldingInfoResult> holdings) {
         List<Long> coinIds = holdings.stream().map(HoldingInfoResult::coinId).toList();
-        return findExchangeCoinMappingUseCase.findExchangeCoinIdMap(exchangeId, coinIds);
+        return new CoinExchangeMapping(findExchangeCoinMappingUseCase.findExchangeCoinIdMap(exchangeId, coinIds));
     }
 
     private EvaluatedHoldingResult toEvaluatedHoldingResult(HoldingInfoResult holding,
-                                                             Map<Long, Long> exchangeCoinIdMap) {
-        Long exchangeCoinId = exchangeCoinIdMap.get(holding.coinId());
+                                                             CoinExchangeMapping coinExchangeMapping) {
+        Long exchangeCoinId = coinExchangeMapping.getExchangeCoinId(holding.coinId());
         BigDecimal currentPrice = getLivePriceUseCase.getCurrentPrice(exchangeCoinId);
         return new EvaluatedHoldingResult(
             holding.coinId(), holding.avgBuyPrice(), holding.totalQuantity(), currentPrice);

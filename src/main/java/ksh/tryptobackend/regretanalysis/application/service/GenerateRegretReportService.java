@@ -10,6 +10,7 @@ import ksh.tryptobackend.regretanalysis.domain.model.AssetSnapshot;
 import ksh.tryptobackend.regretanalysis.domain.model.RegretReport;
 import ksh.tryptobackend.regretanalysis.domain.model.RuleImpact;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolatedOrder;
+import ksh.tryptobackend.regretanalysis.domain.model.ViolatedOrders;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetail;
 import ksh.tryptobackend.regretanalysis.domain.model.ViolationDetails;
 import ksh.tryptobackend.regretanalysis.domain.vo.CurrentPrices;
@@ -17,7 +18,6 @@ import ksh.tryptobackend.regretanalysis.domain.vo.TradeSide;
 import ksh.tryptobackend.regretanalysis.domain.vo.ViolationLossContext.SoldPortion;
 import ksh.tryptobackend.trading.application.port.in.FindViolatedOrdersUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.query.FindViolatedOrdersQuery;
-import ksh.tryptobackend.trading.application.port.in.dto.result.SoldPortionResult;
 import ksh.tryptobackend.trading.application.port.in.dto.result.ViolatedOrderResult;
 import ksh.tryptobackend.marketdata.application.port.in.GetLivePriceUseCase;
 import lombok.RequiredArgsConstructor;
@@ -43,12 +43,13 @@ public class GenerateRegretReportService implements GenerateRegretReportUseCase 
 
     @Override
     public Optional<RegretReport> generateReport(GenerateRegretReportCommand command) {
-        List<ViolatedOrder> violations = findViolations(command);
+        ViolatedOrders violations = findViolations(command);
         if (violations.isEmpty()) {
             return Optional.empty();
         }
 
-        List<ViolationDetail> details = calculateViolationDetails(violations);
+        CurrentPrices currentPrices = resolveCurrentPrices(violations.exchangeCoinIds());
+        List<ViolationDetail> details = violations.calculateDetails(currentPrices);
         AssetSnapshot snapshot = getLatestSnapshot(command);
         List<RuleImpact> impacts = new ViolationDetails(details).toRuleImpacts(snapshot.getTotalInvestment());
 
@@ -61,13 +62,14 @@ public class GenerateRegretReportService implements GenerateRegretReportUseCase 
         ));
     }
 
-    private List<ViolatedOrder> findViolations(GenerateRegretReportCommand command) {
+    private ViolatedOrders findViolations(GenerateRegretReportCommand command) {
         FindViolatedOrdersQuery query = new FindViolatedOrdersQuery(
             command.roundId(), command.exchangeId(), command.walletId());
 
-        return findViolatedOrdersUseCase.findViolatedOrders(query).stream()
+        List<ViolatedOrder> orders = findViolatedOrdersUseCase.findViolatedOrders(query).stream()
             .map(this::toViolatedOrder)
             .toList();
+        return new ViolatedOrders(orders);
     }
 
     private ViolatedOrder toViolatedOrder(ViolatedOrderResult result) {
@@ -83,22 +85,8 @@ public class GenerateRegretReportService implements GenerateRegretReportUseCase 
             soldPortions);
     }
 
-    private List<ViolationDetail> calculateViolationDetails(List<ViolatedOrder> violations) {
-        CurrentPrices currentPrices = resolveCurrentPrices(violations);
-        return violations.stream()
-            .map(v -> {
-                BigDecimal lossAmount = v.calculateLoss(currentPrices.getPrice(v.getExchangeCoinId()));
-                return ViolationDetail.create(
-                    v.getOrderId(), v.getRuleId(), v.getExchangeCoinId(),
-                    lossAmount, lossAmount, v.getViolatedAt());
-            })
-            .toList();
-    }
-
-    private CurrentPrices resolveCurrentPrices(List<ViolatedOrder> violations) {
-        Map<Long, BigDecimal> priceMap = violations.stream()
-            .map(ViolatedOrder::getExchangeCoinId)
-            .distinct()
+    private CurrentPrices resolveCurrentPrices(java.util.Set<Long> exchangeCoinIds) {
+        Map<Long, BigDecimal> priceMap = exchangeCoinIds.stream()
             .collect(Collectors.toMap(id -> id, getLivePriceUseCase::getCurrentPrice));
         return new CurrentPrices(priceMap);
     }
