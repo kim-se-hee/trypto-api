@@ -11,11 +11,12 @@ import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeDetai
 import ksh.tryptobackend.wallet.application.port.in.GetWalletBalancesUseCase;
 import ksh.tryptobackend.wallet.application.port.in.dto.query.GetWalletBalancesQuery;
 import ksh.tryptobackend.wallet.application.port.in.dto.result.WalletBalancesResult;
-import ksh.tryptobackend.wallet.application.port.in.dto.result.WalletBalancesResult.BalanceDetail;
+import ksh.tryptobackend.wallet.application.port.in.dto.result.WalletBalancesResult.CoinBalance;
 import ksh.tryptobackend.wallet.application.port.out.WalletBalanceQueryPort;
 import ksh.tryptobackend.wallet.application.port.out.WalletQueryPort;
 import ksh.tryptobackend.wallet.domain.model.Wallet;
 import ksh.tryptobackend.wallet.domain.model.WalletBalance;
+import ksh.tryptobackend.wallet.domain.model.WalletBalances;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,8 +43,8 @@ public class GetWalletBalancesService implements GetWalletBalancesUseCase {
         validateOwnership(wallet, query);
 
         Long baseCurrencyCoinId = getBaseCurrencyCoinId(wallet);
-        List<WalletBalance> balances = walletBalanceQueryPort.findByWalletId(query.walletId());
-        String baseCurrencySymbol = getBaseCurrencySymbol(baseCurrencyCoinId);
+        WalletBalances balances = new WalletBalances(walletBalanceQueryPort.findByWalletId(query.walletId()));
+        String baseCurrencySymbol = resolveBaseCurrencySymbol(baseCurrencyCoinId);
 
         return buildResult(wallet, baseCurrencySymbol, baseCurrencyCoinId, balances);
     }
@@ -69,7 +70,7 @@ public class GetWalletBalancesService implements GetWalletBalancesUseCase {
         return exchange.baseCurrencyCoinId();
     }
 
-    private String getBaseCurrencySymbol(Long baseCurrencyCoinId) {
+    private String resolveBaseCurrencySymbol(Long baseCurrencyCoinId) {
         CoinInfoResult coinInfo = findCoinInfoUseCase.findByIds(Set.of(baseCurrencyCoinId))
             .get(baseCurrencyCoinId);
 
@@ -81,23 +82,14 @@ public class GetWalletBalancesService implements GetWalletBalancesUseCase {
     }
 
     private WalletBalancesResult buildResult(Wallet wallet, String baseCurrencySymbol,
-                                              Long baseCurrencyCoinId, List<WalletBalance> balances) {
-        BigDecimal baseCurrencyAvailable = BigDecimal.ZERO;
-        BigDecimal baseCurrencyLocked = BigDecimal.ZERO;
-        List<BalanceDetail> coinBalances = new java.util.ArrayList<>();
+                                              Long baseCurrencyCoinId, WalletBalances balances) {
+        WalletBalance baseCurrency = balances.findBaseCurrency(baseCurrencyCoinId).orElse(null);
+        BigDecimal baseCurrencyAvailable = baseCurrency != null ? baseCurrency.getAvailable() : BigDecimal.ZERO;
+        BigDecimal baseCurrencyLocked = baseCurrency != null ? baseCurrency.getLocked() : BigDecimal.ZERO;
 
-        for (WalletBalance balance : balances) {
-            if (balance.getCoinId().equals(baseCurrencyCoinId)) {
-                baseCurrencyAvailable = balance.getAvailable();
-                baseCurrencyLocked = balance.getLocked();
-            } else {
-                coinBalances.add(new BalanceDetail(
-                    balance.getCoinId(),
-                    balance.getAvailable(),
-                    balance.getLocked()
-                ));
-            }
-        }
+        List<CoinBalance> coinBalances = balances.findCoinBalances(baseCurrencyCoinId).stream()
+            .map(b -> new CoinBalance(b.getCoinId(), b.getAvailable(), b.getLocked()))
+            .toList();
 
         return new WalletBalancesResult(
             wallet.getExchangeId(),

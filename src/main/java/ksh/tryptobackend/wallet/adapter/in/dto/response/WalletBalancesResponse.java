@@ -10,15 +10,15 @@ public record WalletBalancesResponse(
     String baseCurrencySymbol,
     BigDecimal baseCurrencyAvailable,
     BigDecimal baseCurrencyLocked,
-    List<BalanceResponse> balances
+    List<CoinBalanceResponse> balances
 ) {
 
-    public record BalanceResponse(Long coinId, BigDecimal available, BigDecimal locked) {
+    public record CoinBalanceResponse(Long coinId, BigDecimal available, BigDecimal locked) {
     }
 
     public static WalletBalancesResponse from(WalletBalancesResult result) {
-        List<BalanceResponse> balances = result.balances().stream()
-            .map(b -> new BalanceResponse(b.coinId(), b.available(), b.locked()))
+        List<CoinBalanceResponse> balances = result.balances().stream()
+            .map(b -> new CoinBalanceResponse(b.coinId(), b.available(), b.locked()))
             .toList();
 
         return new WalletBalancesResponse(

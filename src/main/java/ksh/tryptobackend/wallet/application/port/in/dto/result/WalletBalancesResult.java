@@ -8,9 +8,9 @@ public record WalletBalancesResult(
     String baseCurrencySymbol,
     BigDecimal baseCurrencyAvailable,
     BigDecimal baseCurrencyLocked,
-    List<BalanceDetail> balances
+    List<CoinBalance> balances
 ) {
 
-    public record BalanceDetail(Long coinId, BigDecimal available, BigDecimal locked) {
+    public record CoinBalance(Long coinId, BigDecimal available, BigDecimal locked) {
     }
 }
