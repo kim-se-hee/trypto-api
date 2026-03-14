@@ -19,7 +19,6 @@ import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.model.RuleViolation;
 import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeCoinMappingResult;
 import ksh.tryptobackend.trading.domain.vo.BalanceChange;
-import ksh.tryptobackend.trading.domain.vo.Side;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
 import ksh.tryptobackend.wallet.application.port.in.GetAvailableBalanceUseCase;
 import ksh.tryptobackend.wallet.application.port.in.ManageWalletBalanceUseCase;
@@ -113,7 +112,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
             .findByWalletIdAndCoinId(walletId, coinId)
             .orElse(null);
 
-        BigDecimal changeRate = order.getSide() == Side.BUY
+        BigDecimal changeRate = order.isBuyOrder()
             ? priceChangeRatePort.getChangeRate(exchangeCoinId)
             : BigDecimal.ZERO;
 
@@ -123,7 +122,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
 
         return new CheckRuleViolationsQuery(
             walletId,
-            order.getSide() == Side.BUY,
+            order.isBuyOrder(),
             changeRate,
             holding != null ? holding.getAvgBuyPrice() : null,
             holding != null ? holding.getTotalQuantity() : null,

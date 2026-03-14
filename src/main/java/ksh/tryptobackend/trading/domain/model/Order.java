@@ -130,6 +130,10 @@ public class Order {
         return this.orderType == OrderType.MARKET;
     }
 
+    public boolean isBuyOrder() {
+        return this.side == Side.BUY;
+    }
+
     public boolean isCancellable() {
         return this.status == OrderStatus.PENDING;
     }
