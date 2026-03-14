@@ -17,6 +17,14 @@ public class WalletBalance {
     private BigDecimal available;
     private BigDecimal locked;
 
+    public static WalletBalance zero(Long coinId) {
+        return WalletBalance.builder()
+            .coinId(coinId)
+            .available(BigDecimal.ZERO)
+            .locked(BigDecimal.ZERO)
+            .build();
+    }
+
     public void deductAvailable(BigDecimal amount) {
         validateSufficient(available, amount);
         this.available = available.subtract(amount);
