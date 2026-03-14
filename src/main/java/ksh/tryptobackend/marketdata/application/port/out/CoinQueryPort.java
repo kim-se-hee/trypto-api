@@ -1,6 +1,6 @@
 package ksh.tryptobackend.marketdata.application.port.out;
 
-import ksh.tryptobackend.marketdata.application.port.out.dto.CoinInfo;
+import ksh.tryptobackend.marketdata.domain.model.Coin;
 import ksh.tryptobackend.marketdata.domain.vo.CoinSymbols;
 
 import java.util.List;
@@ -10,6 +10,6 @@ public interface CoinQueryPort {
 
     CoinSymbols findSymbolsByIds(Set<Long> coinIds);
 
-    List<CoinInfo> findByIds(Set<Long> coinIds);
+    List<Coin> findByIds(Set<Long> coinIds);
 
 }

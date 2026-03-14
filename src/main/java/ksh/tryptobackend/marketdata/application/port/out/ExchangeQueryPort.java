@@ -1,7 +1,7 @@
 package ksh.tryptobackend.marketdata.application.port.out;
 
-import ksh.tryptobackend.marketdata.application.port.out.dto.ExchangeDetail;
-import ksh.tryptobackend.marketdata.application.port.out.dto.ExchangeSummary;
+import ksh.tryptobackend.marketdata.domain.model.Exchange;
+import ksh.tryptobackend.marketdata.domain.vo.ExchangeSummary;
 
 import java.util.List;
 import java.util.Map;
@@ -10,7 +10,7 @@ import java.util.Set;
 
 public interface ExchangeQueryPort {
 
-    Optional<ExchangeDetail> findExchangeDetailById(Long exchangeId);
+    Optional<Exchange> findExchangeDetailById(Long exchangeId);
 
     Optional<ExchangeSummary> findExchangeSummaryById(Long exchangeId);
 

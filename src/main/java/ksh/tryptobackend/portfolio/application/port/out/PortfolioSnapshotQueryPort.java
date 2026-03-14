@@ -1,8 +1,8 @@
 package ksh.tryptobackend.portfolio.application.port.out;
 
-import ksh.tryptobackend.portfolio.application.port.out.dto.SnapshotDetailProjection;
-import ksh.tryptobackend.portfolio.application.port.out.dto.SnapshotInfo;
-import ksh.tryptobackend.portfolio.application.port.out.dto.UserSnapshotSummary;
+import ksh.tryptobackend.portfolio.domain.vo.HoldingSummary;
+import ksh.tryptobackend.portfolio.domain.vo.SnapshotOverview;
+import ksh.tryptobackend.portfolio.domain.vo.UserSnapshotSummary;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -10,11 +10,11 @@ import java.util.Optional;
 
 public interface PortfolioSnapshotQueryPort {
 
-    List<SnapshotDetailProjection> findLatestSnapshotDetails(Long userId, Long roundId);
+    List<HoldingSummary> findLatestSnapshotDetails(Long userId, Long roundId);
 
-    Optional<SnapshotInfo> findLatestByRoundIdAndExchangeId(Long roundId, Long exchangeId);
+    Optional<SnapshotOverview> findLatestByRoundIdAndExchangeId(Long roundId, Long exchangeId);
 
-    List<SnapshotInfo> findAllByRoundIdAndExchangeId(Long roundId, Long exchangeId);
+    List<SnapshotOverview> findAllByRoundIdAndExchangeId(Long roundId, Long exchangeId);
 
     List<UserSnapshotSummary> findLatestSummaries(LocalDate snapshotDate);
 }

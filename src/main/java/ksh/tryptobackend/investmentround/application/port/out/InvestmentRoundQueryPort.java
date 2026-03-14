@@ -1,15 +1,15 @@
 package ksh.tryptobackend.investmentround.application.port.out;
 
-import ksh.tryptobackend.investmentround.application.port.out.dto.InvestmentRoundInfo;
+import ksh.tryptobackend.investmentround.domain.vo.RoundOverview;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface InvestmentRoundQueryPort {
 
-    Optional<InvestmentRoundInfo> findActiveRoundByUserId(Long userId);
+    Optional<RoundOverview> findActiveRoundByUserId(Long userId);
 
-    Optional<InvestmentRoundInfo> findRoundInfoById(Long roundId);
+    Optional<RoundOverview> findRoundInfoById(Long roundId);
 
-    List<InvestmentRoundInfo> findAllActiveRounds();
+    List<RoundOverview> findAllActiveRounds();
 }
