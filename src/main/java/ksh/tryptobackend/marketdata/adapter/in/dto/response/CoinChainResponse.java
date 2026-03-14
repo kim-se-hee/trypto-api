@@ -1,6 +1,6 @@
 package ksh.tryptobackend.marketdata.adapter.in.dto.response;
 
-import ksh.tryptobackend.marketdata.domain.model.ExchangeCoinChain;
+import ksh.tryptobackend.marketdata.application.port.in.dto.result.CoinChainResult;
 
 public record CoinChainResponse(
     Long exchangeCoinChainId,
@@ -8,11 +8,11 @@ public record CoinChainResponse(
     boolean tagRequired
 ) {
 
-    public static CoinChainResponse from(ExchangeCoinChain exchangeCoinChain) {
+    public static CoinChainResponse from(CoinChainResult result) {
         return new CoinChainResponse(
-            exchangeCoinChain.getExchangeCoinChainId(),
-            exchangeCoinChain.getChain(),
-            exchangeCoinChain.isTagRequired()
+            result.exchangeCoinChainId(),
+            result.chain(),
+            result.tagRequired()
         );
     }
 }

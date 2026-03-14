@@ -16,21 +16,21 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ExchangeCoinChainQueryAdapter implements ExchangeCoinChainQueryPort {
 
+    private static final QExchangeCoinChainJpaEntity ECC = QExchangeCoinChainJpaEntity.exchangeCoinChainJpaEntity;
+    private static final QExchangeCoinJpaEntity EC = QExchangeCoinJpaEntity.exchangeCoinJpaEntity;
+
     private final JPAQueryFactory queryFactory;
 
     @Override
     public Optional<ExchangeCoinChain> findByExchangeIdAndCoinIdAndChain(
         Long exchangeId, Long coinId, String chain) {
-        QExchangeCoinChainJpaEntity ecc = QExchangeCoinChainJpaEntity.exchangeCoinChainJpaEntity;
-        QExchangeCoinJpaEntity ec = QExchangeCoinJpaEntity.exchangeCoinJpaEntity;
-
         ExchangeCoinChainJpaEntity entity = queryFactory
-            .selectFrom(ecc)
-            .join(ec).on(ecc.exchangeCoinId.eq(ec.id))
+            .selectFrom(ECC)
+            .join(EC).on(ECC.exchangeCoinId.eq(EC.id))
             .where(
-                ec.exchangeId.eq(exchangeId),
-                ec.coinId.eq(coinId),
-                ecc.chain.eq(chain)
+                EC.exchangeId.eq(exchangeId),
+                EC.coinId.eq(coinId),
+                ECC.chain.eq(chain)
             )
             .fetchOne();
 
@@ -40,15 +40,12 @@ public class ExchangeCoinChainQueryAdapter implements ExchangeCoinChainQueryPort
 
     @Override
     public List<ExchangeCoinChain> findByExchangeIdAndCoinId(Long exchangeId, Long coinId) {
-        QExchangeCoinChainJpaEntity ecc = QExchangeCoinChainJpaEntity.exchangeCoinChainJpaEntity;
-        QExchangeCoinJpaEntity ec = QExchangeCoinJpaEntity.exchangeCoinJpaEntity;
-
         return queryFactory
-            .selectFrom(ecc)
-            .join(ec).on(ecc.exchangeCoinId.eq(ec.id))
+            .selectFrom(ECC)
+            .join(EC).on(ECC.exchangeCoinId.eq(EC.id))
             .where(
-                ec.exchangeId.eq(exchangeId),
-                ec.coinId.eq(coinId)
+                EC.exchangeId.eq(exchangeId),
+                EC.coinId.eq(coinId)
             )
             .fetch()
             .stream()
