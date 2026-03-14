@@ -175,7 +175,8 @@ throw new CustomException(ErrorCode.INVALID_PAGE_SIZE, Arrays.asList(requestSize
 - Entity에는 `@Getter`만 허용하고 `@Setter`, `@Data` 금지. 상태 변경은 비즈니스 의미를 가진 메서드로만 수행한다
 - 원시 타입이 단위, 제한, 계산 등 비즈니스 규칙을 가지면 VO로 감싼다 (primitive obsession 방지)
 - 원시 타입이나 제네릭 컬렉션(`Map<Long, X>` 등)이 주변 코드의 추상화 수준을 깨뜨리면 VO나 도메인 모델로 감싸서 가독성을 높인다. 비즈니스 규칙이 없더라도 타입 이름이 도메인 의도를 전달하거나 null 처리 같은 사용 패턴을 캡슐화할 수 있다면 감싸는 것이 낫다
-- 항상 함께 이동하는 필드 묶음(Data Clump)은 VO로 추출한다. 단, 크로스 컨텍스트 경계의 Query/Result DTO에서는 다른 컨텍스트의 도메인 타입을 참조할 수 없으므로 flat primitive 전달이 정상이다
+- 항상 함께 이동하는 필드 묶음은 VO로 추출한다. 
+- 단, 크로스 컨텍스트 경계의 Query/Result DTO에서는 다른 컨텍스트의 도메인 타입을 참조할 수 없으므로 primitive 전달을 해도 된다
 - boolean/원시값 → enum/VO 변환은 도메인 팩토리 메서드에 캡슐화한다 (예: `TradingVenue.of(feeRate, baseCurrencyCoinId, domestic)`)
 - enum 비교(`getSide() == Side.BUY`)는 도메인 모델의 판별 메서드로 감싼다 (예: `order.isBuyOrder()`)
 - VO는 불변 객체로 만든다. 모든 필드 `final`, 변경이 필요하면 새 객체를 생성한다
