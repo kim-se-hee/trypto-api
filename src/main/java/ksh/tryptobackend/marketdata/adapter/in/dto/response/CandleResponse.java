@@ -2,14 +2,15 @@ package ksh.tryptobackend.marketdata.adapter.in.dto.response;
 
 import ksh.tryptobackend.marketdata.domain.model.Candle;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 public record CandleResponse(
     Instant time,
-    double open,
-    double high,
-    double low,
-    double close
+    BigDecimal open,
+    BigDecimal high,
+    BigDecimal low,
+    BigDecimal close
 ) {
 
     public static CandleResponse from(Candle candle) {
