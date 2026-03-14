@@ -7,11 +7,13 @@ import ksh.tryptobackend.transfer.domain.vo.TransferType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 public record TransferHistoryResponse(
     Long transferId,
     TransferType type,
     Long coinId,
+    String coinSymbol,
     String chain,
     String toAddress,
     String toTag,
@@ -20,14 +22,17 @@ public record TransferHistoryResponse(
     TransferStatus status,
     TransferFailureReason failureReason,
     LocalDateTime frozenUntil,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    LocalDateTime completedAt
 ) {
 
-    public static TransferHistoryResponse from(Transfer transfer, Long viewerWalletId) {
+    public static TransferHistoryResponse from(Transfer transfer, Long viewerWalletId,
+                                                Map<Long, String> coinSymbolMap) {
         return new TransferHistoryResponse(
             transfer.getTransferId(),
             transfer.resolveType(viewerWalletId),
             transfer.getCoinId(),
+            coinSymbolMap.get(transfer.getCoinId()),
             transfer.getChain(),
             transfer.getToAddress(),
             transfer.getToTag(),
@@ -36,7 +41,8 @@ public record TransferHistoryResponse(
             transfer.getStatus(),
             transfer.getFailureReason(),
             transfer.getFrozenUntil(),
-            transfer.getCreatedAt()
+            transfer.getCreatedAt(),
+            transfer.getCompletedAt()
         );
     }
 }
