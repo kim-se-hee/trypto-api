@@ -41,11 +41,10 @@
 
 ## 로컬 캐시 제거
 
-트랜잭션 커밋 후 `PendingOrderCachePort.remove(exchangeCoinId, orderId)`를 호출한다.
+주문 저장 후 `PendingOrderCacheCommandPort.remove(exchangeCoinId, orderId)`를 호출한다.
 
 - 캐시에 없는 주문을 제거하려 해도 예외 없이 무시한다 (다른 서버에서 생성된 주문이거나, 매칭이 먼저 제거한 경우)
-- 트랜잭션 커밋 후 제거하는 이유: DB 롤백 시 캐시에서만 제거되어 매칭 기회를 영구히 잃는 것을 방지한다
-- 커밋 후 캐시 제거 전 짧은 시간 동안 매칭이 시도되더라도, DB에서 `WHERE status = 'PENDING'` 조건에 걸려 skip되므로 안전하다
+- 트랜잭션 내에서 호출하므로 롤백 시 캐시만 제거되는 문제가 있으나, 현재 캐시 어댑터가 no-op이므로 실제 캐시 구현 시 AFTER_COMMIT 전환을 검토한다
 
 ## 트랜잭션 범위
 
@@ -56,9 +55,7 @@
     ├─ 주문 조회 + 소유권 검증
     ├─ order.cancel() — 상태 전이
     ├─ 잔고 unlock
-    └─ 주문 저장
-
-@TransactionalEventListener(AFTER_COMMIT):
+    ├─ 주문 저장
     └─ 로컬 캐시에서 제거
 ```
 
@@ -169,7 +166,7 @@ sequenceDiagram
     participant ExchangeUC as FindExchangeDetailUseCase
     participant Balance as ManageWalletBalanceUseCase
     participant MySQL
-    participant Cache as PendingOrderCachePort
+    participant Cache as PendingOrderCacheCommandPort
 
     Client->>Controller: POST /api/orders/{orderId}/cancel {walletId}
     Controller->>Service: cancelOrder(command)
@@ -206,7 +203,7 @@ sequenceDiagram
     OrderPort->>MySQL: UPDATE order (CANCELLED, version+1)
 
     rect rgb(60, 60, 60)
-        Note over Service,Cache: STEP 04 로컬 캐시 제거 (AFTER_COMMIT)
+        Note over Service,Cache: STEP 04 로컬 캐시 제거
     end
     Service->>Cache: remove(exchangeCoinId, orderId)
 

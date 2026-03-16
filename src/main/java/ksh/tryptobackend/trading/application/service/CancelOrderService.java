@@ -4,11 +4,12 @@ import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeCoinMappingUseCase;
 import ksh.tryptobackend.marketdata.application.port.in.FindExchangeDetailUseCase;
+import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeCoinMappingResult;
 import ksh.tryptobackend.trading.application.port.in.CancelOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.command.CancelOrderCommand;
 import ksh.tryptobackend.trading.application.port.out.OrderCommandPort;
+import ksh.tryptobackend.trading.application.port.out.PendingOrderCacheCommandPort;
 import ksh.tryptobackend.trading.domain.model.Order;
-import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeCoinMappingResult;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
 import ksh.tryptobackend.wallet.application.port.in.ManageWalletBalanceUseCase;
 import lombok.RequiredArgsConstructor;
@@ -20,14 +21,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class CancelOrderService implements CancelOrderUseCase {
 
     private final OrderCommandPort orderCommandPort;
-    private final ManageWalletBalanceUseCase manageWalletBalanceUseCase;
+    private final PendingOrderCacheCommandPort pendingOrderCacheCommandPort;
+
     private final FindExchangeDetailUseCase findExchangeDetailUseCase;
     private final FindExchangeCoinMappingUseCase findExchangeCoinMappingUseCase;
+
+    private final ManageWalletBalanceUseCase manageWalletBalanceUseCase;
 
     @Override
     @Transactional
     public Order cancelOrder(CancelOrderCommand command) {
-        Order order = getOrder(command.orderId());
+        Order order = getOrder(command);
 
         if (order.isAlreadyCancelled()) {
             return order;
@@ -35,13 +39,21 @@ public class CancelOrderService implements CancelOrderUseCase {
 
         order.cancel();
         unlockBalance(order);
+        Order savedOrder = orderCommandPort.save(order);
+        pendingOrderCacheCommandPort.remove(order.getExchangeCoinId(), order.getId());
 
-        return orderCommandPort.save(order);
+        return savedOrder;
     }
 
-    private Order getOrder(Long orderId) {
-        return orderCommandPort.findById(orderId)
+    private Order getOrder(CancelOrderCommand command) {
+        Order order = orderCommandPort.findById(command.orderId())
             .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
+
+        if (!order.isOwnedBy(command.walletId())) {
+            throw new CustomException(ErrorCode.ORDER_NOT_FOUND);
+        }
+
+        return order;
     }
 
     private void unlockBalance(Order order) {

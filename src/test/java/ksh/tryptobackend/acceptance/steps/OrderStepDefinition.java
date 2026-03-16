@@ -166,7 +166,8 @@ public class OrderStepDefinition {
 
     @When("해당 주문을 취소한다")
     public void 해당_주문을_취소한다() {
-        apiClient.post("/api/orders/" + lastOrderId + "/cancel");
+        Map<String, Object> body = Map.of("walletId", WALLET_ID);
+        apiClient.post("/api/orders/" + lastOrderId + "/cancel", body);
     }
 
     @Then("주문 상태는 {string}이다")

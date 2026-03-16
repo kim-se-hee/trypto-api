@@ -3,6 +3,7 @@ package ksh.tryptobackend.trading.adapter.in;
 import jakarta.validation.Valid;
 import ksh.tryptobackend.common.dto.response.ApiResponseDto;
 import ksh.tryptobackend.common.dto.response.CursorPageResponseDto;
+import ksh.tryptobackend.trading.adapter.in.dto.request.CancelOrderRequest;
 import ksh.tryptobackend.trading.adapter.in.dto.request.FindOrderHistoryRequest;
 import ksh.tryptobackend.trading.adapter.in.dto.request.GetOrderAvailabilityRequest;
 import ksh.tryptobackend.trading.adapter.in.dto.request.PlaceOrderRequest;
@@ -14,7 +15,6 @@ import ksh.tryptobackend.trading.application.port.in.CancelOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.FindOrderHistoryUseCase;
 import ksh.tryptobackend.trading.application.port.in.GetOrderAvailabilityUseCase;
 import ksh.tryptobackend.trading.application.port.in.PlaceOrderUseCase;
-import ksh.tryptobackend.trading.application.port.in.dto.command.CancelOrderCommand;
 import ksh.tryptobackend.trading.application.port.in.dto.result.OrderAvailabilityResult;
 import ksh.tryptobackend.trading.application.port.in.dto.result.OrderHistoryCursorResult;
 import ksh.tryptobackend.trading.domain.model.Order;
@@ -57,8 +57,9 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/cancel")
-    public ApiResponseDto<CancelOrderResponse> cancelOrder(@PathVariable Long orderId) {
-        Order order = cancelOrderUseCase.cancelOrder(new CancelOrderCommand(orderId));
+    public ApiResponseDto<CancelOrderResponse> cancelOrder(@PathVariable Long orderId,
+                                                           @Valid @RequestBody CancelOrderRequest request) {
+        Order order = cancelOrderUseCase.cancelOrder(request.toCommand(orderId));
         return ApiResponseDto.success("주문이 취소되었습니다.", CancelOrderResponse.from(order));
     }
 }

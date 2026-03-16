@@ -147,6 +147,7 @@ erDiagram
         number fee "수수료 (nullable)"
         number fee_rate "수수료율"
         string status "FILLED PENDING CANCELLED FAILED"
+        number version "낙관적 잠금 버전"
         datetime created_at "주문 시각"
         datetime filled_at "체결 시각 (nullable)"
     }
