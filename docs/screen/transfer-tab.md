@@ -8,7 +8,7 @@
 |------|------|
 | 거래소 탭 | 업비트 / 빗썸 KRW / 바이낸스 USDT (walletId로 전환, 기축통화 표시) |
 | 총 자산 요약 | 선택된 거래소의 총 자산(기축통화 환산), 보유 기축통화(사용 가능 / 잠금). 업비트·빗썸은 KRW, 바이낸스는 USDT |
-| 보유 자산 목록 | 코인(심볼·한글명), 보유수량(≈ KRW 환산), 사용가능, 잠금. 검색·소액 제외 필터, 컬럼별 정렬 |
+| 자산 목록 | 거래소 상장 전체 코인 표시. 코인(심볼·코인명), 보유수량(≈ 기축통화 환산), 사용가능, 잠금. 검색·소액 제외 필터 |
 | 출금 폼 | 코인 선택 → 네트워크 선택 → 주소·태그 입력 → 수량 입력 → 수수료 확인 → 출금 |
 | 입금 영역 | 코인·네트워크 선택 → 입금 주소·태그 표시 |
 | 이체 내역 | 입금/출금 이력 (커서 기반 페이지네이션) |
@@ -75,11 +75,13 @@ STOMP user destination: `/user/queue/events`
 
 | eventType | 발생 시점 | 프론트 동작 |
 |-----------|----------|-----------|
-| `ORDER_FILLED` | 지정가 주문 체결 (매칭 스케줄러) | 잔고 API refetch (잔고 변동) |
+| `ORDER_FILLED` | 지정가 주문 체결 (매칭 스케줄러) | 해당 coinId 잔고만 로컬 갱신 (refetch 없음) |
 | `FROZEN_FUNDS_RELEASED` | 동결 자금 24시간 후 자동 반환 (배치) | 잔고 API + 이체 내역 API refetch |
 
-- 메시지 형식: `{eventType, walletId, ...}`
-- 현재 walletId와 일치할 때만 refetch 트리거
+- 메시지 형식: `{eventType, walletId, orderId, coinId, side, quantity, price, fee}`
+- 현재 walletId와 일치할 때만 로컬 갱신 트리거
+- 매수 체결: 기축통화 available 감소 + locked 감소, 코인 available 증가
+- 매도 체결: 코인 available 감소 + locked 감소, 기축통화 available 증가
 
 # 프론트 조합 흐름
 
@@ -107,21 +109,25 @@ STOMP user destination: `/user/queue/events`
    - 사용 가능 / 잠금: baseCurrency.available / baseCurrency.locked
    - 눈 아이콘으로 금액 표시/숨김 토글
 
-5. 보유 자산 목록 렌더링
-   - balanceMap에서 available + locked > 0인 코인만 표시 (보유 코인만)
-   - 컬럼: 코인(심볼·한글명), 보유수량, 사용가능, 잠금
-   - 보유수량 = available + locked, 하위에 ≈ 기축통화 환산값 표시 (보유수량 × tickerMap[coinId].price)
-   - 잠금: locked > 0이면 🔒 아이콘 + 수량, 0이면 "—" 표시
+5. 자산 목록 렌더링
+   - 거래소 상장 전체 코인을 표시한다 (미보유 코인 포함)
+   - coinMap의 전체 코인을 기반으로, balanceMap에서 잔고를 매칭한다 (없으면 미보유)
+   - 컬럼: 코인(심볼·코인명), 보유수량, 사용가능, 잠금
+   - 보유 코인: 보유수량 = available + locked, 하위에 ≈ 기축통화 환산값 표시 (보유수량 × tickerMap[coinId].price)
+   - 미보유 코인: 보유수량·사용가능·잠금 모두 "—" 표시
+   - 잠금: locked > 0이면 잠금 아이콘 + 수량, 0이면 "—" 표시
+   - 기본 정렬: 보유수량(기축통화 환산) 내림차순 고정 (보유 코인이 상단, 미보유 코인은 하단)
    - 코인 검색: symbol 또는 name으로 필터링
-   - 소액 제외: 기축통화 환산 평가금액이 기준 이하인 코인 숨김
-   - 정렬: 코인명(가나다), 보유수량(기축통화 환산), 사용가능, 잠금 컬럼별 오름/내림차순
+   - 소액 제외: 기축통화 환산 평가금액이 기준 미만인 코인 숨김 (미보유 코인도 숨겨짐, 프론트 필터링)
+     - KRW 거래소 (업비트·빗썸): 1,000원 미만
+     - USDT 거래소 (바이낸스): 1 USDT 미만
 ```
 
 ## 출금 흐름
 
 ```
 1. 코인 선택
-   → 보유 자산 목록에서 코인 선택 (coinId 확정)
+   → 자산 목록에서 코인 선택 (coinId 확정)
 
 2. 네트워크 선택
    → GET /api/exchanges/{exchangeId}/coins/{coinId}/chains → 체인 목록 (캐싱)
@@ -141,8 +147,17 @@ STOMP user destination: `/user/queue/events`
 6. 출금 제출
    → POST /api/transfers
    → 성공/동결 결과 표시
-   → 응답 데이터로 잔고 로컬 갱신 (amount + fee 차감)
-   → 응답의 TransferCoinResponse를 이체 내역 목록 맨 앞에 prepend (type=WITHDRAW, fee는 원본 그대로)
+
+7. 송금 후 로컬 갱신 (refetch 없음)
+   → 잔고 갱신: 응답의 status에 따라 해당 coinId 잔고 로컬 갱신
+     - SUCCESS: available -= (amount + fee)
+     - FROZEN: available -= (amount + fee), locked += (amount + fee)
+   → 이체 내역 prepend: 요청 값 + 응답 값을 조합하여 이체 내역 목록 맨 앞에 추가
+     - 요청에서: coinId, chain, toAddress, toTag, amount
+     - 응답에서: transferId, fee, status, failureReason, frozenUntil
+     - 프론트 판단: type=WITHDRAW, coinSymbol은 캐싱 coinMap에서 조회
+     - createdAt: 클라이언트 시각 사용 (정렬 기준이 transferId이므로 오차 무관)
+     - completedAt: SUCCESS이면 createdAt과 동일, FROZEN이면 null
 ```
 
 ## 입금 흐름
@@ -191,5 +206,4 @@ STOMP user destination: `/user/queue/events`
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
-| 송금 후 자동 갱신 | 설계 완료 | POST 응답 데이터로 잔고 로컬 갱신 + 이체 내역 prepend (refetch 없음) |
 | 동결 자금 해제 알림 | 설계 완료 | `/user/queue/events`의 `FROZEN_FUNDS_RELEASED` 이벤트로 잔고 + 이체 내역 refetch |
