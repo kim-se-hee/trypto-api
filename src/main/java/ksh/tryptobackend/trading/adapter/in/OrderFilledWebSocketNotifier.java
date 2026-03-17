@@ -1,6 +1,7 @@
 package ksh.tryptobackend.trading.adapter.in;
 
-import ksh.tryptobackend.trading.domain.vo.OrderFilledNotification;
+import ksh.tryptobackend.trading.adapter.in.dto.OrderFilledMessage;
+import ksh.tryptobackend.trading.domain.vo.OrderFilledEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -16,15 +17,16 @@ public class OrderFilledWebSocketNotifier {
     private final SimpMessagingTemplate messagingTemplate;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void onOrderFilled(OrderFilledNotification notification) {
+    public void onOrderFilled(OrderFilledEvent event) {
         try {
+            OrderFilledMessage message = OrderFilledMessage.from(event);
             messagingTemplate.convertAndSendToUser(
-                notification.userId().toString(),
+                event.userId().toString(),
                 "/queue/events",
-                notification.event());
+                message);
         } catch (Exception e) {
             log.warn("체결 이벤트 전송 실패: userId={}, orderId={}",
-                notification.userId(), notification.event().orderId(), e);
+                event.userId(), event.orderId(), e);
         }
     }
 }

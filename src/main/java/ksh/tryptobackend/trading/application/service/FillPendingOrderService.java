@@ -6,16 +6,15 @@ import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeCoinM
 import ksh.tryptobackend.trading.application.port.in.FillPendingOrderUseCase;
 import ksh.tryptobackend.trading.application.port.out.HoldingCommandPort;
 import ksh.tryptobackend.trading.application.port.out.OrderCommandPort;
+import ksh.tryptobackend.trading.application.port.out.OrderFilledEventPort;
 import ksh.tryptobackend.trading.domain.model.Holding;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.vo.OrderFilledEvent;
-import ksh.tryptobackend.trading.domain.vo.OrderFilledNotification;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
 import ksh.tryptobackend.wallet.application.port.in.GetWalletOwnerIdUseCase;
 import ksh.tryptobackend.wallet.application.port.in.ManageWalletBalanceUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +36,7 @@ public class FillPendingOrderService implements FillPendingOrderUseCase {
     private final ManageWalletBalanceUseCase manageWalletBalanceUseCase;
     private final GetWalletOwnerIdUseCase getWalletOwnerIdUseCase;
 
-    private final ApplicationEventPublisher eventPublisher;
+    private final OrderFilledEventPort orderFilledEventPort;
     private final Clock clock;
 
     @Override
@@ -113,13 +112,13 @@ public class FillPendingOrderService implements FillPendingOrderUseCase {
     private void publishOrderFilledEvent(Order order, ExchangeCoinMappingResult mapping) {
         try {
             Long userId = getWalletOwnerIdUseCase.getWalletOwnerId(order.getWalletId());
-            OrderFilledEvent event = OrderFilledEvent.from(
-                order.getWalletId(), order.getId(), mapping.coinId(),
+            OrderFilledEvent event = new OrderFilledEvent(
+                userId, order.getWalletId(), order.getId(), mapping.coinId(),
                 order.getSide(), order.getQuantity().value(),
                 order.getFilledPrice(), order.getFee().amount());
-            eventPublisher.publishEvent(new OrderFilledNotification(userId, event));
+            orderFilledEventPort.publish(event);
         } catch (Exception e) {
-            log.warn("체결 이벤트 발행 준비 실패: orderId={}", order.getId(), e);
+            log.warn("체결 이벤트 발행 실패: orderId={}", order.getId(), e);
         }
     }
 }

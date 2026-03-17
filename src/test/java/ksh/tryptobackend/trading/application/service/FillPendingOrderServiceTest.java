@@ -6,9 +6,11 @@ import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeCoinM
 import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeDetailResult;
 import ksh.tryptobackend.trading.application.port.out.HoldingCommandPort;
 import ksh.tryptobackend.trading.application.port.out.OrderCommandPort;
+import ksh.tryptobackend.trading.application.port.out.OrderFilledEventPort;
 import ksh.tryptobackend.trading.domain.model.Holding;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.vo.Fee;
+import ksh.tryptobackend.trading.domain.vo.OrderFilledEvent;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
 import ksh.tryptobackend.trading.domain.vo.Quantity;
@@ -22,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -46,7 +47,7 @@ class FillPendingOrderServiceTest {
     @Mock private FindExchangeDetailUseCase findExchangeDetailUseCase;
     @Mock private ManageWalletBalanceUseCase manageWalletBalanceUseCase;
     @Mock private GetWalletOwnerIdUseCase getWalletOwnerIdUseCase;
-    @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private OrderFilledEventPort orderFilledEventPort;
 
     private final Clock clock = Clock.fixed(Instant.parse("2026-03-17T12:00:00Z"), ZoneId.of("UTC"));
 
@@ -66,7 +67,7 @@ class FillPendingOrderServiceTest {
             orderCommandPort, holdingCommandPort,
             findExchangeCoinMappingUseCase, findExchangeDetailUseCase,
             manageWalletBalanceUseCase, getWalletOwnerIdUseCase,
-            eventPublisher, clock
+            orderFilledEventPort, clock
         );
     }
 
@@ -176,7 +177,7 @@ class FillPendingOrderServiceTest {
     class EventPublishTest {
 
         @Test
-        @DisplayName("체결 성공 후 OrderFilledNotification 이벤트가 발행된다")
+        @DisplayName("체결 성공 후 OrderFilledEvent가 발행된다")
         void fillOrder_success_publishesEvent() {
             // Given
             Order order = createPendingBuyOrder();
@@ -190,7 +191,10 @@ class FillPendingOrderServiceTest {
             sut.fillOrder(ORDER_ID, CURRENT_PRICE);
 
             // Then
-            verify(eventPublisher).publishEvent((Object) argThat(arg -> arg instanceof ksh.tryptobackend.trading.domain.vo.OrderFilledNotification));
+            verify(orderFilledEventPort).publish(argThat(event ->
+                event instanceof OrderFilledEvent
+                    && event.userId().equals(999L)
+                    && event.orderId().equals(ORDER_ID)));
         }
     }
 
