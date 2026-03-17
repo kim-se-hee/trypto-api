@@ -5,7 +5,7 @@ import ksh.tryptobackend.trading.domain.vo.ExchangeSymbolKey;
 import java.util.Map;
 import java.util.Optional;
 
-public interface ExchangeCoinMappingCachePort {
+public interface ExchangeCoinMappingCacheCommandPort {
 
     Optional<Long> resolve(String exchange, String symbol);
 

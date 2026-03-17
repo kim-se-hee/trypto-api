@@ -1,5 +1,7 @@
 package ksh.tryptobackend.trading.application.service;
 
+import ksh.tryptobackend.trading.application.port.in.CompensateFillFailureUseCase;
+import ksh.tryptobackend.trading.application.port.in.FillPendingOrderUseCase;
 import ksh.tryptobackend.trading.application.port.out.OrderCommandPort;
 import ksh.tryptobackend.trading.application.port.out.OrderFillFailureCommandPort;
 import ksh.tryptobackend.trading.application.port.out.OrderFillFailureQueryPort;
@@ -15,13 +17,15 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CompensateFillFailureService {
+public class CompensateFillFailureService implements CompensateFillFailureUseCase {
 
     private final OrderFillFailureQueryPort orderFillFailureQueryPort;
     private final OrderFillFailureCommandPort orderFillFailureCommandPort;
     private final OrderCommandPort orderCommandPort;
-    private final MatchPendingOrdersService matchPendingOrdersService;
 
+    private final FillPendingOrderUseCase fillPendingOrderUseCase;
+
+    @Override
     @Scheduled(fixedDelay = 60_000)
     public void compensate() {
         List<OrderFillFailure> failures = orderFillFailureQueryPort.findUnresolved();
@@ -42,7 +46,7 @@ public class CompensateFillFailureService {
                 resolveFailure(failure);
                 return;
             }
-            matchPendingOrdersService.fillOrder(failure.getOrderId(), failure.getAttemptedPrice());
+            fillPendingOrderUseCase.fillOrder(failure.getOrderId(), failure.getAttemptedPrice());
             resolveFailure(failure);
         } catch (Exception e) {
             log.warn("보상 체결 실패: orderId={}", failure.getOrderId(), e);

@@ -1,6 +1,6 @@
 package ksh.tryptobackend.trading.adapter.out;
 
-import ksh.tryptobackend.trading.application.port.out.ExchangeCoinMappingCachePort;
+import ksh.tryptobackend.trading.application.port.out.ExchangeCoinMappingCacheCommandPort;
 import ksh.tryptobackend.trading.domain.vo.ExchangeSymbolKey;
 import org.springframework.stereotype.Component;
 
@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class ExchangeCoinMappingCacheAdapter implements ExchangeCoinMappingCachePort {
+public class ExchangeCoinMappingCacheCommandAdapter implements ExchangeCoinMappingCacheCommandPort {
 
     private final ConcurrentHashMap<ExchangeSymbolKey, Long> cache = new ConcurrentHashMap<>();
 

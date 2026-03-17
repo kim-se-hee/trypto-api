@@ -2,7 +2,6 @@ package ksh.tryptobackend.trading.adapter.out;
 
 import ksh.tryptobackend.trading.adapter.out.entity.OrderFillFailureJpaEntity;
 import ksh.tryptobackend.trading.adapter.out.repository.OrderFillFailureJpaRepository;
-import ksh.tryptobackend.trading.application.port.out.OrderFillFailureCommandPort;
 import ksh.tryptobackend.trading.application.port.out.OrderFillFailureQueryPort;
 import ksh.tryptobackend.trading.domain.model.OrderFillFailure;
 import lombok.RequiredArgsConstructor;
@@ -12,15 +11,9 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class OrderFillFailureJpaPersistenceAdapter implements OrderFillFailureCommandPort, OrderFillFailureQueryPort {
+public class OrderFillFailureQueryAdapter implements OrderFillFailureQueryPort {
 
     private final OrderFillFailureJpaRepository repository;
-
-    @Override
-    public OrderFillFailure save(OrderFillFailure failure) {
-        OrderFillFailureJpaEntity entity = OrderFillFailureJpaEntity.fromDomain(failure);
-        return repository.save(entity).toDomain();
-    }
 
     @Override
     public List<OrderFillFailure> findUnresolved() {
