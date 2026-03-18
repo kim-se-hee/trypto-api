@@ -1,7 +1,7 @@
 package ksh.tryptobackend.marketdata.application.service;
 
 import ksh.tryptobackend.marketdata.application.port.out.ExchangeCoinMappingCacheQueryPort;
-import ksh.tryptobackend.marketdata.application.port.out.LivePriceMessagePort;
+import ksh.tryptobackend.marketdata.application.port.out.LivePriceCommandPort;
 import ksh.tryptobackend.marketdata.domain.vo.ExchangeCoinMapping;
 import ksh.tryptobackend.marketdata.domain.vo.LiveTicker;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 class BroadcastLiveTickerServiceTest {
 
     @Mock private ExchangeCoinMappingCacheQueryPort exchangeCoinMappingCacheQueryPort;
-    @Mock private LivePriceMessagePort livePriceMessagePort;
+    @Mock private LivePriceCommandPort livePriceCommandPort;
 
     @InjectMocks private BroadcastLiveTickerService sut;
 
@@ -44,7 +44,7 @@ class BroadcastLiveTickerServiceTest {
 
         // Then
         ArgumentCaptor<LiveTicker> captor = ArgumentCaptor.forClass(LiveTicker.class);
-        verify(livePriceMessagePort).send(eq(1L), captor.capture());
+        verify(livePriceCommandPort).send(eq(1L), captor.capture());
 
         LiveTicker ticker = captor.getValue();
         assertThat(ticker.coinId()).isEqualTo(5L);
@@ -67,6 +67,6 @@ class BroadcastLiveTickerServiceTest {
             new BigDecimal("0.1"), new BigDecimal("500000"), 1709913600000L);
 
         // Then
-        verify(livePriceMessagePort, never()).send(any(), any());
+        verify(livePriceCommandPort, never()).send(any(), any());
     }
 }

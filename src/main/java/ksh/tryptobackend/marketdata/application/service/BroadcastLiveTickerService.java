@@ -2,7 +2,7 @@ package ksh.tryptobackend.marketdata.application.service;
 
 import ksh.tryptobackend.marketdata.application.port.in.BroadcastLiveTickerUseCase;
 import ksh.tryptobackend.marketdata.application.port.out.ExchangeCoinMappingCacheQueryPort;
-import ksh.tryptobackend.marketdata.application.port.out.LivePriceMessagePort;
+import ksh.tryptobackend.marketdata.application.port.out.LivePriceCommandPort;
 import ksh.tryptobackend.marketdata.domain.vo.ExchangeCoinMapping;
 import ksh.tryptobackend.marketdata.domain.vo.LiveTicker;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 public class BroadcastLiveTickerService implements BroadcastLiveTickerUseCase {
 
     private final ExchangeCoinMappingCacheQueryPort exchangeCoinMappingCacheQueryPort;
-    private final LivePriceMessagePort livePriceMessagePort;
+    private final LivePriceCommandPort livePriceMessagePort;
 
     @Override
     public void broadcast(String exchange, String symbol, BigDecimal currentPrice,
