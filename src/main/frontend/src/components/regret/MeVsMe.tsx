@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ruleToggles, benchmarks } from "@/mocks/regret";
+import type { RuleToggleItem, BenchmarkItem } from "@/lib/types/regret";
 import type { RuleType } from "@/lib/types/round";
 
 const RULE_ICON_MAP: Record<RuleType, LucideIcon> = {
@@ -25,6 +25,8 @@ interface MeVsMeProps {
   btcHoldEnabled: boolean;
   onToggleRule: (ruleType: RuleType) => void;
   onToggleBtcHold: () => void;
+  ruleToggles: RuleToggleItem[];
+  benchmarks: BenchmarkItem[];
 }
 
 export function MeVsMe({
@@ -32,6 +34,8 @@ export function MeVsMe({
   btcHoldEnabled,
   onToggleRule,
   onToggleBtcHold,
+  ruleToggles,
+  benchmarks,
 }: MeVsMeProps) {
   return (
     <div className="rounded-2xl bg-card p-5 shadow-card sm:p-6">
