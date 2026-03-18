@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { CoinIcon } from "@/components/market/CoinIcon";
 import { cn } from "@/lib/utils";
 import { formatQuantity } from "@/lib/formatters";
-import type { TransferRecord, WalletData } from "@/mocks/wallet";
+import type { TransferRecord, WalletData } from "@/lib/types/wallet";
 
 interface TransferHistoryPanelProps {
   exchangeId: string;
@@ -207,45 +207,29 @@ export function TransferHistoryPanel({ exchangeId, exchanges, records, assetFilt
                     <p className="mt-1 font-mono text-base font-semibold">{formatQuantity(selected.amount)} {selected.asset}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">수수료</p>
-                    <p className="mt-1 font-mono text-base font-semibold">{formatQuantity(selected.fee)} {selected.asset}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">네트워크</p>
-                    <p className="mt-1 font-semibold">{selected.network}</p>
-                  </div>
-                  <div>
                     <p className="text-xs text-muted-foreground">상태</p>
                     <Badge variant="outline" className={cn("mt-1 border text-[11px]", STATUS_CLASS[selected.status])}>
                       {STATUS_LABEL[selected.status]}
                     </Badge>
                   </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">출발 거래소</p>
+                    <p className="mt-1 font-semibold">{selected.fromExchangeName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">도착 거래소</p>
+                    <p className="mt-1 font-semibold">{selected.toExchangeName}</p>
+                  </div>
                 </div>
 
-                <div className="grid gap-3 rounded-xl border border-border/60 p-4 text-xs">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-muted-foreground">주소</span>
-                    <span className="font-mono text-foreground">{selected.address}</span>
-                  </div>
-                  {selected.tag && (
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-muted-foreground">태그/메모</span>
-                      <span className="font-mono text-foreground">{selected.tag}</span>
-                    </div>
-                  )}
-                  {selected.txId && (
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-muted-foreground">TXID</span>
-                      <span className="font-mono text-foreground">{selected.txId}</span>
-                    </div>
-                  )}
-                  {selected.completedAt && (
+                {selected.completedAt && (
+                  <div className="grid gap-3 rounded-xl border border-border/60 p-4 text-xs">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-muted-foreground">완료 시각</span>
                       <span className="font-mono text-foreground">{formatDate(selected.completedAt)}</span>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </>
           )}

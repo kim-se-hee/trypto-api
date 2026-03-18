@@ -12,14 +12,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { CoinIcon } from "@/components/market/CoinIcon";
+import type { ViolationTrade } from "@/lib/types/regret";
 import {
-  violationTrades,
   RULE_LABELS,
   RULE_COLORS,
   EMOTION_STYLES,
-} from "@/mocks/regret";
-import type { ViolationFilter, ViolationEmotion } from "@/mocks/regret";
-import type { RuleType } from "@/mocks/round";
+} from "@/lib/types/regret";
+import type { ViolationFilter, ViolationEmotion } from "@/lib/types/regret";
+import type { RuleType } from "@/lib/types/round";
 import { cn } from "@/lib/utils";
 
 const RULE_ICON_MAP: Record<RuleType, LucideIcon> = {
@@ -42,20 +42,24 @@ const FILTER_TABS: { key: ViolationFilter; label: string }[] = [
   { key: "PROFIT", label: "수익" },
 ];
 
-export function ViolationTradeList() {
+interface ViolationTradeListProps {
+  trades: ViolationTrade[];
+}
+
+export function ViolationTradeList({ trades }: ViolationTradeListProps) {
   const [filter, setFilter] = useState<ViolationFilter>("ALL");
 
   const filtered = useMemo(() => {
-    if (filter === "LOSS") return violationTrades.filter((t) => t.profitLoss < 0);
-    if (filter === "PROFIT") return violationTrades.filter((t) => t.profitLoss >= 0);
-    return violationTrades;
-  }, [filter]);
+    if (filter === "LOSS") return trades.filter((t) => t.profitLoss < 0);
+    if (filter === "PROFIT") return trades.filter((t) => t.profitLoss >= 0);
+    return trades;
+  }, [filter, trades]);
 
   const counts = useMemo(() => {
-    const loss = violationTrades.filter((t) => t.profitLoss < 0).length;
-    const profit = violationTrades.filter((t) => t.profitLoss >= 0).length;
-    return { all: violationTrades.length, loss, profit };
-  }, []);
+    const loss = trades.filter((t) => t.profitLoss < 0).length;
+    const profit = trades.filter((t) => t.profitLoss >= 0).length;
+    return { all: trades.length, loss, profit };
+  }, [trades]);
 
   return (
     <div className="rounded-2xl bg-card p-5 shadow-card sm:p-6">
@@ -92,9 +96,8 @@ export function ViolationTradeList() {
       <div className="space-y-2">
         {filtered.map((trade) => {
           const isLoss = trade.profitLoss < 0;
-          const emotionStyle = EMOTION_STYLES[trade.emotion];
-          const emotionInfo = EMOTION_ICON_MAP[trade.emotion];
-          const EmotionIcon = emotionInfo.icon;
+          const emotionStyle = trade.emotion ? EMOTION_STYLES[trade.emotion] : null;
+          const emotionInfo = trade.emotion ? EMOTION_ICON_MAP[trade.emotion] : null;
 
           return (
             <div
@@ -106,16 +109,21 @@ export function ViolationTradeList() {
               <span className="text-sm font-bold">{trade.coinSymbol}</span>
               <span className="text-xs text-muted-foreground">{trade.date}</span>
 
-              <span
-                className={cn(
-                  "flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
-                  emotionStyle.bg,
-                  emotionStyle.text,
-                )}
-              >
-                <EmotionIcon className="h-3 w-3" />
-                {emotionInfo.label}
-              </span>
+              {emotionStyle && emotionInfo && (() => {
+                const EmotionIcon = emotionInfo.icon;
+                return (
+                  <span
+                    className={cn(
+                      "flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
+                      emotionStyle.bg,
+                      emotionStyle.text,
+                    )}
+                  >
+                    <EmotionIcon className="h-3 w-3" />
+                    {emotionInfo.label}
+                  </span>
+                );
+              })()}
 
               {/* 위반 규칙 태그 */}
               {trade.violatedRules.map((ruleType) => {

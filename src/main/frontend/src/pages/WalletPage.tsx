@@ -5,30 +5,134 @@ import { ExchangeTabs } from "@/components/market/ExchangeTabs";
 import { WalletSummary } from "@/components/wallet/WalletSummary";
 import { WalletAssetTable } from "@/components/wallet/WalletAssetTable";
 import { WalletAssetDetail } from "@/components/wallet/WalletAssetDetail";
-import { TransferModal } from "@/components/wallet/TransferModal";
+import { TransferModal, type TransferDestination } from "@/components/wallet/TransferModal";
 import { DepositModal } from "@/components/wallet/DepositModal";
 import { TransferHistoryPanel } from "@/components/wallet/TransferHistoryPanel";
-import { walletData, transferHistory } from "@/mocks/wallet";
-import type { WalletCoinBalance } from "@/mocks/wallet";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRound } from "@/contexts/RoundContext";
+import { EXCHANGES } from "@/lib/types/coins";
+import type { WalletCoinBalance, WalletData, TransferRecord } from "@/lib/types/wallet";
+import { getWalletBalances } from "@/lib/api/wallet-api";
+import { getExchangeCoins, type ExchangeCoinResponse } from "@/lib/api/exchange-api";
+import { getTransferHistory, type TransferHistoryItem } from "@/lib/api/transfer-api";
 
-const exchangeTabItems = walletData.map((w) => ({
-  id: w.exchangeId,
-  name: w.exchangeName,
-  baseCurrency: w.baseCurrency,
-}));
+function mapTransferItem(item: TransferHistoryItem, currentExchangeName: string): TransferRecord {
+  const isWithdraw = item.type === "WITHDRAW";
+  return {
+    id: String(item.transferId),
+    exchangeId: "",
+    type: item.type,
+    asset: item.coinSymbol,
+    amount: Number(item.amount),
+    fromExchangeName: isWithdraw ? currentExchangeName : "",
+    toExchangeName: isWithdraw ? "" : currentExchangeName,
+    status: item.status as TransferRecord["status"],
+    requestedAt: item.createdAt,
+    completedAt: item.completedAt ?? undefined,
+  };
+}
 
 export function WalletPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const selectedExchange = searchParams.get("exchange") ?? walletData[0].exchangeId;
+  const { user } = useAuth();
+  const { activeRound } = useRound();
+
+  const exchangeTabItems = useMemo(() => {
+    if (!activeRound) return [];
+    return activeRound.wallets.map((w) => {
+      const exchange = EXCHANGES.find((e) => e.id === w.exchangeId);
+      return {
+        id: exchange?.key ?? String(w.exchangeId),
+        name: exchange?.name ?? String(w.exchangeId),
+        baseCurrency: exchange?.baseCurrency ?? "",
+      };
+    });
+  }, [activeRound]);
+
+  const defaultExchange = exchangeTabItems[0]?.id ?? "upbit";
+  const selectedExchange = searchParams.get("exchange") ?? defaultExchange;
+
   const [selectedCoin, setSelectedCoin] = useState<WalletCoinBalance | null>(null);
-
-  const wallet = useMemo(
-    () => walletData.find((w) => w.exchangeId === selectedExchange) ?? walletData[0],
-    [selectedExchange],
-  );
-
   const [transferCoin, setTransferCoin] = useState<WalletCoinBalance | null>(null);
   const [depositCoin, setDepositCoin] = useState<WalletCoinBalance | null>(null);
+
+  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [transfers, setTransfers] = useState<TransferRecord[]>([]);
+  const [walletList, setWalletList] = useState<WalletData[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadWalletData = useCallback(async () => {
+    if (!user || !activeRound) return;
+
+    const exchange = EXCHANGES.find((e) => e.key === selectedExchange);
+    if (!exchange) return;
+
+    const walletEntry = activeRound.wallets.find((w) => w.exchangeId === exchange.id);
+    if (!walletEntry) return;
+
+    setLoading(true);
+    try {
+      const [balancesData, exchangeCoins, transferData] = await Promise.all([
+        getWalletBalances(user.userId, walletEntry.walletId),
+        getExchangeCoins(exchange.id),
+        getTransferHistory(walletEntry.walletId, { size: 50 }),
+      ]);
+
+      const coinMap = new Map<number, ExchangeCoinResponse>();
+      for (const coin of exchangeCoins) {
+        coinMap.set(coin.coinId, coin);
+      }
+
+      // 기본 화폐 잔고 + 코인 잔고
+      const balances: WalletCoinBalance[] = [
+        {
+          coinSymbol: balancesData.baseCurrencySymbol,
+          coinName: balancesData.baseCurrencySymbol === "KRW" ? "원화" : balancesData.baseCurrencySymbol,
+          available: Number(balancesData.baseCurrencyAvailable),
+          locked: Number(balancesData.baseCurrencyLocked),
+          currentPrice: 1,
+        },
+        ...balancesData.balances.map((b) => {
+          const coinInfo = coinMap.get(b.coinId);
+          return {
+            coinSymbol: coinInfo?.coinSymbol ?? String(b.coinId),
+            coinName: coinInfo?.coinName ?? String(b.coinId),
+            available: Number(b.available),
+            locked: Number(b.locked),
+            currentPrice: 0, // WebSocket에서 업데이트 예정
+          };
+        }),
+      ];
+
+      const walletData: WalletData = {
+        exchangeId: exchange.key,
+        exchangeName: exchange.name,
+        baseCurrency: exchange.baseCurrency,
+        balances,
+      };
+
+      setWallet(walletData);
+      setWalletList((prev) => {
+        const filtered = prev.filter((w) => w.exchangeId !== exchange.key);
+        return [...filtered, walletData];
+      });
+      setTransfers(transferData.content.map((item) => mapTransferItem(item, exchange.name)));
+    } catch (error) {
+      console.error("Failed to load wallet data", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, activeRound, selectedExchange]);
+
+  useEffect(() => {
+    void loadWalletData();
+  }, [loadWalletData]);
+
+  const transferDestinations = useMemo<TransferDestination[]>(() => {
+    return exchangeTabItems
+      .filter((e) => e.id !== selectedExchange)
+      .map((e) => ({ exchangeId: e.id, exchangeName: e.name }));
+  }, [exchangeTabItems, selectedExchange]);
 
   const handleExchangeChange = (exchangeId: string) => {
     setSearchParams({ exchange: exchangeId });
@@ -78,55 +182,65 @@ export function WalletPage() {
       </section>
 
       <main className="mx-auto max-w-6xl px-4 py-6">
-        {/* Balance summary */}
-        <WalletSummary
-          balances={wallet.balances}
-          baseCurrency={wallet.baseCurrency}
-          exchangeName={wallet.exchangeName}
-        />
+        {loading ? (
+          <p className="text-sm text-muted-foreground">로딩 중...</p>
+        ) : wallet ? (
+          <>
+            {/* Balance summary */}
+            <WalletSummary
+              balances={wallet.balances}
+              baseCurrency={wallet.baseCurrency}
+              exchangeName={wallet.exchangeName}
+            />
 
-        {/* Asset table + detail panel */}
-        <div className={
-          selectedCoin
-            ? "mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]"
-            : "mt-6"
-        }>
-          <WalletAssetTable
-            balances={wallet.balances}
-            baseCurrency={wallet.baseCurrency}
-            onSelectCoin={setSelectedCoin}
-            selectedCoin={selectedCoin?.coinSymbol ?? null}
-          />
-
-          {/* Desktop: side panel */}
-          {selectedCoin && (
-            <div className="hidden lg:block">
-              <div className="sticky top-24">
-                <WalletAssetDetail
-                  coin={selectedCoin}
-                  baseCurrency={wallet.baseCurrency}
-                  onClose={() => setSelectedCoin(null)}
-                  onDeposit={handleDeposit}
-                  onTransfer={handleTransfer}
-                />
-              </div>
-              <TransferHistoryPanel
-                exchangeId={wallet.exchangeId}
-                exchanges={walletData}
-                records={transferHistory}
-                assetFilter={selectedCoin.coinSymbol}
+            {/* Asset table + detail panel */}
+            <div className={
+              selectedCoin
+                ? "mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]"
+                : "mt-6"
+            }>
+              <WalletAssetTable
+                balances={wallet.balances}
+                baseCurrency={wallet.baseCurrency}
+                onSelectCoin={setSelectedCoin}
+                selectedCoin={selectedCoin?.coinSymbol ?? null}
               />
-            </div>
-          )}
-        </div>
 
-        <p className="mt-3 text-[11px] text-muted-foreground/60">
-          * 모의투자 데이터입니다. 실제 자산이 아닙니다.
-        </p>
+              {/* Desktop: side panel */}
+              {selectedCoin && (
+                <div className="hidden lg:block">
+                  <div className="sticky top-24">
+                    <WalletAssetDetail
+                      coin={selectedCoin}
+                      baseCurrency={wallet.baseCurrency}
+                      onClose={() => setSelectedCoin(null)}
+                      onDeposit={handleDeposit}
+                      onTransfer={handleTransfer}
+                    />
+                  </div>
+                  <TransferHistoryPanel
+                    exchangeId={wallet.exchangeId}
+                    exchanges={walletList}
+                    records={transfers}
+                    assetFilter={selectedCoin.coinSymbol}
+                  />
+                </div>
+              )}
+            </div>
+
+            <p className="mt-3 text-[11px] text-muted-foreground/60">
+              * 모의투자 데이터입니다. 실제 자산이 아닙니다.
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {activeRound ? "지갑 데이터를 불러올 수 없습니다." : "진행 중인 라운드가 없습니다."}
+          </p>
+        )}
       </main>
 
       {/* Mobile: bottom sheet overlay */}
-      {selectedCoin && (
+      {selectedCoin && wallet && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
             className="absolute inset-0 bg-foreground/30 backdrop-blur-sm"
@@ -144,8 +258,8 @@ export function WalletPage() {
             <div className="px-4 pb-6">
               <TransferHistoryPanel
                 exchangeId={wallet.exchangeId}
-                exchanges={walletData}
-                records={transferHistory}
+                exchanges={walletList}
+                records={transfers}
                 assetFilter={selectedCoin.coinSymbol}
               />
             </div>
@@ -154,18 +268,18 @@ export function WalletPage() {
       )}
 
       {/* Transfer Modal */}
-      {transferCoin && (
+      {transferCoin && wallet && (
         <TransferModal
           isOpen
           onClose={() => setTransferCoin(null)}
           coin={transferCoin}
-          exchangeId={wallet.exchangeId}
           baseCurrency={wallet.baseCurrency}
+          destinations={transferDestinations}
         />
       )}
 
       {/* Deposit Modal */}
-      {depositCoin && (
+      {depositCoin && wallet && (
         <DepositModal
           isOpen
           onClose={() => setDepositCoin(null)}

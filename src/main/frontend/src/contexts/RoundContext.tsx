@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { InvestmentRound } from "@/mocks/round";
+import type { InvestmentRound } from "@/lib/types/round";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   chargeEmergencyFunding as chargeEmergencyFundingApi,
@@ -25,6 +25,7 @@ interface RoundContextValue {
   clearRound: () => void;
   refreshActiveRound: () => Promise<void>;
   chargeEmergencyFunding: (amount: number, exchangeId: number) => Promise<boolean>;
+  getWalletId: (exchangeId: number) => number | null;
 }
 
 const RoundContext = createContext<RoundContextValue | null>(null);
@@ -71,6 +72,15 @@ export function RoundProvider({ children }: { children: ReactNode }) {
     setActiveRound(null);
   }, []);
 
+  const getWalletId = useCallback(
+    (exchangeId: number): number | null => {
+      if (!activeRound) return null;
+      const wallet = activeRound.wallets.find((w) => w.exchangeId === exchangeId);
+      return wallet?.walletId ?? null;
+    },
+    [activeRound],
+  );
+
   const chargeEmergencyFunding = useCallback(
     async (amount: number, exchangeId: number): Promise<boolean> => {
       if (!activeRound || !user) return false;
@@ -113,8 +123,9 @@ export function RoundProvider({ children }: { children: ReactNode }) {
       clearRound,
       refreshActiveRound,
       chargeEmergencyFunding,
+      getWalletId,
     }),
-    [activeRound, isRoundLoading, createRound, clearRound, refreshActiveRound, chargeEmergencyFunding],
+    [activeRound, isRoundLoading, createRound, clearRound, refreshActiveRound, chargeEmergencyFunding, getWalletId],
   );
 
   return <RoundContext.Provider value={value}>{children}</RoundContext.Provider>;

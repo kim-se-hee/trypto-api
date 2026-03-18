@@ -1,4 +1,4 @@
-﻿import type { InvestmentRound, RuleType } from "@/mocks/round";
+﻿import type { InvestmentRound, RuleType } from "@/lib/types/round";
 import { apiGet, apiPost } from "./client";
 import { toBackendRuleType, toFrontRuleType, type BackendRuleType } from "./mappers";
 import { isApiClientError } from "./types";
@@ -7,6 +7,11 @@ interface BackendRoundRule {
   ruleId: number;
   ruleType: BackendRuleType;
   thresholdValue: number;
+}
+
+interface BackendRoundWallet {
+  walletId: number;
+  exchangeId: number;
 }
 
 interface BackendRound {
@@ -20,6 +25,7 @@ interface BackendRound {
   startedAt: string;
   endedAt: string | null;
   rules: BackendRoundRule[];
+  wallets: BackendRoundWallet[];
 }
 
 interface StartRoundSeedRequest {
@@ -85,6 +91,10 @@ function mapRound(data: BackendRound): InvestmentRound {
       ruleId: rule.ruleId,
       ruleType: toFrontRuleType(rule.ruleType),
       thresholdValue: Number(rule.thresholdValue),
+    })),
+    wallets: (data.wallets ?? []).map((w) => ({
+      walletId: w.walletId,
+      exchangeId: w.exchangeId,
     })),
     startedAt: data.startedAt,
     endedAt: data.endedAt,

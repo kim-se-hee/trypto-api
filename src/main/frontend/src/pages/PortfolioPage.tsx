@@ -1,26 +1,83 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { ExchangeTabs } from "@/components/market/ExchangeTabs";
 import { AssetSummaryCard } from "@/components/portfolio/AssetSummaryCard";
 import { DonutChart } from "@/components/portfolio/DonutChart";
 import { HoldingsTable } from "@/components/portfolio/HoldingsTable";
-import { portfolioData } from "@/mocks/portfolio";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRound } from "@/contexts/RoundContext";
+import { EXCHANGES } from "@/lib/types/coins";
+import type { HoldingData, PortfolioSummary } from "@/lib/types/portfolio";
+import { getMyHoldings, type MyHoldingsResponse } from "@/lib/api/portfolio-api";
 
-const exchangeTabItems = portfolioData.map((p) => ({
-  id: p.exchangeId,
-  name: p.exchangeName,
-  baseCurrency: p.baseCurrency,
-}));
+function toPortfolioSummary(
+  exchangeId: number,
+  data: MyHoldingsResponse,
+): PortfolioSummary {
+  const exchange = EXCHANGES.find((e) => e.id === exchangeId);
+  return {
+    exchangeId: exchange?.key ?? String(exchangeId),
+    exchangeName: exchange?.name ?? String(exchangeId),
+    baseCurrency: data.baseCurrencySymbol,
+    availableCash: Number(data.baseCurrencyBalance),
+    holdings: data.holdings.map((h): HoldingData => ({
+      coinSymbol: h.coinSymbol,
+      coinName: h.coinName,
+      quantity: Number(h.quantity),
+      avgBuyPrice: Number(h.avgBuyPrice),
+      currentPrice: Number(h.currentPrice),
+    })),
+  };
+}
 
 export function PortfolioPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const selectedExchange = searchParams.get("exchange") ?? portfolioData[0].exchangeId;
+  const { user } = useAuth();
+  const { activeRound } = useRound();
 
-  const portfolio = useMemo(
-    () => portfolioData.find((p) => p.exchangeId === selectedExchange) ?? portfolioData[0],
-    [selectedExchange],
-  );
+  const exchangeTabItems = useMemo(() => {
+    if (!activeRound) return [];
+    return activeRound.wallets.map((w) => {
+      const exchange = EXCHANGES.find((e) => e.id === w.exchangeId);
+      return {
+        id: exchange?.key ?? String(w.exchangeId),
+        name: exchange?.name ?? String(w.exchangeId),
+        baseCurrency: exchange?.baseCurrency ?? "",
+      };
+    });
+  }, [activeRound]);
+
+  const defaultExchange = exchangeTabItems[0]?.id ?? "upbit";
+  const selectedExchange = searchParams.get("exchange") ?? defaultExchange;
+
+  const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const loadPortfolio = useCallback(async () => {
+    if (!user || !activeRound) return;
+
+    const exchange = EXCHANGES.find((e) => e.key === selectedExchange);
+    if (!exchange) return;
+
+    const wallet = activeRound.wallets.find((w) => w.exchangeId === exchange.id);
+    if (!wallet) return;
+
+    setLoading(true);
+    try {
+      const data = await getMyHoldings(user.userId, wallet.walletId);
+      setPortfolio(toPortfolioSummary(exchange.id, data));
+    } catch (error) {
+      console.error("Failed to load portfolio", error);
+      setPortfolio(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, activeRound, selectedExchange]);
+
+  useEffect(() => {
+    void loadPortfolio();
+  }, [loadPortfolio]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,7 +90,7 @@ export function PortfolioPage() {
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight">투자내역</h1>
               <p className="mt-1.5 text-sm font-medium text-muted-foreground">
-                {portfolio.exchangeName} 기준 &middot; {portfolio.baseCurrency} 마켓
+                {portfolio?.exchangeName ?? selectedExchange} 기준 &middot; {portfolio?.baseCurrency ?? ""} 마켓
               </p>
             </div>
             <ExchangeTabs
@@ -46,32 +103,42 @@ export function PortfolioPage() {
       </section>
 
       <main className="mx-auto max-w-6xl px-4 py-6">
-        {/* 2-column layout */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_1fr]">
-          {/* Left column — summary + chart */}
-          <div className="flex flex-col gap-6">
-            <AssetSummaryCard
-              availableCash={portfolio.availableCash}
-              holdings={portfolio.holdings}
-              baseCurrency={portfolio.baseCurrency}
-            />
-            <DonutChart
-              holdings={portfolio.holdings}
-              baseCurrency={portfolio.baseCurrency}
-            />
-          </div>
+        {loading ? (
+          <p className="text-sm text-muted-foreground">로딩 중...</p>
+        ) : portfolio ? (
+          <>
+            {/* 2-column layout */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_1fr]">
+              {/* Left column — summary + chart */}
+              <div className="flex flex-col gap-6">
+                <AssetSummaryCard
+                  availableCash={portfolio.availableCash}
+                  holdings={portfolio.holdings}
+                  baseCurrency={portfolio.baseCurrency}
+                />
+                <DonutChart
+                  holdings={portfolio.holdings}
+                  baseCurrency={portfolio.baseCurrency}
+                />
+              </div>
 
-          {/* Right column — holdings table */}
-          <HoldingsTable
-            holdings={portfolio.holdings}
-            baseCurrency={portfolio.baseCurrency}
-          />
-        </div>
+              {/* Right column — holdings table */}
+              <HoldingsTable
+                holdings={portfolio.holdings}
+                baseCurrency={portfolio.baseCurrency}
+              />
+            </div>
 
-        {/* Footer info */}
-        <p className="mt-3 text-[11px] text-muted-foreground/60">
-          * 모의투자 데이터입니다.
-        </p>
+            {/* Footer info */}
+            <p className="mt-3 text-[11px] text-muted-foreground/60">
+              * 모의투자 데이터입니다.
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {activeRound ? "포트폴리오 데이터를 불러올 수 없습니다." : "진행 중인 라운드가 없습니다."}
+          </p>
+        )}
       </main>
     </div>
   );

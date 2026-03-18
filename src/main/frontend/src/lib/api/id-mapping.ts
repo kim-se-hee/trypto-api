@@ -1,4 +1,6 @@
-﻿export interface OrderTargetIds {
+import { getExchangeCoins, type ExchangeCoinResponse } from "./exchange-api";
+
+export interface OrderTargetIds {
   exchangeId: number;
   walletId: number;
   exchangeCoinId: number;
@@ -11,42 +13,53 @@ const BACKEND_EXCHANGE_ID_MAP: Record<string, number> = {
   jupiter: 4,
 };
 
-// Order API currently requires walletId + exchangeCoinId lookup from client.
-// This table only contains IDs verified/assumed from project docs/tests.
-// Add mappings here as backend seed data expands.
-const ORDER_ID_MAP: Record<string, Record<string, { walletId: number; exchangeCoinId: number }>> = {
-  upbit: {
-    BTC: { walletId: 1, exchangeCoinId: 1 },
-  },
-  bithumb: {
-    BTC: { walletId: 2, exchangeCoinId: 7 },
-  },
-  binance: {
-    BTC: { walletId: 3, exchangeCoinId: 13 },
-  },
-};
+// 거래소별 코인 목록 캐시
+const exchangeCoinsCache = new Map<number, ExchangeCoinResponse[]>();
 
 export function getBackendExchangeId(exchangeKey: string): number | null {
   return BACKEND_EXCHANGE_ID_MAP[exchangeKey] ?? null;
 }
 
-export function resolveOrderTargetIds(
+export function getExchangeKeyById(exchangeId: number): string | null {
+  const entry = Object.entries(BACKEND_EXCHANGE_ID_MAP).find(([, id]) => id === exchangeId);
+  return entry?.[0] ?? null;
+}
+
+async function fetchExchangeCoinsWithCache(exchangeId: number): Promise<ExchangeCoinResponse[]> {
+  const cached = exchangeCoinsCache.get(exchangeId);
+  if (cached) return cached;
+
+  const coins = await getExchangeCoins(exchangeId);
+  exchangeCoinsCache.set(exchangeId, coins);
+  return coins;
+}
+
+export function clearExchangeCoinsCache(): void {
+  exchangeCoinsCache.clear();
+}
+
+export async function resolveOrderTargetIds(
   exchangeKey: string,
   coinSymbol: string,
-): OrderTargetIds | null {
+  getWalletId: (exchangeId: number) => number | null,
+): Promise<OrderTargetIds | null> {
   const exchangeId = getBackendExchangeId(exchangeKey);
   if (!exchangeId) return null;
 
-  const byExchange = ORDER_ID_MAP[exchangeKey];
-  if (!byExchange) return null;
+  const walletId = getWalletId(exchangeId);
+  if (!walletId) return null;
 
-  const ids = byExchange[coinSymbol.toUpperCase()];
-  if (!ids) return null;
+  try {
+    const coins = await fetchExchangeCoinsWithCache(exchangeId);
+    const coin = coins.find((c) => c.coinSymbol.toUpperCase() === coinSymbol.toUpperCase());
+    if (!coin) return null;
 
-  return {
-    exchangeId,
-    walletId: ids.walletId,
-    exchangeCoinId: ids.exchangeCoinId,
-  };
+    return {
+      exchangeId,
+      walletId,
+      exchangeCoinId: coin.exchangeCoinId,
+    };
+  } catch {
+    return null;
+  }
 }
-

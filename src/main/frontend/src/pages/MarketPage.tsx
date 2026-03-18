@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { MarketOverviewCards } from "@/components/market/MarketOverviewCards";
@@ -12,13 +12,14 @@ import { OrderPanel } from "@/components/market/OrderPanel";
 import { EmergencyFundingCard } from "@/components/round/EmergencyFundingCard";
 import { useRound } from "@/contexts/RoundContext";
 import { cexExchanges, dexExchanges } from "@/mocks/coins";
-import { getBackendExchangeId, resolveOrderTargetIds } from "@/lib/api/id-mapping";
+import { getBackendExchangeId, resolveOrderTargetIds, type OrderTargetIds } from "@/lib/api/id-mapping";
+import { useLivePrices } from "@/hooks/useLivePrices";
 import type { MarketType } from "@/components/market/MarketTypeTabs";
 import type { FilterType } from "@/components/market/FilterChips";
 
 export function MarketPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { activeRound, chargeEmergencyFunding } = useRound();
+  const { activeRound, chargeEmergencyFunding, getWalletId } = useRound();
 
   const marketType = (searchParams.get("type") === "dex" ? "dex" : "cex") as MarketType;
   const isCex = marketType === "cex";
@@ -35,12 +36,19 @@ export function MarketPage() {
   );
   const backendExchangeId = getBackendExchangeId(selectedExchange);
 
+  // 실시간 가격 연동
+  const liveCoins = useLivePrices({
+    exchangeId: backendExchangeId ?? 0,
+    initialCoins: exchange.coins,
+  });
+  const coins = backendExchangeId ? liveCoins : exchange.coins;
+
   const filteredCoins = useMemo(() => {
-    let coins = exchange.coins;
+    let filtered = coins;
 
     if (searchQuery.trim()) {
       const query = searchQuery.trim().toLowerCase();
-      coins = coins.filter(
+      filtered = filtered.filter(
         (coin) =>
           coin.symbol.toLowerCase().includes(query) ||
           coin.name.toLowerCase().includes(query),
@@ -49,26 +57,35 @@ export function MarketPage() {
 
     switch (filter) {
       case "rising":
-        coins = coins.filter((c) => c.changeRate > 0);
+        filtered = filtered.filter((c) => c.changeRate > 0);
         break;
       case "falling":
-        coins = coins.filter((c) => c.changeRate < 0);
+        filtered = filtered.filter((c) => c.changeRate < 0);
         break;
       case "volume":
-        coins = [...coins].sort((a, b) => b.volume - a.volume);
+        filtered = [...filtered].sort((a, b) => b.volume - a.volume);
         break;
     }
 
-    return coins;
-  }, [exchange.coins, searchQuery, filter]);
+    return filtered;
+  }, [coins, searchQuery, filter]);
 
   const selectedCoin = useMemo(() => {
-    const fromSelection = exchange.coins.find((coin) => coin.symbol === selectedSymbol);
-    return fromSelection ?? filteredCoins[0] ?? exchange.coins[0];
-  }, [exchange.coins, filteredCoins, selectedSymbol]);
-  const orderTargetIds = selectedCoin
-    ? resolveOrderTargetIds(selectedExchange, selectedCoin.symbol)
-    : null;
+    const fromSelection = coins.find((coin) => coin.symbol === selectedSymbol);
+    return fromSelection ?? filteredCoins[0] ?? coins[0];
+  }, [coins, filteredCoins, selectedSymbol]);
+  const [orderTargetIds, setOrderTargetIds] = useState<OrderTargetIds | null>(null);
+  useEffect(() => {
+    if (!selectedCoin) {
+      setOrderTargetIds(null);
+      return;
+    }
+    let cancelled = false;
+    void resolveOrderTargetIds(selectedExchange, selectedCoin.symbol, getWalletId).then((ids) => {
+      if (!cancelled) setOrderTargetIds(ids);
+    });
+    return () => { cancelled = true; };
+  }, [selectedExchange, selectedCoin, getWalletId]);
 
   const handleMarketTypeChange = (type: MarketType) => {
     const newExchanges = type === "cex" ? cexExchanges : dexExchanges;
@@ -114,7 +131,7 @@ export function MarketPage() {
 
       <main className="mx-auto max-w-6xl px-4 py-6">
         {/* Market overview cards */}
-        <MarketOverviewCards coins={exchange.coins} baseCurrency={exchange.baseCurrency} />
+        <MarketOverviewCards coins={coins} baseCurrency={exchange.baseCurrency} />
 
         {/* Controls card */}
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl bg-card p-4 shadow-card">
