@@ -5,7 +5,7 @@ import { ExchangeTabs } from "@/components/market/ExchangeTabs";
 import { WalletSummary } from "@/components/wallet/WalletSummary";
 import { WalletAssetTable } from "@/components/wallet/WalletAssetTable";
 import { WalletAssetDetail } from "@/components/wallet/WalletAssetDetail";
-import { TransferModal } from "@/components/wallet/TransferModal";
+import { TransferModal, type TransferDestination } from "@/components/wallet/TransferModal";
 import { DepositModal } from "@/components/wallet/DepositModal";
 import { TransferHistoryPanel } from "@/components/wallet/TransferHistoryPanel";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,17 +16,16 @@ import { getWalletBalances } from "@/lib/api/wallet-api";
 import { getExchangeCoins, type ExchangeCoinResponse } from "@/lib/api/exchange-api";
 import { getTransferHistory, type TransferHistoryItem } from "@/lib/api/transfer-api";
 
-function mapTransferItem(item: TransferHistoryItem): TransferRecord {
+function mapTransferItem(item: TransferHistoryItem, currentExchangeName: string): TransferRecord {
+  const isWithdraw = item.type === "WITHDRAW";
   return {
     id: String(item.transferId),
     exchangeId: "",
     type: item.type,
     asset: item.coinSymbol,
     amount: Number(item.amount),
-    fee: Number(item.fee),
-    network: item.chain,
-    address: item.toAddress,
-    tag: item.toTag ?? undefined,
+    fromExchangeName: isWithdraw ? currentExchangeName : "",
+    toExchangeName: isWithdraw ? "" : currentExchangeName,
     status: item.status as TransferRecord["status"],
     requestedAt: item.createdAt,
     completedAt: item.completedAt ?? undefined,
@@ -109,8 +108,6 @@ export function WalletPage() {
         exchangeId: exchange.key,
         exchangeName: exchange.name,
         baseCurrency: exchange.baseCurrency,
-        walletAddress: "",
-        chain: "",
         balances,
       };
 
@@ -119,7 +116,7 @@ export function WalletPage() {
         const filtered = prev.filter((w) => w.exchangeId !== exchange.key);
         return [...filtered, walletData];
       });
-      setTransfers(transferData.content.map(mapTransferItem));
+      setTransfers(transferData.content.map((item) => mapTransferItem(item, exchange.name)));
     } catch (error) {
       console.error("Failed to load wallet data", error);
     } finally {
@@ -130,6 +127,12 @@ export function WalletPage() {
   useEffect(() => {
     void loadWalletData();
   }, [loadWalletData]);
+
+  const transferDestinations = useMemo<TransferDestination[]>(() => {
+    return exchangeTabItems
+      .filter((e) => e.id !== selectedExchange)
+      .map((e) => ({ exchangeId: e.id, exchangeName: e.name }));
+  }, [exchangeTabItems, selectedExchange]);
 
   const handleExchangeChange = (exchangeId: string) => {
     setSearchParams({ exchange: exchangeId });
@@ -270,8 +273,8 @@ export function WalletPage() {
           isOpen
           onClose={() => setTransferCoin(null)}
           coin={transferCoin}
-          exchangeId={wallet.exchangeId}
           baseCurrency={wallet.baseCurrency}
+          destinations={transferDestinations}
         />
       )}
 

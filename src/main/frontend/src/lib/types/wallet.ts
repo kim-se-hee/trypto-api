@@ -10,8 +10,6 @@ export interface WalletData {
   exchangeId: string;
   exchangeName: string;
   baseCurrency: string;
-  walletAddress: string;
-  chain: string;
   balances: WalletCoinBalance[];
 }
 
@@ -21,11 +19,8 @@ export interface TransferRecord {
   type: "DEPOSIT" | "WITHDRAW";
   asset: string;
   amount: number;
-  fee: number;
-  network: string;
-  address: string;
-  tag?: string;
-  txId?: string;
+  fromExchangeName: string;
+  toExchangeName: string;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "RETURNED" | "DELAYED";
   requestedAt: string;
   completedAt?: string;
