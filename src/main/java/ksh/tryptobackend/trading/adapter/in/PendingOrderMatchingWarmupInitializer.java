@@ -1,5 +1,6 @@
 package ksh.tryptobackend.trading.adapter.in;
 
+import ksh.tryptobackend.common.config.RabbitMqConfig;
 import ksh.tryptobackend.trading.application.port.in.WarmupPendingOrderMatchingUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,7 @@ public class PendingOrderMatchingWarmupInitializer {
     }
 
     private void startTickerListener() {
-        rabbitListenerEndpointRegistry.getListenerContainer("tickerMatchingListener").start();
+        rabbitListenerEndpointRegistry.getListenerContainer(RabbitMqConfig.TICKER_TRADING_LISTENER_ID).start();
         log.info("RabbitMQ 시세 리스너 활성화");
     }
 }

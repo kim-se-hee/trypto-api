@@ -1,5 +1,6 @@
 package ksh.tryptobackend.trading.adapter.in;
 
+import ksh.tryptobackend.common.config.RabbitMqConfig;
 import ksh.tryptobackend.common.dto.TickerMessage;
 import ksh.tryptobackend.trading.application.port.in.MatchPendingOrdersUseCase;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,7 @@ public class TickerEventListener {
 
     private final MatchPendingOrdersUseCase matchPendingOrdersUseCase;
 
-    @RabbitListener(queues = "#{tickerMatchingQueue.name}", autoStartup = "false", id = "tickerMatchingListener")
+    @RabbitListener(queues = "#{tickerTradingQueue.name}", autoStartup = "false", id = RabbitMqConfig.TICKER_TRADING_LISTENER_ID)
     public void onTickerEvent(TickerMessage message) {
         try {
             matchPendingOrdersUseCase.matchOrders(
