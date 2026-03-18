@@ -1,6 +1,6 @@
 package ksh.tryptobackend.trading.adapter.in;
 
-import ksh.tryptobackend.trading.adapter.in.dto.TickerMessage;
+import ksh.tryptobackend.common.dto.TickerMessage;
 import ksh.tryptobackend.trading.application.port.in.MatchPendingOrdersUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
