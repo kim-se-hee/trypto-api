@@ -136,7 +136,7 @@ public class SyncMarketMetaService implements SyncMarketMetaUseCase {
                 if (coinId == null) {
                     continue;
                 }
-                exchangeCoinCommandPort.save(exchangeId, coinId);
+                exchangeCoinCommandPort.save(exchangeId, coinId, meta.displayName());
                 count++;
             }
         }

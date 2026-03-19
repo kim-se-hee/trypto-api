@@ -49,7 +49,7 @@ class WarmupExchangeCoinMappingServiceTest {
         when(findCoinInfoUseCase.findByIds(Set.of(100L)))
             .thenReturn(Map.of(100L, new CoinInfoResult("KRW", "Korean Won")));
         when(findExchangeCoinsUseCase.findByExchangeId(1L))
-            .thenReturn(List.of(new ExchangeCoinListResult(10L, 5L, "BTC", "Bitcoin")));
+            .thenReturn(List.of(new ExchangeCoinListResult(10L, 5L, "BTC", "Bitcoin", null)));
 
         // When
         sut.warmup();

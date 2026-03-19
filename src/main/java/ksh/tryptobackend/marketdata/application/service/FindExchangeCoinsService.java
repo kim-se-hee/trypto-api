@@ -76,7 +76,7 @@ public class FindExchangeCoinsService implements FindExchangeCoinsUseCase {
             exchangeCoin.exchangeCoinId(),
             exchangeCoin.coinId(),
             coin.symbol(),
-            coin.name(),
+            exchangeCoin.displayName(),
             tickerSnapshots.getSnapshot(exchangeCoin.exchangeCoinId())
         );
     }
