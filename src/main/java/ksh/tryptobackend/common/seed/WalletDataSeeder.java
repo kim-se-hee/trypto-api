@@ -44,38 +44,38 @@ class WalletDataSeeder {
         LocalDateTime now = LocalDateTime.now();
         int count = 0;
 
-        // 김비트 - UPBIT
-        count += createWallet(ctx, "김비트", "UPBIT", LARGE_SEED, now);
+        // 김비트 - 주 거래소: UPBIT
+        count += createAllExchangeWallets(ctx, "김비트", "UPBIT", LARGE_SEED, now);
 
-        // 이더리움 - BITHUMB
-        count += createWallet(ctx, "이더리움", "BITHUMB", DEFAULT_SEED, now);
+        // 이더리움 - 주 거래소: BITHUMB
+        count += createAllExchangeWallets(ctx, "이더리움", "BITHUMB", DEFAULT_SEED, now);
 
-        // 박솔라나 - BINANCE
-        count += createWallet(ctx, "박솔라나", "BINANCE", DEFAULT_SEED, now);
+        // 박솔라나 - 주 거래소: BINANCE
+        count += createAllExchangeWallets(ctx, "박솔라나", "BINANCE", DEFAULT_SEED, now);
 
-        // 최리플 - 3개 거래소
+        // 최리플 - 3개 거래소 균등 분배
         BigDecimal splitSeed = LARGE_SEED.divide(new BigDecimal("3"), 8, java.math.RoundingMode.FLOOR);
         count += createWallet(ctx, "최리플", "UPBIT", splitSeed, now);
         count += createWallet(ctx, "최리플", "BITHUMB", splitSeed, now);
         count += createWallet(ctx, "최리플", "BINANCE", splitSeed, now);
 
-        // 정도지 - UPBIT (파산)
-        count += createWallet(ctx, "정도지", "UPBIT", DEFAULT_SEED, now);
+        // 정도지 - 주 거래소: UPBIT (파산)
+        count += createAllExchangeWallets(ctx, "정도지", "UPBIT", DEFAULT_SEED, now);
 
-        // 한에이다 - UPBIT
-        count += createWallet(ctx, "한에이다", "UPBIT", DEFAULT_SEED, now);
+        // 한에이다 - 주 거래소: UPBIT
+        count += createAllExchangeWallets(ctx, "한에이다", "UPBIT", DEFAULT_SEED, now);
 
-        // 강링크 - BITHUMB
-        count += createWallet(ctx, "강링크", "BITHUMB", DEFAULT_SEED, now);
+        // 강링크 - 주 거래소: BITHUMB
+        count += createAllExchangeWallets(ctx, "강링크", "BITHUMB", DEFAULT_SEED, now);
 
-        // 윤닷 - UPBIT (ACTIVE 라운드만)
-        count += createWallet(ctx, "윤닷", "UPBIT", DEFAULT_SEED, now);
+        // 윤닷 - 주 거래소: UPBIT (ACTIVE 라운드만)
+        count += createAllExchangeWallets(ctx, "윤닷", "UPBIT", DEFAULT_SEED, now);
 
-        // 송아톰 - UPBIT
-        count += createWallet(ctx, "송아톰", "UPBIT", DEFAULT_SEED, now);
+        // 송아톰 - 주 거래소: UPBIT
+        count += createAllExchangeWallets(ctx, "송아톰", "UPBIT", DEFAULT_SEED, now);
 
-        // 임앱트 - BINANCE
-        count += createWallet(ctx, "임앱트", "BINANCE", LARGE_SEED, now);
+        // 임앱트 - 주 거래소: BINANCE
+        count += createAllExchangeWallets(ctx, "임앱트", "BINANCE", LARGE_SEED, now);
 
         return count;
     }
@@ -120,6 +120,18 @@ class WalletDataSeeder {
 
         balanceRepository.saveAll(balances);
         return balances.size();
+    }
+
+    private static final String[] ALL_EXCHANGES = {"UPBIT", "BITHUMB", "BINANCE"};
+
+    private int createAllExchangeWallets(SeedContext ctx, String nickname, String primaryExchange,
+                                          BigDecimal seedAmount, LocalDateTime now) {
+        int count = 0;
+        for (String exchange : ALL_EXCHANGES) {
+            BigDecimal amount = exchange.equals(primaryExchange) ? seedAmount : BigDecimal.ZERO;
+            count += createWallet(ctx, nickname, exchange, amount, now);
+        }
+        return count;
     }
 
     private int createWallet(SeedContext ctx, String nickname, String exchangeName,
