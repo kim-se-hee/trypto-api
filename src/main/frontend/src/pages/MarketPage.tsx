@@ -62,9 +62,6 @@ export function MarketPage() {
       case "falling":
         filtered = filtered.filter((c) => c.changeRate < 0);
         break;
-      case "volume":
-        filtered = [...filtered].sort((a, b) => b.volume - a.volume);
-        break;
     }
 
     return filtered;

@@ -155,8 +155,9 @@ function buildMockCandles(
   candleCount: number,
 ): CandleItem[] {
   const random = createSeededRandom(hashSeed(`${coin.symbol}-${interval}-${coin.currentPrice}`));
+  const startPrice = coin.currentPrice / (1 + coin.changeRate / 100);
   const baseSeries = interpolateSeries(
-    [...coin.sparkline.slice(-24), coin.currentPrice],
+    [startPrice, coin.currentPrice],
     candleCount + 1,
   );
   const now = new Date();

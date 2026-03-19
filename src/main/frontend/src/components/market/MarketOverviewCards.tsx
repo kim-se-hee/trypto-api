@@ -1,7 +1,6 @@
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CoinIcon } from "./CoinIcon";
-import { Sparkline } from "./Sparkline";
 import type { CoinData } from "@/lib/types/coins";
 
 interface MarketOverviewCardsProps {
@@ -80,11 +79,10 @@ export function MarketOverviewCards({ coins, baseCurrency, highlightSymbols }: M
                 {isUp ? "+" : ""}{coin.changeRate.toFixed(2)}%
               </span>
             </div>
-            <div className="relative mt-3 flex items-end justify-between">
+            <div className="relative mt-3">
               <span className="font-mono text-lg font-bold tabular-nums">
                 {formatCardPrice(coin.currentPrice, baseCurrency)}
               </span>
-              <Sparkline data={coin.sparkline} width={72} height={28} />
             </div>
           </div>
         );

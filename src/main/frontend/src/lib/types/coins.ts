@@ -5,7 +5,6 @@ export interface CoinData {
   changeRate: number;
   volume: number;
   marketCap: number;
-  sparkline: number[];
 }
 
 export interface ExchangeData {

@@ -5,7 +5,6 @@ import { SortIcon } from "@/components/ui/SortIcon";
 import { useSort } from "@/hooks/useSort";
 import type { SortDir } from "@/hooks/useSort";
 import { CoinIcon } from "./CoinIcon";
-import { Sparkline } from "./Sparkline";
 import type { CoinData } from "@/lib/types/coins";
 
 interface CoinTableProps {
@@ -17,7 +16,7 @@ interface CoinTableProps {
 
 type SortKey = "name" | "price" | "change" | "volume" | "marketCap";
 
-const GRID_COLS = "grid-cols-[2fr_minmax(100px,140px)_minmax(80px,100px)_80px_minmax(90px,120px)_minmax(90px,120px)]";
+const GRID_COLS = "grid-cols-[2fr_minmax(100px,140px)_minmax(80px,100px)_minmax(90px,120px)_minmax(90px,120px)]";
 
 export function CoinTable({ coins, baseCurrency, selectedSymbol, onSelect }: CoinTableProps) {
   const comparator = useCallback((key: SortKey, dir: SortDir) => {
@@ -41,11 +40,10 @@ export function CoinTable({ coins, baseCurrency, selectedSymbol, onSelect }: Coi
 
   const currencySymbol = getCurrencySymbol(baseCurrency);
 
-  const columns: { key: SortKey | "sparkline"; label: string; sortable: boolean }[] = [
+  const columns: { key: SortKey; label: string; sortable: boolean }[] = [
     { key: "name", label: "코인명", sortable: true },
     { key: "price", label: "현재가", sortable: true },
     { key: "change", label: "전일대비", sortable: true },
-    { key: "sparkline", label: "7일", sortable: false },
     { key: "marketCap", label: "시가총액", sortable: true },
     { key: "volume", label: "거래대금(24H)", sortable: true },
   ];
@@ -57,16 +55,15 @@ export function CoinTable({ coins, baseCurrency, selectedSymbol, onSelect }: Coi
         {columns.map((col) => (
           <button
             key={col.key}
-            onClick={() => col.sortable && handleSort(col.key as SortKey)}
+            onClick={() => col.sortable && handleSort(col.key)}
             disabled={!col.sortable}
             className={cn(
               "flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors",
               col.sortable && "hover:text-foreground",
-              !col.sortable && "cursor-default",
               col.key !== "name" && "justify-end",
             )}
           >
-            {col.key !== "name" && col.sortable && <SortIcon column={col.key as SortKey} activeColumn={sortKey} direction={sortDir} />}
+            {col.key !== "name" && <SortIcon column={col.key} activeColumn={sortKey} direction={sortDir} />}
             {col.label}
             {col.key === "name" && <SortIcon column="name" activeColumn={sortKey} direction={sortDir} />}
           </button>
@@ -123,11 +120,6 @@ export function CoinTable({ coins, baseCurrency, selectedSymbol, onSelect }: Coi
                 >
                   {formatChangeRate(coin.changeRate)}
                 </span>
-              </div>
-
-              {/* Sparkline */}
-              <div className="flex justify-end">
-                <Sparkline data={coin.sparkline} width={64} height={24} />
               </div>
 
               {/* Market cap */}
