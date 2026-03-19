@@ -22,7 +22,7 @@ export function Header() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link to="/market" className="flex items-center gap-2">
           <Activity className="h-4.5 w-4.5 text-primary" />
-          <span className="font-serif text-lg font-bold tracking-tight">Trypto</span>
+          <span className="font-logo text-lg tracking-tight">Trypto</span>
         </Link>
 
         {/* Desktop nav */}

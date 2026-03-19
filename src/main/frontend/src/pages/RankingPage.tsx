@@ -175,7 +175,7 @@ export function RankingPage() {
             <div>
               <div className="mb-1 flex items-center gap-2.5">
                 <Trophy className="h-6 w-6 text-primary" />
-                <h1 className="font-serif text-3xl font-bold tracking-tight">랭킹</h1>
+                <h1 className="font-display text-3xl tracking-tight">랭킹</h1>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
                 {periodLabel} 수익률 기준 순위

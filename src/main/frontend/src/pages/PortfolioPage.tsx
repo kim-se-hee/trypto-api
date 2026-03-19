@@ -88,7 +88,7 @@ export function PortfolioPage() {
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="font-serif text-3xl font-bold tracking-tight">투자내역</h1>
+              <h1 className="font-display text-3xl tracking-tight">투자내역</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 {portfolio?.exchangeName ?? selectedExchange} 기준 · {portfolio?.baseCurrency ?? ""} 마켓
               </p>

@@ -107,7 +107,7 @@ export function MyPage() {
       {/* Page header */}
       <section className="animate-enter border-b border-border/40 pb-6 pt-8">
         <div className="mx-auto max-w-6xl px-4">
-          <h1 className="font-serif text-3xl font-bold tracking-tight">마이페이지</h1>
+          <h1 className="font-display text-3xl tracking-tight">마이페이지</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             프로필 관리 및 투자 라운드 현황
           </p>

@@ -90,7 +90,7 @@ export function RegretPage() {
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex items-center gap-2.5">
             <BarChart3 className="h-6 w-6 text-primary" />
-            <h1 className="font-serif text-3xl font-bold tracking-tight">투자 복기</h1>
+            <h1 className="font-display text-3xl tracking-tight">투자 복기</h1>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
             규칙만 지켰으면 얼마를 벌었을까?

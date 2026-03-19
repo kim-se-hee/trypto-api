@@ -117,7 +117,7 @@ export function MarketPage() {
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="font-serif text-3xl font-bold tracking-tight">
+              <h1 className="font-display text-3xl tracking-tight">
                 {isCex ? "코인 시세" : "DEX 시세"}
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
