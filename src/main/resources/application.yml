@@ -44,6 +44,9 @@ app:
     endpoint: /ws
     heartbeat-send: 10000
     heartbeat-receive: 10000
+  market-meta-sync:
+    max-retries: 30
+    retry-interval-seconds: 5
   exchanges:
     - name: UPBIT
       market-type: DOMESTIC
