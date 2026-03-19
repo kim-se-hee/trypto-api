@@ -48,7 +48,7 @@ export function MarketOverviewCards({ coins, baseCurrency, highlightSymbols }: M
       <div className="mb-3 flex items-center gap-1.5">
         <Star className="h-4 w-4 fill-chart-4 text-chart-4" />
         <span className="text-sm font-bold text-foreground">주요 코인</span>
-        <span className="text-xs font-medium text-muted-foreground">&middot; 시가총액 기준</span>
+        <span className="text-xs font-medium text-muted-foreground">&middot; 실시간</span>
       </div>
       <div className="grid grid-cols-3 gap-4">
       {highlighted.map((coin) => {
@@ -69,19 +69,25 @@ export function MarketOverviewCards({ coins, baseCurrency, highlightSymbols }: M
                   <span className="ml-1.5 text-xs text-muted-foreground">{coin.name}</span>
                 </div>
               </div>
-              <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
-                  isUp ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative",
-                  coin.changeRate === 0 && "bg-muted text-muted-foreground",
-                )}
-              >
-                {isUp ? "+" : ""}{coin.changeRate.toFixed(2)}%
-              </span>
+              {coin.currentPrice > 0 ? (
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
+                    isUp ? "bg-positive/15 text-positive" : "bg-negative/15 text-negative",
+                    coin.changeRate === 0 && "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {isUp ? "+" : ""}{coin.changeRate.toFixed(2)}%
+                </span>
+              ) : (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">-</span>
+              )}
             </div>
             <div className="relative mt-3">
               <span className="font-mono text-lg font-bold tabular-nums">
-                {formatCardPrice(coin.currentPrice, baseCurrency)}
+                {coin.currentPrice > 0
+                  ? formatCardPrice(coin.currentPrice, baseCurrency)
+                  : <span className="text-muted-foreground">-</span>}
               </span>
             </div>
           </div>

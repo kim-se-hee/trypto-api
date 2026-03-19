@@ -102,27 +102,6 @@ export function formatVolume(volume: number, baseCurrency: string): string {
   return volume.toLocaleString("ko-KR");
 }
 
-// ── 시가총액 포맷 ──────────────────────────────────────────
-
-export function formatMarketCap(cap: number, baseCurrency: string): string {
-  if (baseCurrency === "SOL") {
-    if (cap >= 1_000_000_000_000) return `◎${(cap / 1_000_000_000_000).toFixed(1)}T`;
-    if (cap >= 1_000_000_000) return `◎${(cap / 1_000_000_000).toFixed(1)}B`;
-    if (cap >= 1_000_000) return `◎${(cap / 1_000_000).toFixed(0)}M`;
-    return `◎${cap.toLocaleString("en-US")}`;
-  }
-  if (baseCurrency === "USDT") {
-    if (cap >= 1_000_000_000_000) return `$${(cap / 1_000_000_000_000).toFixed(1)}T`;
-    if (cap >= 1_000_000_000) return `$${(cap / 1_000_000_000).toFixed(1)}B`;
-    if (cap >= 1_000_000) return `$${(cap / 1_000_000).toFixed(0)}M`;
-    return `$${cap.toLocaleString("en-US")}`;
-  }
-  if (cap >= 1_0000_0000_0000_0000) return `${(cap / 1_0000_0000_0000).toFixed(0)}조`;
-  if (cap >= 1_0000_0000_0000) return `${(cap / 1_0000_0000_0000).toFixed(1)}조`;
-  if (cap >= 1_0000_0000) return `${Math.floor(cap / 1_0000_0000).toLocaleString("ko-KR")}억`;
-  return cap.toLocaleString("ko-KR");
-}
-
 // ── 변동률 포맷 ──────────────────────────────────────────
 
 export function formatChangeRate(rate: number): string {

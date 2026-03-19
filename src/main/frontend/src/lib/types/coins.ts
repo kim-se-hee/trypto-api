@@ -4,15 +4,6 @@ export interface CoinData {
   currentPrice: number;
   changeRate: number;
   volume: number;
-  marketCap: number;
-}
-
-export interface ExchangeData {
-  id: string;
-  name: string;
-  type: "CEX" | "DEX";
-  baseCurrency: string;
-  coins: CoinData[];
 }
 
 const COIN_COLORS: Record<string, string> = {

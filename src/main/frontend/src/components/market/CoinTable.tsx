@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { formatPrice, formatVolume, formatMarketCap, formatChangeRate, getCurrencySymbol } from "@/lib/formatters";
+import { formatPrice, formatVolume, formatChangeRate, getCurrencySymbol } from "@/lib/formatters";
 import { SortIcon } from "@/components/ui/SortIcon";
 import { useSort } from "@/hooks/useSort";
 import type { SortDir } from "@/hooks/useSort";
@@ -14,9 +14,9 @@ interface CoinTableProps {
   onSelect?: (symbol: string) => void;
 }
 
-type SortKey = "name" | "price" | "change" | "volume" | "marketCap";
+type SortKey = "name" | "price" | "change" | "volume";
 
-const GRID_COLS = "grid-cols-[2fr_minmax(100px,140px)_minmax(80px,100px)_minmax(90px,120px)_minmax(90px,120px)]";
+const GRID_COLS = "grid-cols-[2fr_minmax(100px,140px)_minmax(80px,100px)_minmax(90px,120px)]";
 
 export function CoinTable({ coins, baseCurrency, selectedSymbol, onSelect }: CoinTableProps) {
   const comparator = useCallback((key: SortKey, dir: SortDir) => {
@@ -27,7 +27,6 @@ export function CoinTable({ coins, baseCurrency, selectedSymbol, onSelect }: Coi
         case "price": cmp = a.currentPrice - b.currentPrice; break;
         case "change": cmp = a.changeRate - b.changeRate; break;
         case "volume": cmp = a.volume - b.volume; break;
-        case "marketCap": cmp = a.marketCap - b.marketCap; break;
       }
       return dir === "asc" ? cmp : -cmp;
     };
@@ -44,7 +43,6 @@ export function CoinTable({ coins, baseCurrency, selectedSymbol, onSelect }: Coi
     { key: "name", label: "코인명", sortable: true },
     { key: "price", label: "현재가", sortable: true },
     { key: "change", label: "전일대비", sortable: true },
-    { key: "marketCap", label: "시가총액", sortable: true },
     { key: "volume", label: "거래대금(24H)", sortable: true },
   ];
 
@@ -105,31 +103,32 @@ export function CoinTable({ coins, baseCurrency, selectedSymbol, onSelect }: Coi
                 coin.changeRate > 0 && "text-positive",
                 coin.changeRate < 0 && "text-negative",
               )}>
-                {currencySymbol}{formatPrice(coin.currentPrice, baseCurrency)}
+                {coin.currentPrice > 0
+                  ? <>{currencySymbol}{formatPrice(coin.currentPrice, baseCurrency)}</>
+                  : <span className="text-muted-foreground">-</span>}
               </div>
 
               {/* Change rate */}
               <div className="flex justify-end">
-                <span
-                  className={cn(
-                    "inline-block rounded-full px-2 py-0.5 font-mono text-xs font-medium tabular-nums",
-                    coin.changeRate > 0 && "bg-positive/15 text-positive",
-                    coin.changeRate < 0 && "bg-negative/15 text-negative",
-                    coin.changeRate === 0 && "text-muted-foreground",
-                  )}
-                >
-                  {formatChangeRate(coin.changeRate)}
-                </span>
-              </div>
-
-              {/* Market cap */}
-              <div className="text-right font-mono text-xs tabular-nums text-muted-foreground">
-                {formatMarketCap(coin.marketCap, baseCurrency)}
+                {coin.currentPrice > 0 ? (
+                  <span
+                    className={cn(
+                      "inline-block rounded-full px-2 py-0.5 font-mono text-xs font-medium tabular-nums",
+                      coin.changeRate > 0 && "bg-positive/15 text-positive",
+                      coin.changeRate < 0 && "bg-negative/15 text-negative",
+                      coin.changeRate === 0 && "text-muted-foreground",
+                    )}
+                  >
+                    {formatChangeRate(coin.changeRate)}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">-</span>
+                )}
               </div>
 
               {/* Volume */}
               <div className="text-right font-mono text-xs tabular-nums text-muted-foreground">
-                {formatVolume(coin.volume, baseCurrency)}
+                {coin.volume > 0 ? formatVolume(coin.volume, baseCurrency) : "-"}
               </div>
             </div>
           )})
