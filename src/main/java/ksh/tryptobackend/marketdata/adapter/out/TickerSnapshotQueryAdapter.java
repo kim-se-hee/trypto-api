@@ -105,9 +105,9 @@ public class TickerSnapshotQueryAdapter implements TickerSnapshotQueryPort {
         }
         try {
             JsonNode node = objectMapper.readTree(json);
-            BigDecimal price = decimalOrZero(node.get("last_price"));
-            BigDecimal changeRate = decimalOrZero(node.get("change_rate"));
-            BigDecimal volume = decimalOrZero(node.get("quote_turnover"));
+            BigDecimal price = decimalOrZero(node.get("lastPrice"));
+            BigDecimal changeRate = decimalOrZero(node.get("changeRate"));
+            BigDecimal volume = decimalOrZero(node.get("quoteTurnover"));
             return new TickerSnapshot(price, changeRate, volume);
         } catch (JacksonException e) {
             return TickerSnapshot.EMPTY;
