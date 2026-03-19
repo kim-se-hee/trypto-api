@@ -29,33 +29,26 @@ export function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4">
-      {/* Background decorations */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/6 blur-3xl" />
-        <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-chart-2/8 blur-3xl" />
-        <div className="absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-chart-4/5 blur-3xl" />
-      </div>
-
-      <div className="relative w-full max-w-[380px]">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
+      <div className="w-full max-w-[380px] animate-enter">
         {/* Logo */}
-        <div className="mb-8 text-center">
+        <div className="mb-10 text-center">
           <div className="inline-flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-[#9A6AFF] shadow-md">
-              <Activity className="h-5 w-5 text-white" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+              <Activity className="h-4.5 w-4.5 text-white" />
             </div>
-            <span className="text-2xl font-extrabold tracking-tight">Trypto</span>
+            <span className="font-serif text-2xl font-bold tracking-tight">Trypto</span>
           </div>
-          <p className="mt-2 text-sm font-medium text-muted-foreground">
+          <p className="mt-3 text-sm text-muted-foreground">
             큰 돈 잃을 걱정 없이 해보는 실전 리허설
           </p>
         </div>
 
         {/* Login card */}
-        <div className="rounded-2xl bg-card p-6 shadow-card">
+        <div className="rounded-xl border border-border bg-card p-6">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="email" className="text-xs font-semibold text-muted-foreground">
+              <label htmlFor="email" className="text-xs font-medium text-muted-foreground">
                 이메일
               </label>
               <Input
@@ -65,12 +58,12 @@ export function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
-                className="h-11 rounded-xl bg-secondary/40 text-sm"
+                className="h-11 rounded-lg bg-secondary/40 text-sm"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="password" className="text-xs font-semibold text-muted-foreground">
+              <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
                 비밀번호
               </label>
               <Input
@@ -80,7 +73,7 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                className="h-11 rounded-xl bg-secondary/40 text-sm"
+                className="h-11 rounded-lg bg-secondary/40 text-sm"
               />
             </div>
 
@@ -92,7 +85,7 @@ export function LoginPage() {
 
             <button
               type="submit"
-              className="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-[#9A6AFF] text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
+              className="mt-1 flex h-11 items-center justify-center gap-2 rounded-lg bg-primary text-sm font-semibold text-white transition-all duration-150 hover:bg-primary/90 active:scale-[0.98]"
             >
               로그인
               <ArrowRight className="h-4 w-4" />
@@ -101,10 +94,9 @@ export function LoginPage() {
         </div>
 
         {/* Test account hint */}
-        <div className="mt-4 rounded-xl bg-card/60 px-4 py-3 text-center backdrop-blur-sm">
+        <div className="mt-4 rounded-lg border border-dashed border-border px-4 py-3 text-center">
           <p className="text-xs text-muted-foreground">
-            테스트 계정 &middot;{" "}
-            <span className="font-semibold text-foreground">test@trypto.com</span>
+            테스트 계정 · <span className="font-medium text-foreground">test@trypto.com</span>
           </p>
         </div>
       </div>

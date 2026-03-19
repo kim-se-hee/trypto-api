@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Activity, Menu, X, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -18,15 +18,15 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 shadow-sm backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link to="/market" className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-primary" />
-          <span className="text-lg font-bold tracking-tight">Trypto</span>
+          <Activity className="h-4.5 w-4.5 text-primary" />
+          <span className="font-serif text-lg font-bold tracking-tight">Trypto</span>
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden h-full items-center gap-6 text-sm sm:flex">
+        <nav className="hidden items-center gap-1 text-sm sm:flex">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -34,10 +34,10 @@ export function Header() {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex h-full items-center border-b-2 font-medium transition-colors",
+                  "rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors",
                   isActive
-                    ? "border-primary font-semibold text-primary"
-                    : "border-transparent text-muted-foreground hover:text-primary",
+                    ? "bg-foreground/[0.06] font-semibold text-foreground"
+                    : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
                 )}
               >
                 {item.label}
@@ -47,27 +47,27 @@ export function Header() {
         </nav>
 
         {/* Desktop user info */}
-        <div className="hidden items-center gap-3 sm:flex">
+        <div className="hidden items-center gap-2 sm:flex">
           {user && (
             <Link
               to="/mypage"
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              className="text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               {user.nickname}
             </Link>
           )}
           <button
             onClick={logout}
-            className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+            className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-3.5 w-3.5" />
             <span>로그아웃</span>
           </button>
         </div>
 
         {/* Mobile hamburger */}
         <button
-          className="sm:hidden rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary/60"
+          className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-foreground/[0.04] sm:hidden"
           onClick={() => setMobileOpen((v) => !v)}
           aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"}
         >
@@ -77,7 +77,7 @@ export function Header() {
 
       {/* Mobile nav dropdown */}
       {mobileOpen && (
-        <nav className="border-t border-border/30 bg-white px-4 pb-3 pt-2 sm:hidden">
+        <nav className="border-t border-border/40 bg-background px-4 pb-3 pt-2 sm:hidden">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -86,10 +86,10 @@ export function Header() {
                 to={item.path}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
-                  "block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                  "block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                    ? "bg-foreground/[0.06] text-foreground"
+                    : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground",
                 )}
               >
                 {item.label}
@@ -97,12 +97,12 @@ export function Header() {
             );
           })}
 
-          <div className="mt-2 flex items-center justify-between border-t border-border/30 px-3 pt-3">
+          <div className="mt-2 flex items-center justify-between border-t border-border/40 px-3 pt-3">
             {user && (
               <Link
                 to="/mypage"
                 onClick={() => setMobileOpen(false)}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 {user.nickname}
               </Link>
@@ -112,7 +112,7 @@ export function Header() {
                 setMobileOpen(false);
                 logout();
               }}
-              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.04] hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
               <span>로그아웃</span>
