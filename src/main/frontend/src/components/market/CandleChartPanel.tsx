@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import { formatChangeRate, formatPrice, getCurrencySymbol } from "@/lib/formatters";
 import {
   findCandles,
-  normalizeCandleTime,
   resolveCandleExchangeCode,
   type CandleInterval,
   type CandleItem,
@@ -96,94 +95,6 @@ function formatTickTime(time: string, interval: CandleInterval): string {
   }).format(date);
 }
 
-function getIntervalMs(interval: CandleInterval): number {
-  switch (interval) {
-    case "1m":
-      return 60_000;
-    case "1h":
-      return 60 * 60_000;
-    case "4h":
-      return 4 * 60 * 60_000;
-    case "1d":
-      return 24 * 60 * 60_000;
-    case "1w":
-      return 7 * 24 * 60 * 60_000;
-    case "1M":
-      return 30 * 24 * 60 * 60_000;
-  }
-}
-
-function hashSeed(value: string): number {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-  return hash || 1;
-}
-
-function createSeededRandom(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    return state / 0xffffffff;
-  };
-}
-
-function interpolateSeries(values: number[], targetLength: number): number[] {
-  if (values.length === 0) {
-    return Array.from({ length: targetLength }, () => 0);
-  }
-
-  if (values.length === 1) {
-    return Array.from({ length: targetLength }, () => values[0]);
-  }
-
-  return Array.from({ length: targetLength }, (_, index) => {
-    const position = (index / Math.max(targetLength - 1, 1)) * (values.length - 1);
-    const leftIndex = Math.floor(position);
-    const rightIndex = Math.min(values.length - 1, Math.ceil(position));
-    const ratio = position - leftIndex;
-    const left = values[leftIndex];
-    const right = values[rightIndex];
-    return left + (right - left) * ratio;
-  });
-}
-
-function buildMockCandles(
-  coin: CoinData,
-  interval: CandleInterval,
-  candleCount: number,
-): CandleItem[] {
-  const random = createSeededRandom(hashSeed(`${coin.symbol}-${interval}-${coin.currentPrice}`));
-  const baseSeries = interpolateSeries(
-    [...coin.sparkline.slice(-24), coin.currentPrice],
-    candleCount + 1,
-  );
-  const now = new Date();
-  const intervalMs = getIntervalMs(interval);
-  const lastCandleTime = new Date(normalizeCandleTime(now.toISOString(), interval));
-
-  return Array.from({ length: candleCount }, (_, index) => {
-    const openBase = baseSeries[index];
-    const closeBase = baseSeries[index + 1];
-    const amplitude = Math.max(openBase * 0.0045, Math.abs(closeBase - openBase) * 1.15);
-    const open = openBase * (1 + (random() - 0.5) * 0.01);
-    const close = closeBase * (1 + (random() - 0.5) * 0.01);
-    const wickHigh = amplitude * (0.35 + random() * 0.8);
-    const wickLow = amplitude * (0.35 + random() * 0.8);
-
-    return {
-      time: new Date(
-        lastCandleTime.getTime() - (candleCount - index - 1) * intervalMs,
-      ).toISOString(),
-      open,
-      high: Math.max(open, close) + wickHigh,
-      low: Math.max(0, Math.min(open, close) - wickLow),
-      close,
-    };
-  });
-}
-
 function getDefaultVisibleCount(interval: CandleInterval, totalCount: number): number {
   return Math.min(DEFAULT_VISIBLE_COUNT[interval], totalCount);
 }
@@ -206,17 +117,9 @@ export function CandleChartPanel({
     startEndIndex: number;
   } | null>(null);
 
-  const fallbackCandles = useMemo(() => {
-    const option = INTERVAL_OPTIONS.find((item) => item.value === interval);
-    return buildMockCandles(coin, interval, option?.candleCount ?? 60);
-  }, [coin, interval]);
-
-  useEffect(() => {
-    setCandles(fallbackCandles);
-  }, [fallbackCandles]);
-
   useEffect(() => {
     let active = true;
+    setCandles([]);
 
     async function loadCandles() {
       const exchangeCode = resolveCandleExchangeCode(exchangeKey);
@@ -231,10 +134,10 @@ export function CandleChartPanel({
           limit: option?.candleCount ?? 60,
         });
 
-        if (!active || data.length === 0) return;
+        if (!active) return;
         setCandles(data);
       } catch {
-        // Keep mock candles when the backend candle API is unavailable.
+        // 캔들 API 실패 시 빈 상태 유지
       }
     }
 
@@ -506,10 +409,6 @@ export function CandleChartPanel({
     visibleStartIndex,
   ]);
 
-  if (!chartData) {
-    return null;
-  }
-
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="border-b border-border/50 px-5 py-5 sm:px-6">
@@ -569,6 +468,11 @@ export function CandleChartPanel({
       </div>
 
       <div className="px-4 py-4 sm:px-6 sm:py-6">
+        {!chartData ? (
+          <div className="flex h-64 items-center justify-center rounded-[24px] border border-border/60 bg-white text-sm text-muted-foreground">
+            캔들 데이터를 불러오는 중...
+          </div>
+        ) : (
         <div
           ref={chartContainerRef}
           className="relative overflow-hidden rounded-[24px] border border-border/60 bg-white"
@@ -713,7 +617,7 @@ export function CandleChartPanel({
             </div>
           )}
         </div>
-
+        )}
       </div>
     </section>
   );

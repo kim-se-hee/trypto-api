@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export type FilterType = "all" | "rising" | "falling" | "volume";
+export type FilterType = "all" | "rising" | "falling";
 
 interface FilterChipsProps {
   selected: FilterType;
@@ -11,7 +11,6 @@ const FILTERS: { key: FilterType; label: string }[] = [
   { key: "all", label: "전체" },
   { key: "rising", label: "상승" },
   { key: "falling", label: "하락" },
-  { key: "volume", label: "거래량순" },
 ];
 
 export function FilterChips({ selected, onSelect }: FilterChipsProps) {

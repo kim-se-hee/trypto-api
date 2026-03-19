@@ -11,11 +11,15 @@ import { CandleChartPanel } from "@/components/market/CandleChartPanel";
 import { OrderPanel } from "@/components/market/OrderPanel";
 import { EmergencyFundingCard } from "@/components/round/EmergencyFundingCard";
 import { useRound } from "@/contexts/RoundContext";
-import { cexExchanges, dexExchanges } from "@/mocks/coins";
-import { getBackendExchangeId, resolveOrderTargetIds, type OrderTargetIds } from "@/lib/api/id-mapping";
+import { EXCHANGES } from "@/lib/types/coins";
+import { resolveOrderTargetIds, type OrderTargetIds } from "@/lib/api/id-mapping";
+import { useExchangeCoins } from "@/hooks/useExchangeCoins";
 import { useLivePrices } from "@/hooks/useLivePrices";
 import type { MarketType } from "@/components/market/MarketTypeTabs";
 import type { FilterType } from "@/components/market/FilterChips";
+
+const CEX_EXCHANGES = EXCHANGES.filter((e) => e.type === "CEX");
+const DEX_EXCHANGES = EXCHANGES.filter((e) => e.type === "DEX");
 
 export function MarketPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,25 +27,26 @@ export function MarketPage() {
 
   const marketType = (searchParams.get("type") === "dex" ? "dex" : "cex") as MarketType;
   const isCex = marketType === "cex";
-  const activeExchanges = isCex ? cexExchanges : dexExchanges;
+  const activeExchanges = isCex ? CEX_EXCHANGES : DEX_EXCHANGES;
 
-  const selectedExchange = searchParams.get("exchange") ?? activeExchanges[0].id;
+  const selectedExchangeKey = searchParams.get("exchange") ?? activeExchanges[0].key;
+  const exchange = useMemo(
+    () => activeExchanges.find((e) => e.key === selectedExchangeKey) ?? activeExchanges[0],
+    [activeExchanges, selectedExchangeKey],
+  );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
 
-  const exchange = useMemo(
-    () => activeExchanges.find((e) => e.id === selectedExchange) ?? activeExchanges[0],
-    [activeExchanges, selectedExchange],
-  );
-  const backendExchangeId = getBackendExchangeId(selectedExchange);
+  // 정적 API로 코인 목록 조회
+  const { coins: staticCoins, loading } = useExchangeCoins(exchange.id);
 
   // 실시간 가격 연동
-  const liveCoins = useLivePrices({
-    exchangeId: backendExchangeId ?? 0,
-    initialCoins: exchange.coins,
+  const coins = useLivePrices({
+    exchangeId: exchange.id,
+    initialCoins: staticCoins,
   });
-  const coins = backendExchangeId ? liveCoins : exchange.coins;
 
   const filteredCoins = useMemo(() => {
     let filtered = coins;
@@ -62,9 +67,6 @@ export function MarketPage() {
       case "falling":
         filtered = filtered.filter((c) => c.changeRate < 0);
         break;
-      case "volume":
-        filtered = [...filtered].sort((a, b) => b.volume - a.volume);
-        break;
     }
 
     return filtered;
@@ -74,6 +76,7 @@ export function MarketPage() {
     const fromSelection = coins.find((coin) => coin.symbol === selectedSymbol);
     return fromSelection ?? filteredCoins[0] ?? coins[0];
   }, [coins, filteredCoins, selectedSymbol]);
+
   const [orderTargetIds, setOrderTargetIds] = useState<OrderTargetIds | null>(null);
   useEffect(() => {
     if (!selectedCoin) {
@@ -81,29 +84,29 @@ export function MarketPage() {
       return;
     }
     let cancelled = false;
-    void resolveOrderTargetIds(selectedExchange, selectedCoin.symbol, getWalletId).then((ids) => {
+    void resolveOrderTargetIds(exchange.key, selectedCoin.symbol, getWalletId).then((ids) => {
       if (!cancelled) setOrderTargetIds(ids);
     });
     return () => { cancelled = true; };
-  }, [selectedExchange, selectedCoin, getWalletId]);
+  }, [exchange.key, selectedCoin, getWalletId]);
 
   const handleMarketTypeChange = (type: MarketType) => {
-    const newExchanges = type === "cex" ? cexExchanges : dexExchanges;
-    setSearchParams({ type, exchange: newExchanges[0].id });
+    const newExchanges = type === "cex" ? CEX_EXCHANGES : DEX_EXCHANGES;
+    setSearchParams({ type, exchange: newExchanges[0].key });
     setSearchQuery("");
     setFilter("all");
     setSelectedSymbol(null);
   };
 
-  const handleExchangeChange = (id: string) => {
-    setSearchParams({ type: marketType, exchange: id });
+  const handleExchangeChange = (key: string) => {
+    setSearchParams({ type: marketType, exchange: key });
     setSearchQuery("");
     setFilter("all");
     setSelectedSymbol(null);
   };
 
   const exchangeTabItems = activeExchanges.map((e) => ({
-    id: e.id,
+    id: e.key,
     name: e.name,
     baseCurrency: e.baseCurrency,
   }));
@@ -139,7 +142,7 @@ export function MarketPage() {
         <div className="animate-enter-delay-2 mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4">
           <ExchangeTabs
             exchanges={exchangeTabItems}
-            selected={selectedExchange}
+            selected={selectedExchangeKey}
             onSelect={handleExchangeChange}
           />
           {activeExchanges.length > 1 && <div className="h-6 w-px bg-border/60" />}
@@ -149,45 +152,51 @@ export function MarketPage() {
           </div>
         </div>
 
-        <div className="animate-enter-delay-3 mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="space-y-5">
-            {selectedCoin && (
-              <CandleChartPanel
-                exchangeKey={selectedExchange}
-                baseCurrency={exchange.baseCurrency}
-                coin={selectedCoin}
-              />
-            )}
-
-            {/* Coin table */}
-            <CoinTable
-              coins={filteredCoins}
-              baseCurrency={exchange.baseCurrency}
-              selectedSymbol={selectedCoin?.symbol ?? null}
-              onSelect={setSelectedSymbol}
-            />
+        {loading ? (
+          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+            코인 목록을 불러오는 중...
           </div>
+        ) : (
+          <div className="animate-enter-delay-3 mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="space-y-5">
+              {selectedCoin && (
+                <CandleChartPanel
+                  exchangeKey={exchange.key}
+                  baseCurrency={exchange.baseCurrency}
+                  coin={selectedCoin}
+                />
+              )}
 
-          {/* Side panel */}
-          <div className="space-y-5">
-            {activeRound && backendExchangeId !== null && (
-              <EmergencyFundingCard
-                round={activeRound}
-                onCharge={(amount) => chargeEmergencyFunding(amount, backendExchangeId)}
-              />
-            )}
-            {selectedCoin && (
-              <OrderPanel
+              {/* Coin table */}
+              <CoinTable
+                coins={filteredCoins}
                 baseCurrency={exchange.baseCurrency}
-                coinSymbol={selectedCoin.symbol}
-                coinName={selectedCoin.name}
-                currentPrice={selectedCoin.currentPrice}
-                feeRate={0.0005}
-                orderTargetIds={orderTargetIds}
+                selectedSymbol={selectedCoin?.symbol ?? null}
+                onSelect={setSelectedSymbol}
               />
-            )}
+            </div>
+
+            {/* Side panel */}
+            <div className="space-y-5">
+              {activeRound && (
+                <EmergencyFundingCard
+                  round={activeRound}
+                  onCharge={(amount) => chargeEmergencyFunding(amount, exchange.id)}
+                />
+              )}
+              {selectedCoin && (
+                <OrderPanel
+                  baseCurrency={exchange.baseCurrency}
+                  coinSymbol={selectedCoin.symbol}
+                  coinName={selectedCoin.name}
+                  currentPrice={selectedCoin.currentPrice}
+                  feeRate={0.0005}
+                  orderTargetIds={orderTargetIds}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Footer info */}
         <p className="mt-4 text-[11px] text-muted-foreground/50">
