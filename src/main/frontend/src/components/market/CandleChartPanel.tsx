@@ -107,6 +107,7 @@ export function CandleChartPanel({
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const [interval, setInterval] = useState<CandleInterval>("1d");
   const [candles, setCandles] = useState<CandleItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(DEFAULT_VISIBLE_COUNT["1d"]);
   const [endIndex, setEndIndex] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -120,10 +121,14 @@ export function CandleChartPanel({
   useEffect(() => {
     let active = true;
     setCandles([]);
+    setLoading(true);
 
     async function loadCandles() {
       const exchangeCode = resolveCandleExchangeCode(exchangeKey);
-      if (!exchangeCode) return;
+      if (!exchangeCode) {
+        setLoading(false);
+        return;
+      }
 
       try {
         const option = INTERVAL_OPTIONS.find((item) => item.value === interval);
@@ -138,6 +143,8 @@ export function CandleChartPanel({
         setCandles(data);
       } catch {
         // 캔들 API 실패 시 빈 상태 유지
+      } finally {
+        if (active) setLoading(false);
       }
     }
 
@@ -470,7 +477,7 @@ export function CandleChartPanel({
       <div className="px-4 py-4 sm:px-6 sm:py-6">
         {!chartData ? (
           <div className="flex h-64 items-center justify-center rounded-[24px] border border-border/60 bg-white text-sm text-muted-foreground">
-            캔들 데이터를 불러오는 중...
+            {loading ? "캔들 데이터를 불러오는 중..." : "캔들 데이터가 부족합니다"}
           </div>
         ) : (
         <div
