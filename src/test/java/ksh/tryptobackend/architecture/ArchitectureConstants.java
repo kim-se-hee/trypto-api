@@ -23,6 +23,7 @@ public final class ArchitectureConstants {
     static final String ADAPTER_IN = ".adapter.in..";
     static final String ADAPTER_OUT = ".adapter.out..";
     static final String SERVICE = ".application.service..";
+    static final String DOMAIN_SERVICE = ".domain.service..";
     static final String PORT_IN = ".application.port.in";
     static final String PORT_OUT = ".application.port.out";
     static final String STRATEGY = ".application.strategy..";

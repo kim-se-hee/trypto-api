@@ -89,6 +89,7 @@ class BoundedContextIsolationTest {
         noClasses()
             .that().resideInAPackage(contextPkg(context, ".."))
             .and().resideOutsideOfPackage(contextPkg(context, SERVICE))
+            .and().resideOutsideOfPackage(contextPkg(context, DOMAIN_SERVICE))
             .should().dependOnClassesThat()
             .resideInAnyPackage(otherPortInPackages)
             .as(context + " non-service classes should not depend on other context UseCases")

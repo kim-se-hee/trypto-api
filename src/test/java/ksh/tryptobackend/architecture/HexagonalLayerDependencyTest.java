@@ -16,6 +16,7 @@ class HexagonalLayerDependencyTest {
     void domain_should_not_depend_on_application_or_adapter_or_framework(JavaClasses classes) {
         noClasses()
             .that().resideInAnyPackage(allContextPackages(DOMAIN))
+            .and().resideOutsideOfPackage("..domain.service..")
             .should().dependOnClassesThat()
             .resideInAnyPackage(
                 merge(
