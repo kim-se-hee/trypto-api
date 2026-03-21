@@ -24,17 +24,17 @@ public class PlaceOrderService implements PlaceOrderUseCase {
     @Override
     @Transactional
     public Order placeOrder(PlaceOrderCommand cmd) {
-        return orderService.findDuplicate(cmd.idempotencyKey())
-            .orElseGet(() -> {
-                TradingContext ctx = tradingContextResolver.resolve(cmd);
-                Order order = Order.create(cmd.orderType(), cmd.side(),
-                    cmd.idempotencyKey(), cmd.walletId(), cmd.exchangeCoinId(),
-                    cmd.amount(), cmd.price(), ctx.venue(), ctx.currentPrice(), ctx.now());
+        Order duplicate = orderService.findDuplicate(cmd.idempotencyKey());
+        if (duplicate != null) return duplicate;
 
-                balances.validateFor(order, ctx);
-                rules.inspect(order, ctx);
+        TradingContext ctx = tradingContextResolver.resolve(cmd);
+        Order order = Order.create(cmd.orderType(), cmd.side(),
+            cmd.idempotencyKey(), cmd.walletId(), cmd.exchangeCoinId(),
+            cmd.amount(), cmd.price(), ctx.venue(), ctx.currentPrice(), ctx.now());
 
-                return orderService.save(order, ctx);
-            });
+        balances.validateFor(order, ctx);
+        rules.inspect(order, ctx);
+
+        return orderService.save(order, ctx);
     }
 }

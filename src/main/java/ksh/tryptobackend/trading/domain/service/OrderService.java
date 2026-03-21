@@ -8,8 +8,6 @@ import ksh.tryptobackend.trading.domain.vo.TradingContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-
 @Component
 @RequiredArgsConstructor
 public class OrderService {
@@ -17,8 +15,8 @@ public class OrderService {
     private final OrderCommandPort orderCommandPort;
     private final OrderPlacedEventPort orderPlacedEventPort;
 
-    public Optional<Order> findDuplicate(String idempotencyKey) {
-        return orderCommandPort.findByIdempotencyKey(idempotencyKey);
+    public Order findDuplicate(String idempotencyKey) {
+        return orderCommandPort.findByIdempotencyKey(idempotencyKey).orElse(null);
     }
 
     public Order save(Order order, TradingContext ctx) {
