@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -20,5 +21,11 @@ public class HoldingQueryAdapter implements HoldingQueryPort {
         return repository.findByWalletId(walletId).stream()
             .map(HoldingJpaEntity::toDomain)
             .toList();
+    }
+
+    @Override
+    public Optional<Holding> findByWalletIdAndCoinId(Long walletId, Long coinId) {
+        return repository.findByWalletIdAndCoinId(walletId, coinId)
+            .map(HoldingJpaEntity::toDomain);
     }
 }

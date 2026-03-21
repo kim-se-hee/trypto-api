@@ -27,4 +27,6 @@ public interface OrderQueryPort {
     int countFilledByWalletId(Long walletId);
 
     FilledOrderCounts countFilledGroupByWalletId(List<Long> walletIds);
+
+    long countByWalletIdAndCreatedAtBetween(Long walletId, LocalDateTime from, LocalDateTime to);
 }

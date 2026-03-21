@@ -6,6 +6,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import ksh.tryptobackend.trading.adapter.out.entity.OrderJpaEntity;
 import ksh.tryptobackend.trading.adapter.out.entity.QOrderJpaEntity;
+import ksh.tryptobackend.trading.adapter.out.repository.OrderJpaRepository;
 import ksh.tryptobackend.trading.application.port.out.OrderQueryPort;
 import ksh.tryptobackend.trading.domain.vo.FilledOrder;
 import ksh.tryptobackend.trading.domain.model.Order;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 public class OrderQueryAdapter implements OrderQueryPort {
 
     private final JPAQueryFactory queryFactory;
+    private final OrderJpaRepository orderJpaRepository;
 
     @Override
     public List<PendingOrder> findAllPendingOrders() {
@@ -143,6 +145,11 @@ public class OrderQueryAdapter implements OrderQueryPort {
             )
             .orderBy(o.filledAt.asc())
             .fetch();
+    }
+
+    @Override
+    public long countByWalletIdAndCreatedAtBetween(Long walletId, LocalDateTime from, LocalDateTime to) {
+        return orderJpaRepository.countByWalletIdAndCreatedAtBetween(walletId, from, to);
     }
 
     private BooleanExpression exchangeCoinIdEq(QOrderJpaEntity order, Long exchangeCoinId) {
