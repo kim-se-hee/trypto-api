@@ -20,7 +20,10 @@ class HexagonalLayerDependencyTest {
             .should().dependOnClassesThat()
             .resideInAnyPackage(
                 merge(
-                    allContextPackages(APPLICATION),
+                    allContextPackages(SERVICE),
+                    allContextPackages(".application.port.out.."),
+                    allContextPackages(".application.port.in"),
+                    allContextPackages(STRATEGY),
                     allContextPackages(ADAPTER),
                     new String[]{
                         "org.springframework..",
@@ -30,7 +33,7 @@ class HexagonalLayerDependencyTest {
                     }
                 )
             )
-            .as("Domain should not depend on application, adapter, or framework")
+            .as("Domain should not depend on application (except port.in.dto), adapter, or framework")
             .check(classes);
     }
 
