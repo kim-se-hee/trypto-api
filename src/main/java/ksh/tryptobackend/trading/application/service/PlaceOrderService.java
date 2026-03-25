@@ -28,9 +28,7 @@ public class PlaceOrderService implements PlaceOrderUseCase {
         if (duplicate != null) return duplicate;
 
         TradingContext ctx = tradingContextResolver.resolve(cmd);
-        Order order = Order.create(cmd.orderType(), cmd.side(),
-            cmd.idempotencyKey(), cmd.walletId(), cmd.exchangeCoinId(),
-            cmd.amount(), cmd.price(), ctx.venue(), ctx.currentPrice(), ctx.now());
+        Order order = Order.create(cmd, ctx);
 
         balances.validateFor(order, ctx);
         rules.inspect(order, ctx);

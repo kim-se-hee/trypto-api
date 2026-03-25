@@ -1,10 +1,15 @@
 package ksh.tryptobackend.trading.domain.model;
 
 import ksh.tryptobackend.common.exception.CustomException;
+import ksh.tryptobackend.trading.application.port.in.dto.command.PlaceOrderCommand;
 import ksh.tryptobackend.trading.domain.vo.Fee;
 import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
+import ksh.tryptobackend.trading.domain.vo.OrderMode;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
+import ksh.tryptobackend.trading.domain.vo.OrderType;
 import ksh.tryptobackend.trading.domain.vo.Quantity;
+import ksh.tryptobackend.trading.domain.vo.Side;
+import ksh.tryptobackend.trading.domain.vo.TradingContext;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,6 +26,21 @@ class OrderTest {
 
     private static final TradingVenue DOMESTIC_VENUE = new TradingVenue(
         new BigDecimal("0.0005"), 1L, OrderAmountPolicy.DOMESTIC);
+    private static final LocalDateTime NOW = LocalDateTime.of(2026, 3, 17, 12, 0, 0);
+
+    private static PlaceOrderCommand cmd(Side side, OrderType orderType,
+                                          BigDecimal amount, BigDecimal price) {
+        return new PlaceOrderCommand(UUID.randomUUID().toString(), 1L, 1L,
+            side, orderType, price, amount);
+    }
+
+    private static TradingContext ctx(BigDecimal currentPrice) {
+        return new TradingContext(100L, DOMESTIC_VENUE, OrderMode.MARKET_BUY, currentPrice, NOW);
+    }
+
+    private static TradingContext ctx(OrderMode mode, BigDecimal currentPrice) {
+        return new TradingContext(100L, DOMESTIC_VENUE, mode, currentPrice, NOW);
+    }
 
     @Nested
     @DisplayName("수량 계산")
@@ -71,9 +91,9 @@ class OrderTest {
             BigDecimal orderAmount = new BigDecimal("100000");
             BigDecimal currentPrice = new BigDecimal("100274000");
 
-            Order order = Order.createMarketBuyOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                orderAmount, currentPrice, DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.BUY, OrderType.MARKET, orderAmount, null),
+                ctx(currentPrice));
 
             BigDecimal expectedAmount = order.getQuantity().value().multiply(currentPrice);
             assertThat(order.getAmount()).isEqualByComparingTo(expectedAmount);
@@ -85,9 +105,9 @@ class OrderTest {
             BigDecimal sellQuantity = new BigDecimal("0.5");
             BigDecimal currentPrice = new BigDecimal("100274000");
 
-            Order order = Order.createMarketSellOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                sellQuantity, currentPrice, DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.SELL, OrderType.MARKET, sellQuantity, null),
+                ctx(currentPrice));
 
             BigDecimal expectedAmount = sellQuantity.multiply(currentPrice);
             assertThat(order.getAmount()).isEqualByComparingTo(expectedAmount);
@@ -99,9 +119,9 @@ class OrderTest {
             BigDecimal orderAmount = new BigDecimal("500000");
             BigDecimal limitPrice = new BigDecimal("100000000");
 
-            Order order = Order.createLimitBuyOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                orderAmount, limitPrice, DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.BUY, OrderType.LIMIT, orderAmount, limitPrice),
+                ctx(limitPrice));
 
             BigDecimal expectedAmount = order.getQuantity().value().multiply(limitPrice);
             assertThat(order.getAmount()).isEqualByComparingTo(expectedAmount);
@@ -113,9 +133,9 @@ class OrderTest {
             BigDecimal sellQuantity = new BigDecimal("0.001");
             BigDecimal limitPrice = new BigDecimal("110000000");
 
-            Order order = Order.createLimitSellOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                sellQuantity, limitPrice, DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.SELL, OrderType.LIMIT, sellQuantity, limitPrice),
+                ctx(limitPrice));
 
             BigDecimal expectedAmount = sellQuantity.multiply(limitPrice);
             assertThat(order.getAmount()).isEqualByComparingTo(expectedAmount);
@@ -156,17 +176,13 @@ class OrderTest {
         @Test
         @DisplayName("PENDING 주문 체결 성공 - 상태가 FILLED로 변경되고 filledAt이 설정된다")
         void fill_pendingOrder_filledSuccessfully() {
-            // Given
-            Order order = Order.createLimitBuyOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                new BigDecimal("500000"), new BigDecimal("100000000"),
-                DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.BUY, OrderType.LIMIT, new BigDecimal("500000"), new BigDecimal("100000000")),
+                ctx(new BigDecimal("100000000")));
             LocalDateTime fillTime = LocalDateTime.of(2026, 3, 17, 12, 0, 0);
 
-            // When
             order.fill(fillTime);
 
-            // Then
             assertThat(order.getStatus()).isEqualTo(OrderStatus.FILLED);
             assertThat(order.getFilledAt()).isEqualTo(fillTime);
         }
@@ -174,13 +190,10 @@ class OrderTest {
         @Test
         @DisplayName("FILLED 주문에 fill 시도 - 예외 발생")
         void fill_filledOrder_throwsException() {
-            // Given
-            Order order = Order.createMarketBuyOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                new BigDecimal("100000"), new BigDecimal("100274000"),
-                DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.BUY, OrderType.MARKET, new BigDecimal("100000"), null),
+                ctx(new BigDecimal("100274000")));
 
-            // When & Then
             assertThatThrownBy(() -> order.fill(LocalDateTime.now()))
                 .isInstanceOf(CustomException.class);
         }
@@ -188,14 +201,11 @@ class OrderTest {
         @Test
         @DisplayName("CANCELLED 주문에 fill 시도 - 예외 발생")
         void fill_cancelledOrder_throwsException() {
-            // Given
-            Order order = Order.createLimitBuyOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                new BigDecimal("500000"), new BigDecimal("100000000"),
-                DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.BUY, OrderType.LIMIT, new BigDecimal("500000"), new BigDecimal("100000000")),
+                ctx(new BigDecimal("100000000")));
             order.cancel();
 
-            // When & Then
             assertThatThrownBy(() -> order.fill(LocalDateTime.now()))
                 .isInstanceOf(CustomException.class);
         }
@@ -208,40 +218,31 @@ class OrderTest {
         @Test
         @DisplayName("지정가 주문 생성 직후 - isPending이 true")
         void isPending_limitOrder_true() {
-            // Given
-            Order order = Order.createLimitBuyOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                new BigDecimal("500000"), new BigDecimal("100000000"),
-                DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.BUY, OrderType.LIMIT, new BigDecimal("500000"), new BigDecimal("100000000")),
+                ctx(new BigDecimal("100000000")));
 
-            // When & Then
             assertThat(order.isPending()).isTrue();
         }
 
         @Test
         @DisplayName("시장가 주문 생성 직후 - isPending이 false")
         void isPending_marketOrder_false() {
-            // Given
-            Order order = Order.createMarketBuyOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                new BigDecimal("100000"), new BigDecimal("100274000"),
-                DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.BUY, OrderType.MARKET, new BigDecimal("100000"), null),
+                ctx(new BigDecimal("100274000")));
 
-            // When & Then
             assertThat(order.isPending()).isFalse();
         }
 
         @Test
         @DisplayName("체결된 주문 - isPending이 false")
         void isPending_filledOrder_false() {
-            // Given
-            Order order = Order.createLimitBuyOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                new BigDecimal("500000"), new BigDecimal("100000000"),
-                DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.BUY, OrderType.LIMIT, new BigDecimal("500000"), new BigDecimal("100000000")),
+                ctx(new BigDecimal("100000000")));
             order.fill(LocalDateTime.now());
 
-            // When & Then
             assertThat(order.isPending()).isFalse();
         }
     }
@@ -253,10 +254,9 @@ class OrderTest {
         @Test
         @DisplayName("PENDING 주문 취소 성공")
         void cancel_pendingOrder_cancelledSuccessfully() {
-            Order order = Order.createLimitBuyOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                new BigDecimal("500000"), new BigDecimal("100000000"),
-                DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.BUY, OrderType.LIMIT, new BigDecimal("500000"), new BigDecimal("100000000")),
+                ctx(new BigDecimal("100000000")));
 
             order.cancel();
 
@@ -266,10 +266,9 @@ class OrderTest {
         @Test
         @DisplayName("FILLED 주문 취소 시도 — 예외 발생")
         void cancel_filledOrder_throwsException() {
-            Order order = Order.createMarketBuyOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                new BigDecimal("100000"), new BigDecimal("100274000"),
-                DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.BUY, OrderType.MARKET, new BigDecimal("100000"), null),
+                ctx(new BigDecimal("100274000")));
 
             assertThatThrownBy(order::cancel)
                 .isInstanceOf(CustomException.class);
@@ -278,10 +277,9 @@ class OrderTest {
         @Test
         @DisplayName("이미 취소된 주문 재취소 — 멱등성 보장")
         void cancel_alreadyCancelled_idempotent() {
-            Order order = Order.createLimitBuyOrder(
-                UUID.randomUUID().toString(), 1L, 1L,
-                new BigDecimal("500000"), new BigDecimal("100000000"),
-                DOMESTIC_VENUE, LocalDateTime.now());
+            Order order = Order.create(
+                cmd(Side.BUY, OrderType.LIMIT, new BigDecimal("500000"), new BigDecimal("100000000")),
+                ctx(new BigDecimal("100000000")));
 
             order.cancel();
             order.cancel();
