@@ -1,4 +1,5 @@
 export interface WalletCoinBalance {
+  coinId: number | null;
   coinSymbol: string;
   coinName: string;
   available: number;
@@ -7,6 +8,7 @@ export interface WalletCoinBalance {
 }
 
 export interface WalletData {
+  walletId: number;
   exchangeId: string;
   exchangeName: string;
   baseCurrency: string;

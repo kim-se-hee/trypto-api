@@ -120,7 +120,7 @@ export async function placeOrder(request: PlaceOrderRequest): Promise<PlaceOrder
   };
 }
 
-export function cancelOrder(orderId: number): Promise<CancelOrderResult> {
-  return apiPost<CancelOrderResult>(`/api/orders/${orderId}/cancel`);
+export function cancelOrder(orderId: number, walletId: number): Promise<CancelOrderResult> {
+  return apiPost<CancelOrderResult>(`/api/orders/${orderId}/cancel`, { walletId });
 }
 

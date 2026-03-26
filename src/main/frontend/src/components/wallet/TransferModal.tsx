@@ -16,9 +16,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { CoinIcon } from "@/components/market/CoinIcon";
 import { formatQuantity } from "@/lib/formatters";
+import { createTransfer } from "@/lib/api/transfer-api";
 import type { WalletCoinBalance } from "@/lib/types/wallet";
 
 export interface TransferDestination {
+  walletId: number;
   exchangeId: string;
   exchangeName: string;
 }
@@ -28,6 +30,7 @@ interface TransferModalProps {
   onClose: () => void;
   coin: WalletCoinBalance;
   baseCurrency: string;
+  fromWalletId: number;
   destinations: TransferDestination[];
 }
 
@@ -36,11 +39,13 @@ export function TransferModal({
   onClose,
   coin,
   baseCurrency,
+  fromWalletId,
   destinations,
 }: TransferModalProps) {
   const [selectedDestination, setSelectedDestination] = useState("");
   const [amountStr, setAmountStr] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const amount = parseFloat(amountStr) || 0;
 
@@ -57,12 +62,27 @@ export function TransferModal({
     setAmountStr(coin.available.toString());
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     setSubmitted(true);
+    setError(null);
     if (!selectedDestination || amount <= 0 || amount > coin.available) return;
+    if (!coin.coinId) return;
 
-    // TODO: createTransfer API 호출
-    onClose();
+    const dest = destinations.find((d) => d.exchangeId === selectedDestination);
+    if (!dest) return;
+
+    try {
+      await createTransfer({
+        idempotencyKey: crypto.randomUUID(),
+        fromWalletId,
+        toWalletId: dest.walletId,
+        coinId: coin.coinId,
+        amount,
+      });
+      onClose();
+    } catch {
+      setError("송금에 실패했습니다.");
+    }
   }
 
   function handleOpenChange(open: boolean) {
@@ -150,6 +170,10 @@ export function TransferModal({
               <p className="text-xs text-destructive">{errors.amount}</p>
             )}
           </div>
+
+          {error && (
+            <p className="text-center text-sm text-destructive">{error}</p>
+          )}
 
           {/* Submit */}
           <Button className="w-full" onClick={handleSubmit}>

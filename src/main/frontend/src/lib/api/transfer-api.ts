@@ -3,10 +3,8 @@ import { apiGet, apiPost } from "./client";
 export interface CreateTransferRequest {
   idempotencyKey: string;
   fromWalletId: number;
+  toWalletId: number;
   coinId: number;
-  chain: string;
-  toAddress: string;
-  toTag?: string;
   amount: number;
 }
 

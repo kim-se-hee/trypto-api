@@ -86,6 +86,7 @@ export function WalletPage() {
       // 기본 화폐 잔고 + 거래소 상장 코인 전체 (잔고 없으면 0)
       const balances: WalletCoinBalance[] = [
         {
+          coinId: null,
           coinSymbol: balancesData.baseCurrencySymbol,
           coinName: balancesData.baseCurrencySymbol === "KRW" ? "원화" : balancesData.baseCurrencySymbol,
           available: Number(balancesData.baseCurrencyAvailable),
@@ -95,6 +96,7 @@ export function WalletPage() {
         ...exchangeCoins.map((coin) => {
           const balance = balanceMap.get(coin.coinId);
           return {
+            coinId: coin.coinId,
             coinSymbol: coin.coinSymbol,
             coinName: coin.coinName,
             available: balance?.available ?? 0,
@@ -105,6 +107,7 @@ export function WalletPage() {
       ];
 
       const walletData: WalletData = {
+        walletId: walletEntry.walletId,
         exchangeId: exchange.key,
         exchangeName: exchange.name,
         baseCurrency: exchange.baseCurrency,
@@ -129,10 +132,21 @@ export function WalletPage() {
   }, [loadWalletData]);
 
   const transferDestinations = useMemo<TransferDestination[]>(() => {
+    if (!activeRound) return [];
     return exchangeTabItems
       .filter((e) => e.id !== selectedExchange)
-      .map((e) => ({ exchangeId: e.id, exchangeName: e.name }));
-  }, [exchangeTabItems, selectedExchange]);
+      .map((e) => {
+        const exchange = EXCHANGES.find((ex) => ex.key === e.id);
+        const walletEntry = exchange
+          ? activeRound.wallets.find((w) => w.exchangeId === exchange.id)
+          : undefined;
+        return {
+          walletId: walletEntry?.walletId ?? 0,
+          exchangeId: e.id,
+          exchangeName: e.name,
+        };
+      });
+  }, [exchangeTabItems, selectedExchange, activeRound]);
 
   const handleExchangeChange = (exchangeId: string) => {
     setSearchParams({ exchange: exchangeId });
@@ -274,6 +288,7 @@ export function WalletPage() {
           onClose={() => setTransferCoin(null)}
           coin={transferCoin}
           baseCurrency={wallet.baseCurrency}
+          fromWalletId={wallet.walletId}
           destinations={transferDestinations}
         />
       )}
@@ -284,8 +299,7 @@ export function WalletPage() {
           isOpen
           onClose={() => setDepositCoin(null)}
           coin={depositCoin}
-          exchangeId={wallet.exchangeId}
-          baseCurrency={wallet.baseCurrency}
+          walletId={wallet.walletId}
         />
       )}
     </div>

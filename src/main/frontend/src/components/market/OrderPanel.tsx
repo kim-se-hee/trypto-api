@@ -293,7 +293,7 @@ export function OrderPanel({
 
   async function handleCancel(orderId: number) {
     try {
-      await cancelOrder(orderId);
+      await cancelOrder(orderId, orderTargetIds.walletId);
       setHistoryItems((prev) => prev.filter((item) => item.orderId !== orderId));
       await loadAvailability();
     } catch (error) {

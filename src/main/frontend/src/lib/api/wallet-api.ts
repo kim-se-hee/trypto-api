@@ -17,9 +17,7 @@ export interface WalletBalancesResponse {
 export interface DepositAddressResponse {
   depositAddressId: number;
   walletId: number;
-  chain: string;
   address: string;
-  tag: string | null;
 }
 
 export function getWalletBalances(
@@ -32,10 +30,8 @@ export function getWalletBalances(
 export function getDepositAddress(
   walletId: number,
   coinId: number,
-  chain: string,
 ): Promise<DepositAddressResponse> {
   return apiGet<DepositAddressResponse>(`/api/wallets/${walletId}/deposit-address`, {
     coinId,
-    chain,
   });
 }
