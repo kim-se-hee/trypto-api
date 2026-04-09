@@ -31,7 +31,7 @@ public class MatchedOrderEventListener {
 
     @RabbitListener(queues = "matched.orders", id = RabbitMqConfig.MATCHED_ORDERS_LISTENER_ID)
     public void handleMatchedOrders(MatchedOrderMessage message) {
-        for (MatchedOrderMessage.Item item : message.fills()) {
+        for (MatchedOrderMessage.Item item : message.matched()) {
             fillWithRetry(item);
         }
     }

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record MatchedOrderMessage(
-    List<Item> fills
+    List<Item> matched
 ) {
 
     public record Item(
