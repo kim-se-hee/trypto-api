@@ -14,4 +14,8 @@ public interface OrderCommandPort {
     Optional<Order> findByIdempotencyKey(String idempotencyKey);
 
     long countByWalletIdAndCreatedAtBetween(Long walletId, LocalDateTime from, LocalDateTime to);
+
+    boolean fillOrder(Long orderId, LocalDateTime filledAt);
+
+    boolean cancelOrder(Long orderId);
 }
