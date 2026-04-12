@@ -9,14 +9,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MockHoldingAdapter implements HoldingCommandPort, HoldingQueryPort {
 
     private final Map<String, Holding> holdings = new ConcurrentHashMap<>();
+    private final Map<String, ReentrantLock> locks = new ConcurrentHashMap<>();
 
     @Override
     public Optional<Holding> findByWalletIdAndCoinId(Long walletId, Long coinId) {
-        return Optional.ofNullable(holdings.get(key(walletId, coinId)));
+        String k = key(walletId, coinId);
+        locks.computeIfAbsent(k, ignore -> new ReentrantLock()).lock();
+        return Optional.ofNullable(holdings.get(k));
     }
 
     @Override
@@ -28,7 +32,12 @@ public class MockHoldingAdapter implements HoldingCommandPort, HoldingQueryPort 
 
     @Override
     public Holding save(Holding holding) {
-        holdings.put(key(holding.getWalletId(), holding.getCoinId()), holding);
+        String k = key(holding.getWalletId(), holding.getCoinId());
+        holdings.put(k, holding);
+        ReentrantLock lock = locks.get(k);
+        if (lock != null && lock.isHeldByCurrentThread()) {
+            lock.unlock();
+        }
         return holding;
     }
 
@@ -46,6 +55,7 @@ public class MockHoldingAdapter implements HoldingCommandPort, HoldingQueryPort 
 
     public void clear() {
         holdings.clear();
+        locks.clear();
     }
 
     private String key(Long walletId, Long coinId) {

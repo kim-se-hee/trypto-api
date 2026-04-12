@@ -34,6 +34,7 @@ import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -81,7 +82,7 @@ class FillPendingOrderServiceTest {
         @DisplayName("정상 체결 - 기준통화 unlock/deduct 후 코인 add")
         void fillOrder_buyOrder_settlesBalanceAndUpdatesHolding() {
             // Given
-            Order order = createPendingBuyOrder();
+            Order order = createFilledBuyOrder();
             stubDependencies(order);
             when(holdingCommandPort.findByWalletIdAndCoinId(WALLET_ID, COIN_ID))
                 .thenReturn(Optional.of(Holding.empty(WALLET_ID, COIN_ID)));
@@ -95,7 +96,6 @@ class FillPendingOrderServiceTest {
             verify(manageWalletBalanceUseCase).unlockBalance(WALLET_ID, BASE_CURRENCY_COIN_ID, settlementDebit);
             verify(manageWalletBalanceUseCase).deductBalance(WALLET_ID, BASE_CURRENCY_COIN_ID, settlementDebit);
             verify(manageWalletBalanceUseCase).addBalance(WALLET_ID, COIN_ID, order.getQuantity().value());
-            verify(orderCommandPort).save(order);
         }
     }
 
@@ -107,7 +107,7 @@ class FillPendingOrderServiceTest {
         @DisplayName("정상 체결 - 코인 unlock/deduct 후 기준통화 add")
         void fillOrder_sellOrder_settlesBalanceAndUpdatesHolding() {
             // Given
-            Order order = createPendingSellOrder();
+            Order order = createFilledSellOrder();
             stubDependencies(order);
             when(holdingCommandPort.findByWalletIdAndCoinId(WALLET_ID, COIN_ID))
                 .thenReturn(Optional.of(createHoldingWithQuantity(new BigDecimal("1"))));
@@ -121,7 +121,6 @@ class FillPendingOrderServiceTest {
             verify(manageWalletBalanceUseCase).unlockBalance(WALLET_ID, COIN_ID, unlockQuantity);
             verify(manageWalletBalanceUseCase).deductBalance(WALLET_ID, COIN_ID, unlockQuantity);
             verify(manageWalletBalanceUseCase).addBalance(WALLET_ID, BASE_CURRENCY_COIN_ID, order.getSettlementCredit());
-            verify(orderCommandPort).save(order);
         }
     }
 
@@ -130,47 +129,17 @@ class FillPendingOrderServiceTest {
     class SkipCaseTest {
 
         @Test
-        @DisplayName("주문이 존재하지 않으면 체결하지 않고 종료")
-        void fillOrder_orderNotFound_skips() {
+        @DisplayName("CAS 실패 시 (이미 처리된 주문) 체결하지 않고 종료")
+        void fillOrder_casFails_skips() {
             // Given
-            when(orderCommandPort.findById(ORDER_ID)).thenReturn(Optional.empty());
+            when(orderCommandPort.fillOrder(anyLong(), any())).thenReturn(false);
 
             // When
             sut.fillOrder(ORDER_ID, CURRENT_PRICE);
 
             // Then
             verify(manageWalletBalanceUseCase, never()).unlockBalance(any(), any(), any());
-            verify(orderCommandPort, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("주문이 이미 FILLED 상태이면 체결하지 않고 종료")
-        void fillOrder_alreadyFilled_skips() {
-            // Given
-            Order order = createFilledOrder();
-            when(orderCommandPort.findById(ORDER_ID)).thenReturn(Optional.of(order));
-
-            // When
-            sut.fillOrder(ORDER_ID, CURRENT_PRICE);
-
-            // Then
-            verify(manageWalletBalanceUseCase, never()).unlockBalance(any(), any(), any());
-            verify(orderCommandPort, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("주문이 CANCELLED 상태이면 체결하지 않고 종료")
-        void fillOrder_cancelled_skips() {
-            // Given
-            Order order = createCancelledOrder();
-            when(orderCommandPort.findById(ORDER_ID)).thenReturn(Optional.of(order));
-
-            // When
-            sut.fillOrder(ORDER_ID, CURRENT_PRICE);
-
-            // Then
-            verify(manageWalletBalanceUseCase, never()).unlockBalance(any(), any(), any());
-            verify(orderCommandPort, never()).save(any());
+            verify(orderCommandPort, never()).findById(any());
         }
     }
 
@@ -182,7 +151,7 @@ class FillPendingOrderServiceTest {
         @DisplayName("체결 성공 후 OrderFilledEvent가 발행된다")
         void fillOrder_success_publishesEvent() {
             // Given
-            Order order = createPendingBuyOrder();
+            Order order = createFilledBuyOrder();
             stubDependencies(order);
             when(holdingCommandPort.findByWalletIdAndCoinId(WALLET_ID, COIN_ID))
                 .thenReturn(Optional.of(Holding.empty(WALLET_ID, COIN_ID)));
@@ -201,51 +170,31 @@ class FillPendingOrderServiceTest {
     }
 
     private void stubDependencies(Order order) {
+        when(orderCommandPort.fillOrder(anyLong(), any())).thenReturn(true);
         when(orderCommandPort.findById(ORDER_ID)).thenReturn(Optional.of(order));
-        when(orderCommandPort.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(findExchangeCoinMappingUseCase.findById(EXCHANGE_COIN_ID))
             .thenReturn(Optional.of(new ExchangeCoinMappingResult(EXCHANGE_COIN_ID, EXCHANGE_ID, COIN_ID)));
         when(findExchangeDetailUseCase.findExchangeDetail(EXCHANGE_ID))
             .thenReturn(Optional.of(new ExchangeDetailResult("UPBIT", BASE_CURRENCY_COIN_ID, true, new BigDecimal("0.0005"))));
     }
 
-    private Order createPendingBuyOrder() {
+    private Order createFilledBuyOrder() {
         return Order.reconstitute(
             ORDER_ID, "key-1", WALLET_ID, EXCHANGE_COIN_ID,
             Side.BUY, OrderType.LIMIT, new BigDecimal("500000"),
             new Quantity(new BigDecimal("0.01")), new BigDecimal("50000000"),
             new BigDecimal("50000000"), Fee.of(new BigDecimal("250"), new BigDecimal("0.0005")),
-            OrderStatus.PENDING, 0L, LocalDateTime.now(), null, null
+            OrderStatus.FILLED, LocalDateTime.now(), LocalDateTime.now(), null
         );
     }
 
-    private Order createPendingSellOrder() {
+    private Order createFilledSellOrder() {
         return Order.reconstitute(
             ORDER_ID, "key-2", WALLET_ID, EXCHANGE_COIN_ID,
             Side.SELL, OrderType.LIMIT, new BigDecimal("500000"),
             new Quantity(new BigDecimal("0.01")), new BigDecimal("50000000"),
             new BigDecimal("50000000"), Fee.of(new BigDecimal("250"), new BigDecimal("0.0005")),
-            OrderStatus.PENDING, 0L, LocalDateTime.now(), null, null
-        );
-    }
-
-    private Order createFilledOrder() {
-        return Order.reconstitute(
-            ORDER_ID, "key-3", WALLET_ID, EXCHANGE_COIN_ID,
-            Side.BUY, OrderType.LIMIT, new BigDecimal("500000"),
-            new Quantity(new BigDecimal("0.01")), new BigDecimal("50000000"),
-            new BigDecimal("50000000"), Fee.of(new BigDecimal("250"), new BigDecimal("0.0005")),
-            OrderStatus.FILLED, 0L, LocalDateTime.now(), LocalDateTime.now(), null
-        );
-    }
-
-    private Order createCancelledOrder() {
-        return Order.reconstitute(
-            ORDER_ID, "key-4", WALLET_ID, EXCHANGE_COIN_ID,
-            Side.BUY, OrderType.LIMIT, new BigDecimal("500000"),
-            new Quantity(new BigDecimal("0.01")), new BigDecimal("50000000"),
-            new BigDecimal("50000000"), Fee.of(new BigDecimal("250"), new BigDecimal("0.0005")),
-            OrderStatus.CANCELLED, 0L, LocalDateTime.now(), null, null
+            OrderStatus.FILLED, LocalDateTime.now(), LocalDateTime.now(), null
         );
     }
 

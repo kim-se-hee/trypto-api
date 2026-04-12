@@ -185,7 +185,7 @@ class ConcurrentFillSettlementIntegrationTest {
             amount, new Quantity(quantity),
             FILL_PRICE, FILL_PRICE,
             Fee.of(feeAmount, FEE_RATE),
-            OrderStatus.PENDING, null,
+            OrderStatus.PENDING,
             LocalDateTime.now(), null, null);
         OrderJpaEntity entity = OrderJpaEntity.fromDomain(order);
         return orderJpaRepository.save(entity).getId();

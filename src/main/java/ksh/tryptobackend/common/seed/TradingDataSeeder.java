@@ -177,7 +177,7 @@ class TradingDataSeeder {
                 side, orderType, amount, new Quantity(quantity),
                 orderType == OrderType.LIMIT ? orderPrice : null,
                 orderPrice, Fee.of(feeAmount, FEE_RATE), status,
-                null, createdAt, filledAt, violations
+                createdAt, filledAt, violations
             );
             orders.add(OrderJpaEntity.fromDomain(order));
         }

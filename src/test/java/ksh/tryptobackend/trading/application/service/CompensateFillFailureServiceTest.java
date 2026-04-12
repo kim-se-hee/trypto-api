@@ -169,7 +169,7 @@ class CompensateFillFailureServiceTest {
             Side.BUY, OrderType.LIMIT, new BigDecimal("500000"),
             new Quantity(new BigDecimal("0.01")), new BigDecimal("50000000"),
             new BigDecimal("50000000"), Fee.of(new BigDecimal("250"), new BigDecimal("0.0005")),
-            status, 0L, LocalDateTime.now(),
+            status, LocalDateTime.now(),
             status == OrderStatus.FILLED ? LocalDateTime.now() : null, null
         );
     }

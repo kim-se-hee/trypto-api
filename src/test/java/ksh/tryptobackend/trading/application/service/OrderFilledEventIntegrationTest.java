@@ -138,7 +138,7 @@ class OrderFilledEventIntegrationTest {
             new BigDecimal("100000"), new Quantity(new BigDecimal("2")),
             CURRENT_PRICE, CURRENT_PRICE,
             Fee.of(new BigDecimal("50"), FEE_RATE),
-            OrderStatus.PENDING, null,
+            OrderStatus.PENDING,
             LocalDateTime.now(), null, null);
         OrderJpaEntity entity = OrderJpaEntity.fromDomain(order);
         return orderJpaRepository.save(entity).getId();
@@ -151,7 +151,7 @@ class OrderFilledEventIntegrationTest {
             new BigDecimal("100000"), new Quantity(new BigDecimal("2")),
             CURRENT_PRICE, CURRENT_PRICE,
             Fee.of(new BigDecimal("50"), FEE_RATE),
-            OrderStatus.FILLED, null,
+            OrderStatus.FILLED,
             LocalDateTime.now(), LocalDateTime.now(), null);
         OrderJpaEntity entity = OrderJpaEntity.fromDomain(order);
         return orderJpaRepository.save(entity).getId();

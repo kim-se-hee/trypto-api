@@ -11,6 +11,7 @@ import ksh.tryptobackend.trading.adapter.out.repository.OrderJpaRepository;
 import ksh.tryptobackend.trading.application.port.in.CancelOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.FillPendingOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.command.CancelOrderCommand;
+import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.vo.Fee;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
@@ -27,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.math.BigDecimal;
@@ -102,7 +102,7 @@ class OrderConcurrencyIntegrationTest {
     class ConcurrentFill {
 
         @Test
-        @DisplayName("동일 주문을 두 스레드가 동시에 체결하면 하나만 성공한다")
+        @DisplayName("동일 주문을 두 스레드가 동시에 체결하면 CAS로 하나만 실제 체결된다")
         void 동시_fill_하나만_성공() throws InterruptedException {
             // given
             Long orderId = savePendingOrder();
@@ -110,8 +110,7 @@ class OrderConcurrencyIntegrationTest {
             ExecutorService executor = Executors.newFixedThreadPool(2);
             CountDownLatch ready = new CountDownLatch(2);
             CountDownLatch start = new CountDownLatch(1);
-            AtomicInteger successCount = new AtomicInteger(0);
-            AtomicInteger optimisticLockFailCount = new AtomicInteger(0);
+            AtomicInteger completedCount = new AtomicInteger(0);
 
             // when
             for (int i = 0; i < 2; i++) {
@@ -120,9 +119,7 @@ class OrderConcurrencyIntegrationTest {
                     try {
                         start.await();
                         fillPendingOrderUseCase.fillOrder(orderId, CURRENT_PRICE);
-                        successCount.incrementAndGet();
-                    } catch (OptimisticLockingFailureException e) {
-                        optimisticLockFailCount.incrementAndGet();
+                        completedCount.incrementAndGet();
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
@@ -134,13 +131,11 @@ class OrderConcurrencyIntegrationTest {
             executor.shutdown();
             executor.awaitTermination(10, TimeUnit.SECONDS);
 
-            // then
-            assertThat(successCount.get() + optimisticLockFailCount.get()).isEqualTo(2);
-            assertThat(successCount.get()).isEqualTo(1);
+            // then — 두 스레드 모두 예외 없이 완료 (CAS 실패 측은 no-op)
+            assertThat(completedCount.get()).isEqualTo(2);
 
             OrderJpaEntity saved = orderJpaRepository.findById(orderId).orElseThrow();
             assertThat(saved.getStatus()).isEqualTo(OrderStatus.FILLED);
-            assertThat(saved.getVersion()).isEqualTo(1L);
         }
     }
 
@@ -149,7 +144,7 @@ class OrderConcurrencyIntegrationTest {
     class CancelAndFillRace {
 
         @Test
-        @DisplayName("취소와 체결이 동시에 발생하면 하나만 성공한다")
+        @DisplayName("취소와 체결이 동시에 발생하면 CAS로 하나만 상태 변경에 성공한다")
         void 취소_체결_경합_하나만_성공() throws InterruptedException {
             // given
             Long orderId = savePendingOrder();
@@ -167,8 +162,6 @@ class OrderConcurrencyIntegrationTest {
                     start.await();
                     fillPendingOrderUseCase.fillOrder(orderId, CURRENT_PRICE);
                     fillResult.set("SUCCESS");
-                } catch (OptimisticLockingFailureException e) {
-                    fillResult.set("OPTIMISTIC_LOCK_FAIL");
                 } catch (Exception e) {
                     fillResult.set("ERROR: " + e.getClass().getSimpleName());
                 }
@@ -181,8 +174,8 @@ class OrderConcurrencyIntegrationTest {
                     start.await();
                     cancelOrderUseCase.cancelOrder(new CancelOrderCommand(orderId, WALLET_ID));
                     cancelResult.set("SUCCESS");
-                } catch (OptimisticLockingFailureException e) {
-                    cancelResult.set("OPTIMISTIC_LOCK_FAIL");
+                } catch (CustomException e) {
+                    cancelResult.set("CAS_FAIL");
                 } catch (Exception e) {
                     cancelResult.set("ERROR: " + e.getClass().getSimpleName());
                 }
@@ -193,21 +186,19 @@ class OrderConcurrencyIntegrationTest {
             executor.shutdown();
             executor.awaitTermination(10, TimeUnit.SECONDS);
 
-            // then — 정확히 하나만 성공
-            boolean fillSuccess = fillResult.get().equals("SUCCESS");
-            boolean cancelSuccess = cancelResult.get().equals("SUCCESS");
-            assertThat(fillSuccess ^ cancelSuccess)
-                .as("fill=%s, cancel=%s", fillResult.get(), cancelResult.get())
-                .isTrue();
-
-            // DB 상태 확인: 성공한 쪽의 상태로 저장
+            // then — DB 상태 확인: FILLED 또는 CANCELLED 중 하나
             OrderJpaEntity saved = orderJpaRepository.findById(orderId).orElseThrow();
-            if (fillSuccess) {
-                assertThat(saved.getStatus()).isEqualTo(OrderStatus.FILLED);
+            assertThat(saved.getStatus()).isIn(OrderStatus.FILLED, OrderStatus.CANCELLED);
+
+            if (saved.getStatus() == OrderStatus.FILLED) {
+                // fill이 CAS 성공, cancel은 CAS 실패(ORDER_NOT_CANCELLABLE)
+                assertThat(fillResult.get()).isEqualTo("SUCCESS");
+                assertThat(cancelResult.get()).isEqualTo("CAS_FAIL");
             } else {
-                assertThat(saved.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+                // cancel이 CAS 성공, fill은 CAS 실패(no-op)
+                assertThat(cancelResult.get()).isEqualTo("SUCCESS");
+                assertThat(fillResult.get()).isEqualTo("SUCCESS"); // fill은 no-op으로 정상 완료
             }
-            assertThat(saved.getVersion()).isEqualTo(1L);
         }
     }
 
@@ -218,7 +209,7 @@ class OrderConcurrencyIntegrationTest {
             new BigDecimal("100000"), new Quantity(new BigDecimal("2")),
             CURRENT_PRICE, CURRENT_PRICE,
             Fee.of(new BigDecimal("50"), FEE_RATE),
-            OrderStatus.PENDING, null,
+            OrderStatus.PENDING,
             LocalDateTime.now(), null, null);
         OrderJpaEntity entity = OrderJpaEntity.fromDomain(order);
         return orderJpaRepository.save(entity).getId();
