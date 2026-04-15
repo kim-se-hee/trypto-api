@@ -92,7 +92,7 @@ class MatchedOrderEventListenerIntegrationTest {
     void publishedMessageIsConsumedAndRoutedToFillOrder() {
         willDoNothing().given(fillPendingOrderUseCase).fillOrder(any(), any());
 
-        MatchedOrderMessage message = new MatchedOrderMessage(List.of(
+        MatchedOrderMessage message = new MatchedOrderMessage(0L, 0L, 0L, List.of(
                 new MatchedOrderMessage.Item(1001L, new BigDecimal("50000000")),
                 new MatchedOrderMessage.Item(1002L, new BigDecimal("50100000"))
         ));
@@ -113,7 +113,7 @@ class MatchedOrderEventListenerIntegrationTest {
         willThrow(new RuntimeException("DB 오류"))
                 .given(fillPendingOrderUseCase).fillOrder(eq(2001L), any());
 
-        MatchedOrderMessage message = new MatchedOrderMessage(List.of(
+        MatchedOrderMessage message = new MatchedOrderMessage(0L, 0L, 0L, List.of(
                 new MatchedOrderMessage.Item(2001L, new BigDecimal("50000000"))
         ));
         rabbitTemplate.convertAndSend("", QUEUE_NAME, message);
@@ -140,7 +140,7 @@ class MatchedOrderEventListenerIntegrationTest {
                 .given(fillPendingOrderUseCase).fillOrder(eq(3001L), any());
         willDoNothing().given(fillPendingOrderUseCase).fillOrder(eq(3002L), any());
 
-        MatchedOrderMessage message = new MatchedOrderMessage(List.of(
+        MatchedOrderMessage message = new MatchedOrderMessage(0L, 0L, 0L, List.of(
                 new MatchedOrderMessage.Item(3001L, new BigDecimal("50000000")),
                 new MatchedOrderMessage.Item(3002L, new BigDecimal("50100000"))
         ));

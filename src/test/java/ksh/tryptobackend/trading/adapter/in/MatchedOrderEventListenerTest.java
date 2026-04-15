@@ -1,5 +1,6 @@
 package ksh.tryptobackend.trading.adapter.in;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import ksh.tryptobackend.trading.adapter.in.messages.MatchedOrderMessage;
 import ksh.tryptobackend.trading.application.port.in.FillPendingOrderUseCase;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +43,8 @@ class MatchedOrderEventListenerTest {
             fillPendingOrderUseCase,
             rabbitTemplate,
             noBackoffRetryTemplate(MAIN_MAX_ATTEMPTS),
-            noBackoffRetryTemplate(RETRY_TIER_MAX_ATTEMPTS)
+            noBackoffRetryTemplate(RETRY_TIER_MAX_ATTEMPTS),
+            new SimpleMeterRegistry()
         );
     }
 
@@ -60,7 +62,7 @@ class MatchedOrderEventListenerTest {
         @Test
         @DisplayName("매칭된 주문 목록의 각 항목에 대해 fillOrder를 호출한다")
         void fillsEachMatchedItem() {
-            MatchedOrderMessage message = new MatchedOrderMessage(List.of(
+            MatchedOrderMessage message = new MatchedOrderMessage(0L, 0L, 0L, List.of(
                 new MatchedOrderMessage.Item(ORDER_ID_1, FILLED_PRICE),
                 new MatchedOrderMessage.Item(ORDER_ID_2, FILLED_PRICE)
             ));
@@ -74,7 +76,7 @@ class MatchedOrderEventListenerTest {
         @Test
         @DisplayName("빈 매칭 목록이면 fillOrder를 호출하지 않는다")
         void skipsEmptyList() {
-            MatchedOrderMessage message = new MatchedOrderMessage(List.of());
+            MatchedOrderMessage message = new MatchedOrderMessage(0L, 0L, 0L, List.of());
 
             sut.handleMatchedOrders(message);
 
@@ -90,7 +92,7 @@ class MatchedOrderEventListenerTest {
         @DisplayName("fillOrder 재시도가 소진되면 해당 항목을 retry 큐로 발행한다")
         void publishesToRetryQueueOnMainRetryExhaustion() {
             MatchedOrderMessage.Item failItem = new MatchedOrderMessage.Item(ORDER_ID_1, FILLED_PRICE);
-            MatchedOrderMessage message = new MatchedOrderMessage(List.of(failItem));
+            MatchedOrderMessage message = new MatchedOrderMessage(0L, 0L, 0L, List.of(failItem));
 
             doThrow(new RuntimeException("DB 오류"))
                 .when(fillPendingOrderUseCase).fillOrder(ORDER_ID_1, FILLED_PRICE);
@@ -104,7 +106,7 @@ class MatchedOrderEventListenerTest {
         @Test
         @DisplayName("한 항목이 실패해도 나머지 항목은 정상 처리된다")
         void continuesProcessingAfterFailure() {
-            MatchedOrderMessage message = new MatchedOrderMessage(List.of(
+            MatchedOrderMessage message = new MatchedOrderMessage(0L, 0L, 0L, List.of(
                 new MatchedOrderMessage.Item(ORDER_ID_1, FILLED_PRICE),
                 new MatchedOrderMessage.Item(ORDER_ID_2, FILLED_PRICE)
             ));

@@ -1,6 +1,7 @@
 package ksh.tryptobackend.trading.adapter.in;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import ksh.tryptobackend.common.config.RabbitMqConfig;
 import ksh.tryptobackend.trading.adapter.in.messages.MatchedOrderMessage;
 import ksh.tryptobackend.trading.application.port.in.FillPendingOrderUseCase;
@@ -25,6 +26,7 @@ public class MatchedOrderEventListener {
     private final RetryTemplate mainRetryTemplate;
     private final RetryTemplate retryTierRetryTemplate;
     private final MeterRegistry meterRegistry;
+    private final Timer pendingOrderFillTimer;
 
     public MatchedOrderEventListener(FillPendingOrderUseCase fillPendingOrderUseCase,
                                      RabbitTemplate rabbitTemplate,
@@ -36,6 +38,10 @@ public class MatchedOrderEventListener {
         this.mainRetryTemplate = mainRetryTemplate;
         this.retryTierRetryTemplate = retryTierRetryTemplate;
         this.meterRegistry = meterRegistry;
+        this.pendingOrderFillTimer = Timer.builder("pending.order.fill")
+            .description("한 배치 메시지 내 주문들의 DB 체결 처리 총 시간")
+            .publishPercentiles(0.5, 0.95, 0.99)
+            .register(meterRegistry);
     }
 
     @RabbitListener(
@@ -48,9 +54,14 @@ public class MatchedOrderEventListener {
         meterRegistry.timer("match.queue.wait")
                 .record(receivedAtMs - message.publishedAtMs(), TimeUnit.MILLISECONDS);
 
+        Timer.Sample fillSample = Timer.start();
         for (MatchedOrderMessage.Item item : message.matched()) {
-            fillWithMainRetry(item, message.tickerTsMs());
+            fillWithMainRetry(item);
         }
+        fillSample.stop(pendingOrderFillTimer);
+
+        meterRegistry.timer("match.batch.e2e", "size", sizeBucket(message.matched().size()))
+                .record(System.currentTimeMillis() - message.matchStartedAtMs(), TimeUnit.MILLISECONDS);
     }
 
     @RabbitListener(
@@ -62,14 +73,12 @@ public class MatchedOrderEventListener {
         fillWithRetryTierRetry(item);
     }
 
-    private void fillWithMainRetry(MatchedOrderMessage.Item item, long tickerTsMs) {
+    private void fillWithMainRetry(MatchedOrderMessage.Item item) {
         try {
             mainRetryTemplate.execute(context -> {
                 fillPendingOrderUseCase.fillOrder(item.orderId(), item.filledPrice());
                 return null;
             });
-            meterRegistry.timer("match.fill.e2e")
-                    .record(System.currentTimeMillis() - tickerTsMs, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             log.warn("메인 재시도 소진, retry 큐 발행: orderId={}", item.orderId(), e);
             publishToRetryQueue(item);
@@ -102,5 +111,12 @@ public class MatchedOrderEventListener {
         } catch (Exception e) {
             log.error("DLQ 발행 실패: orderId={}", item.orderId(), e);
         }
+    }
+
+    private String sizeBucket(int size) {
+        if (size <= 1) return "1";
+        if (size <= 5) return "2-5";
+        if (size <= 20) return "6-20";
+        return "21+";
     }
 }
