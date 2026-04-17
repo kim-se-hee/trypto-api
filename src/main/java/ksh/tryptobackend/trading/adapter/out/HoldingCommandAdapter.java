@@ -18,7 +18,7 @@ public class HoldingCommandAdapter implements HoldingCommandPort {
 
     @Override
     public Optional<Holding> findByWalletIdAndCoinId(Long walletId, Long coinId) {
-        return repository.findForUpdateByWalletIdAndCoinId(walletId, coinId)
+        return repository.findByWalletIdAndCoinId(walletId, coinId)
             .map(HoldingJpaEntity::toDomain);
     }
 
@@ -38,7 +38,7 @@ public class HoldingCommandAdapter implements HoldingCommandPort {
         try {
             return repository.saveAndFlush(new HoldingJpaEntity(walletId, coinId));
         } catch (DataIntegrityViolationException e) {
-            return repository.findForUpdateByWalletIdAndCoinId(walletId, coinId)
+            return repository.findByWalletIdAndCoinId(walletId, coinId)
                 .orElseThrow(() -> e);
         }
     }

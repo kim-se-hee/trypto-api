@@ -38,6 +38,10 @@ public class HoldingJpaEntity {
     @Column(name = "averaging_down_count", nullable = false)
     private int averagingDownCount;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+
     public HoldingJpaEntity(Long walletId, Long coinId) {
         this.walletId = walletId;
         this.coinId = coinId;
