@@ -7,13 +7,14 @@ import ksh.tryptobackend.trading.domain.event.OrderPlacedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Component
@@ -21,7 +22,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class EngineInboxPublisher {
 
     private final RabbitTemplate rabbitTemplate;
-    private final MessageConverter messageConverter;
+    private final ObjectMapper objectMapper;
 
     @Value("${engine.inbox.queue:engine.inbox}")
     private String inboxQueue;
@@ -40,10 +41,12 @@ public class EngineInboxPublisher {
 
     private void publish(String type, Object payload, Long orderId) {
         try {
-            MessageProperties props = new MessageProperties();
-            props.setHeader("event_type", type);
-            props.setDeliveryMode(MessageProperties.DEFAULT_DELIVERY_MODE);
-            Message msg = messageConverter.toMessage(payload, props);
+            byte[] body = objectMapper.writeValueAsBytes(payload);
+            Message msg = MessageBuilder.withBody(body)
+                .setContentType(MessageProperties.CONTENT_TYPE_JSON)
+                .setDeliveryMode(MessageProperties.DEFAULT_DELIVERY_MODE)
+                .setHeader("event_type", type)
+                .build();
             rabbitTemplate.send("", inboxQueue, msg);
         } catch (Exception e) {
             log.warn("engine.inbox publish failed type={} orderId={}", type, orderId, e);
