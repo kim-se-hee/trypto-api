@@ -253,6 +253,14 @@ erDiagram
         datetime occurred_at "발생 시각"
     }
 
+    OUTBOX {
+        id id PK "주 식별자"
+        string event_type "이벤트 타입"
+        string payload "JSON 페이로드"
+        datetime created_at "생성 시각"
+        datetime sent_at "전송 시각 (nullable)"
+    }
+
     %% === 관계 ===
     USER ||--|{ INVESTMENT_ROUND : ""
     INVESTMENT_ROUND ||--|{ WALLET : ""
