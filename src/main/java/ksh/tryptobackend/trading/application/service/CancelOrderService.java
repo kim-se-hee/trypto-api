@@ -8,12 +8,13 @@ import ksh.tryptobackend.marketdata.application.port.in.dto.result.ExchangeCoinM
 import ksh.tryptobackend.trading.application.port.in.CancelOrderUseCase;
 import ksh.tryptobackend.trading.application.port.in.dto.command.CancelOrderCommand;
 import ksh.tryptobackend.trading.application.port.out.OrderCommandPort;
-import ksh.tryptobackend.trading.application.port.out.PendingOrderCacheCommandPort;
+import ksh.tryptobackend.trading.domain.event.OrderCanceledEvent;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.vo.TradingVenue;
 import ksh.tryptobackend.wallet.application.port.in.ManageWalletBalanceUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,12 +24,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class CancelOrderService implements CancelOrderUseCase {
 
     private final OrderCommandPort orderCommandPort;
-    private final PendingOrderCacheCommandPort pendingOrderCacheCommandPort;
 
     private final FindExchangeDetailUseCase findExchangeDetailUseCase;
     private final FindExchangeCoinMappingUseCase findExchangeCoinMappingUseCase;
 
     private final ManageWalletBalanceUseCase manageWalletBalanceUseCase;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -46,11 +48,8 @@ public class CancelOrderService implements CancelOrderUseCase {
 
         order.cancel();
         unlockBalance(order);
-        try {
-            pendingOrderCacheCommandPort.remove(order.getExchangeCoinId(), order.getId());
-        } catch (Exception e) {
-            log.error("Redis ZREM 실패: orderId={}", order.getId(), e);
-        }
+
+        eventPublisher.publishEvent(new OrderCanceledEvent(order));
 
         return order;
     }

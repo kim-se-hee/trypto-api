@@ -93,6 +93,7 @@
     - 매도: 체결 수량을 코인 보유 수량에서 점유
 - 매수: 현재가 ≤ 지정가이면 체결
 - 매도: 현재가 ≥ 지정가이면 체결
+- 지정가 주문은 PENDING 상태로 저장한 뒤, 매칭 엔진으로 메시지를 보내 오더북에 올린다
 
 ## API 명세
 
@@ -317,11 +318,14 @@ sequenceDiagram
     HoldingPort->>MySQL: SELECT FOR UPDATE + UPDATE holding
 
     rect rgb(60, 60, 60)
-        Note over Service,Redis: STEP 10 Redis 미체결 주문 캐시 적재 (지정가만)
+        Note over Service,Order: STEP 10 엔진 이벤트 발행 (지정가만, AFTER_COMMIT)
     end
-    Service->>OrderPort: addToCache(pendingOrder)
-    OrderPort->>Redis: ZADD pending:orders:{exchange}:{symbol}:{side}
+    Note over Service: Order.shouldForwardToEngine() 인 경우에만
+    Service->>Service: publishEvent(OrderPlacedEvent)
+    Note over Service: EngineInboxPublisher 가 AFTER_COMMIT 에<br/>engine.inbox 큐로 전송 (event_type=OrderPlaced)
 
     Service-->>Controller: Order
     Controller-->>Client: 201 Created
 ```
+
+지정가 주문이 엔진 오더북에 올라가고 체결되기까지의 전체 흐름은 `pending-order-matching.md` 를 참고한다. API 는 PENDING 상태로 저장하고 엔진에 이벤트만 넘긴다.
