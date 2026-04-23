@@ -1,0 +1,21 @@
+# Terraform state
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfvars
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Claude Code runtime
+.claude/scheduled_tasks.lock
+
+# Logs
+*.log
+
+# Env
+.env
