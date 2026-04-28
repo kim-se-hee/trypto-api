@@ -11,6 +11,7 @@ import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.model.OrderFillFailure;
 import ksh.tryptobackend.trading.domain.model.RuleViolation;
 import ksh.tryptobackend.trading.domain.vo.Fee;
+import ksh.tryptobackend.trading.domain.vo.MarketIdentifier;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
 import ksh.tryptobackend.trading.domain.vo.Quantity;
@@ -177,6 +178,7 @@ class TradingDataSeeder {
 
             Order order = Order.reconstitute(
                 null, UUID.randomUUID().toString(), userId, walletId, exchangeCoinId, coinId, baseCoinId,
+                MarketIdentifier.of(exchangeName, coin, baseSymbol),
                 side, orderType, amount, new Quantity(quantity),
                 orderType == OrderType.LIMIT ? orderPrice : null,
                 orderPrice, Fee.of(feeAmount, FEE_RATE), status,

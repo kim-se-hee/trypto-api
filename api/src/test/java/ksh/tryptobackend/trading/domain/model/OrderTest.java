@@ -3,6 +3,7 @@ package ksh.tryptobackend.trading.domain.model;
 import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.trading.application.port.in.dto.command.PlaceOrderCommand;
 import ksh.tryptobackend.trading.domain.vo.Fee;
+import ksh.tryptobackend.trading.domain.vo.MarketIdentifier;
 import ksh.tryptobackend.trading.domain.vo.OrderAmountPolicy;
 import ksh.tryptobackend.trading.domain.vo.OrderMode;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
@@ -27,6 +28,7 @@ class OrderTest {
     private static final TradingVenue DOMESTIC_VENUE = new TradingVenue(
         new BigDecimal("0.0005"), 1L, OrderAmountPolicy.DOMESTIC);
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 3, 17, 12, 0, 0);
+    private static final MarketIdentifier MARKET = new MarketIdentifier("UPBIT", "BTC/KRW");
 
     private static PlaceOrderCommand cmd(Side side, OrderType orderType,
                                           BigDecimal amount, BigDecimal price) {
@@ -35,11 +37,11 @@ class OrderTest {
     }
 
     private static TradingContext ctx(BigDecimal currentPrice) {
-        return new TradingContext(1L, 100L, DOMESTIC_VENUE, OrderMode.MARKET_BUY, currentPrice, NOW);
+        return new TradingContext(1L, 100L, DOMESTIC_VENUE, OrderMode.MARKET_BUY, currentPrice, NOW, MARKET);
     }
 
     private static TradingContext ctx(OrderMode mode, BigDecimal currentPrice) {
-        return new TradingContext(1L, 100L, DOMESTIC_VENUE, mode, currentPrice, NOW);
+        return new TradingContext(1L, 100L, DOMESTIC_VENUE, mode, currentPrice, NOW, MARKET);
     }
 
     @Nested

@@ -3,6 +3,7 @@ package ksh.tryptobackend.trading.adapter.out.entity;
 import jakarta.persistence.*;
 import ksh.tryptobackend.trading.domain.model.Order;
 import ksh.tryptobackend.trading.domain.vo.Fee;
+import ksh.tryptobackend.trading.domain.vo.MarketIdentifier;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
 import ksh.tryptobackend.trading.domain.vo.Quantity;
@@ -42,6 +43,12 @@ public class OrderJpaEntity {
 
     @Column(name = "base_coin_id", nullable = false)
     private Long baseCoinId;
+
+    @Column(name = "exchange_name", nullable = false, length = 32)
+    private String exchangeName;
+
+    @Column(name = "market_symbol", nullable = false, length = 32)
+    private String marketSymbol;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "order_type", nullable = false, length = 10)
@@ -92,6 +99,8 @@ public class OrderJpaEntity {
         entity.exchangeCoinId = order.getExchangeCoinId();
         entity.coinId = order.getCoinId();
         entity.baseCoinId = order.getBaseCoinId();
+        entity.exchangeName = order.getMarketIdentifier().exchangeName();
+        entity.marketSymbol = order.getMarketIdentifier().marketSymbol();
         entity.orderType = order.getOrderType();
         entity.side = order.getSide();
         entity.amount = order.getAmount();
@@ -118,6 +127,7 @@ public class OrderJpaEntity {
                 .toList();
         return Order.reconstitute(
             id, idempotencyKey, userId, walletId, exchangeCoinId, coinId, baseCoinId,
+            new MarketIdentifier(exchangeName, marketSymbol),
             side, orderType, amount, new Quantity(quantity),
             price, filledPrice, domainFee, status,
             createdAt, filledAt, domainViolations

@@ -9,7 +9,8 @@ public record TradingContext(
     TradingVenue venue,
     OrderMode mode,
     BigDecimal currentPrice,
-    LocalDateTime now
+    LocalDateTime now,
+    MarketIdentifier marketIdentifier
 ) {
 
     public Long balanceCoinId() {

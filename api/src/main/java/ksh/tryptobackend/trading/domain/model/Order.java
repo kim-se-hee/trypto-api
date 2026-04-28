@@ -4,6 +4,7 @@ import ksh.tryptobackend.common.exception.CustomException;
 import ksh.tryptobackend.common.exception.ErrorCode;
 import ksh.tryptobackend.trading.application.port.in.dto.command.PlaceOrderCommand;
 import ksh.tryptobackend.trading.domain.vo.Fee;
+import ksh.tryptobackend.trading.domain.vo.MarketIdentifier;
 import ksh.tryptobackend.trading.domain.vo.OrderStatus;
 import ksh.tryptobackend.trading.domain.vo.OrderType;
 import ksh.tryptobackend.trading.domain.vo.Quantity;
@@ -29,6 +30,7 @@ public class Order {
     private final Long exchangeCoinId;
     private final Long coinId;
     private final Long baseCoinId;
+    private final MarketIdentifier marketIdentifier;
     private final Side side;
     private final OrderType orderType;
     private BigDecimal amount;
@@ -55,6 +57,7 @@ public class Order {
 
     public static Order reconstitute(Long id, String idempotencyKey, Long userId, Long walletId,
                                      Long exchangeCoinId, Long coinId, Long baseCoinId,
+                                     MarketIdentifier marketIdentifier,
                                      Side side, OrderType orderType, BigDecimal amount, Quantity quantity,
                                      BigDecimal price, BigDecimal filledPrice, Fee fee, OrderStatus status,
                                      LocalDateTime createdAt, LocalDateTime filledAt,
@@ -67,6 +70,7 @@ public class Order {
             .exchangeCoinId(exchangeCoinId)
             .coinId(coinId)
             .baseCoinId(baseCoinId)
+            .marketIdentifier(marketIdentifier)
             .side(side)
             .orderType(orderType)
             .amount(amount)
@@ -217,6 +221,7 @@ public class Order {
             .exchangeCoinId(cmd.exchangeCoinId())
             .coinId(ctx.coinId())
             .baseCoinId(venue.baseCurrencyCoinId())
+            .marketIdentifier(ctx.marketIdentifier())
             .side(side)
             .orderType(orderType)
             .amount(amount)
