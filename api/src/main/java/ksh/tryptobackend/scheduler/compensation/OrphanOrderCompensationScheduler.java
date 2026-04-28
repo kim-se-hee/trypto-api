@@ -22,7 +22,7 @@ public class OrphanOrderCompensationScheduler {
     @SchedulerLock(name = "orphan-order-compensation",
                    lockAtMostFor = "PT10M",
                    lockAtLeastFor = "PT30S")
-    public void scan() {
+    public void compensateOrphanOrders() {
         int filled = compensateOrphanOrdersUseCase.compensate(boundarySeconds);
         if (filled > 0) {
             log.info("compensation filled {}", filled);
