@@ -10,6 +10,7 @@ import ksh.tryptobackend.trading.domain.vo.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -45,10 +46,11 @@ public class OrderCommandAdapter implements OrderCommandPort {
     }
 
     @Override
-    public boolean fillOrder(Long orderId, LocalDateTime filledAt) {
+    public boolean fillOrder(Long orderId, BigDecimal filledPrice, LocalDateTime filledAt) {
         QOrderJpaEntity order = QOrderJpaEntity.orderJpaEntity;
         long count = queryFactory.update(order)
             .set(order.status, OrderStatus.FILLED)
+            .set(order.filledPrice, filledPrice)
             .set(order.filledAt, filledAt)
             .where(order.id.eq(orderId)
                 .and(order.status.eq(OrderStatus.PENDING)))
