@@ -26,4 +26,4 @@ docs의 하위 디렉토리를 탐색할 때 `index.md`가 있으면 **반드시
 - [docs/contracts/](docs/contracts/) — 서비스 간 메시지 큐 페이로드와 이벤트 스펙 모음
 
 **컨벤션**
-- [docs/conventions/git.md](docs/conventions/git.md) — Git 커밋/브랜치 규칙
+- [docs/git-convention.md](docs/git-convention.md) — Git 커밋/브랜치 규칙. 커밋 시 **반드시** 확인한다.

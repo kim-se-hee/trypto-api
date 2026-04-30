@@ -1,5 +1,3 @@
-# Git 컨벤션
-
 **커밋 메시지**
 
 AngularJS Commit Convention을 따른다.
