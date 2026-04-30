@@ -22,7 +22,7 @@ docs의 하위 디렉토리를 탐색할 때 `index.md`가 있으면 **반드시
 
 **시스템 전체**
 - [docs/architecture.md](docs/architecture.md) — 4개 서비스 전체 흐름
-- [docs/db-schema.md](docs/db-schema.md) — 시스템 구성 및 모듈 간 데이터 흐름
+- [docs/schema.md](docs/schema.md) — 테이블 스키마 ERD
 - [docs/contracts/](docs/contracts/) — 서비스 간 메시지 큐 페이로드와 이벤트 스펙 모음
 
 **컨벤션**
