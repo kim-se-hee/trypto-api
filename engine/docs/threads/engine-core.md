@@ -31,7 +31,7 @@
 ```mermaid
 sequenceDiagram
     participant RMQ as RabbitMQ(engine.inbox)
-    participant Ingress as RabbitIngress
+    participant Ingress as RabbitConsumer
     participant Engine as EngineThread(engine-core)
     participant WAL as WalWriter(engine-wal)
     participant Book as OrderBook

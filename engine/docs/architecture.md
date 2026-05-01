@@ -1,157 +1,63 @@
-# Architecture
+# 모듈 개요
 
-`trypto-engine`의 스레드 경계, 이벤트 흐름, 외부 경계 계약, 멱등성 계약을 정리한 오케스트레이션 문서.
-
-각 스레드가 소유한 로직 상세는 [`threads/`](threads/) 하위 문서를 참조한다.
+엔진 모듈은 유입된 주문 이벤트를 바탕으로 지정가 주문 오더북을 관리하고 외부에서 유입된 티커에 따라 체결 가능한 주문을 모두 체결하는 매칭 엔진이다.
 
 ---
 
-## 1. 개요
+# 아키텍쳐
 
-`trypto-engine`은 단일 쓰기 스레드 위에서 지정가 주문 장부를 유지하고, 외부 시세 틱에 따라 체결 가능한 주문을 모두 체결하는 매칭 엔진이다. 
-모든 인바운드 이벤트는 처리 전에 WAL에 append되고, 주기적 스냅샷과 WAL 리플레이로 장애 복구를 보장한다. 체결 결과는 DB에 반영된 뒤 아웃박스 패턴을 통해 trypto-api으로 재발행된다.
+동시성 문제 회피와 선입선출 보장을 위해 작업별로 전용 스레드를 두고, 스레드 간 통신은 BlockingQueue로 한다. 모든 인바운드 이벤트는 처리 전 WAL 에 append 되어 장애 복구의 단일 진실 공급원이 된다.
 
----
+- **매칭 스레드** — 엔진 내부로 들어온 주문/틱 이벤트를 순차 소비해 오더북을 갱신하고 체결을 한다.
+- **WAL 스레드** — 엔진이 이벤트를 처리하기 전 파일에 append 하고, 주기적으로 스냅샷을 떠 리플레이 비용을 제한한다
+- **DB 쓰기 스레드** — 매칭이 만든 체결 결과를 DB에 반영하다
+- **아웃박스 릴레이 스레드** — 아웃박스 테이블을 주기적으로 폴링해 체결 결과를 RabbitMQ fanout 으로 발행한다
 
-## 2. 패키지 구성
+스레드별 동작 상세는 [threads/index.md](threads/index.md) 참고.
 
-| 패키지 | 책임 |
-|--------|------|
-| `ingress` | RabbitMQ에서 엔진 인바운드 이벤트 수신 후 `EngineThread.submit` 호출 |
-| `engine` | 단일 쓰기 스레드(`EngineThread`), `OrderBook`/`OrderBookRegistry`, 도메인 타입(`Side`, `TradingPair`, `OrderDetail`, `ExchangeCoinResolver`) |
-| `event` | 엔진 경계 이벤트/커맨드 (record) |
-| `wal` | `WalWriter`, `SnapshotWriter`, `WalRecovery`, `WalRecord`, `WalCommand` |
-| `dbwriter` | `DbWriterThread`, `FillTransactionExecutor` — 체결 결과 DB 영속화 |
-| `holding` | 홀딩 평단 증분 업데이트(`HoldingIncrementalUpdater`) 및 전체 재계산(`HoldingRecalculator`) |
-| `publisher` | `OutboxRelay` — 아웃박스 테이블을 폴링해 아웃바운드 이벤트 발행 |
-| `metrics` | `EngineMetrics` — Micrometer 지표 등록/노출 |
-| `config` | `RabbitConfig`, `SchedulingConfig` 등 스프링 설정 |
+# 외부 시스템
+
+- **MySQL** — 체결·아웃박스·홀딩 영속화의 주 저장소
+- **RabbitMQ** — 인바운드 주문/틱 수신([engine-inbox](../../docs/contracts/engine-inbox.md)), 아웃바운드 체결 결과 발행([outbox-events](../../docs/contracts/outbox-events.md))
+- **로컬 파일 시스템** — WAL append, 주기적 스냅샷 기록
 
 ---
 
-## 3. 스레드 구성
+## 스레드 구성 원칙
 
-### 3.1 스레드 목록
-
-| 스레드 이름 | 상세 문서 |
-|-------------|-----------|
-| `engine-core` | [engine-core](threads/engine-core.md) |
-| `engine-wal` | [engine-wal](threads/engine-wal.md) |
-| `engine-dbwriter` | [engine-dbwriter](threads/engine-dbwriter.md) |
-| `OutboxRelay` (스케줄러) | [outbox-relay](threads/outbox-relay.md) |
-| RabbitMQ listener | §4.1 인바운드 계약 참조 (상태 없음) |
-
-### 3.2 스레드 간 통신
-
-단일 쓰기 스레드 소유, cross-thread 동기 대기 금지, thread-safe 자료구조 사용 범위 등 저장소 전체에 적용되는 동시성 규칙은 [`CLAUDE.md` 동시성 규칙](../CLAUDE.md#동시성-규칙) 참조.
-
-### 3.3 Graceful shutdown
-
-- `@PostConstruct init()`에서 `dbWriter.start()` → `walRecovery.recover()` → `walWriter.start()` → `engine-core` 스레드 시작 순
-- `@PreDestroy stop()`에서 `running = false` 후 `thread.interrupt()`
-- 각 스레드 루프는 `InterruptedException`을 catch하면 반드시 `Thread.currentThread().interrupt()`로 인터럽트 상태를 복구하고 종료한다
+- 각 스레드는 자신의 데이터(오더북, WAL, DB 커넥션) 를 단독으로 소유하고, 해당 데이터의 변경은 소유 스레드만 한다
+- 스레드끼리는 불변 record 를 큐에 던져 단방향으로만 소통하고, 응답을 기다리지 않는다
+- 락이나 동기화 자료구조는 위 구조로 풀 수 없을 때만 쓴다
 
 ---
 
-## 4. 외부 경계 계약
+# 패키지 구성
 
-엔진이 소통하는 외부 서비스는 두 곳이다
+최상위는 스레드 소유 기준으로 분리한다. 한 스레드가 소유하는 자료와 그 스레드가 처리하는 record 를 한 패키지에 둔다. 큐로 전달되는 record 는 만드는 쪽이 아니라 받는 쪽에 둔다 (예: `FillCommand` 는 매칭이 만들지만 dbwriter 가 받으므로 `dbwriter/`).
 
-| 상대 | 방향 | 교환 이벤트 | 역할 |
-|------|------|-------------|------|
-| `trypto-api` | 인바운드 / 아웃바운드 | `OrderPlaced`, `OrderCanceled` / `OrderFilledEvent` | 주문을 발행하는 업스트림, 체결 결과의 유일한 소비자 |
-| `trypto-collector` | 인바운드만 | `TickReceived` | 외부 거래소 시세를 수집해 틱으로 주입하는 업스트림 |
-
-엔진은 `trypto-api`/`trypto-collector` 메세지 큐를 통해 소통한다.
-
-### 4.1 인바운드 — RabbitMQ `engine.inbox`
-
-- 큐 이름: `${engine.inbox.queue}` (환경 설정)
-- 리스너 동시성: 1 (단일 컨슈머, `@RabbitListener(concurrency = "1")`)
-- 리스너 prefetch: `${spring.rabbitmq.listener.simple.prefetch:64}` — concurrency=1 고정이므로 이 값만이 인바운드 처리량 상한에 영향
-- 메시지 헤더: `event_type` (필수)
-
-**이벤트 스키마 (JSON payload)**
-
-| event_type | 필드 |
-|------------|------|
-| `OrderPlaced` | `orderId:Long, userId:Long, walletId:Long, side:"BUY"|"SELL", exchangeCoinId:Long, coinId:Long, baseCoinId:Long, price:BigDecimal, quantity:BigDecimal, lockedAmount:BigDecimal, lockedCoinId:Long, placedAt:LocalDateTime` |
-| `OrderCanceled` | `orderId:Long, exchangeCoinId:Long` |
-| `TickReceived` | `exchange:String, displayName:String, tradePrice:BigDecimal, tickAt:LocalDateTime` |
-
-- `event_type` 헤더가 없거나 미지의 값이면 WARN 로깅 후 drop (at-least-once 전제)
-- 같은 이벤트의 재전송은 멱등 처리된다 (engine-core 문서, engine-wal 문서 참조)
-
-**샘플 페이로드**
-
-`OrderPlaced` (header `event_type=OrderPlaced`)
-
-```json
-{
-  "orderId": 42,
-  "userId": 7,
-  "walletId": 2,
-  "side": "BUY",
-  "exchangeCoinId": 11,
-  "coinId": 3,
-  "baseCoinId": 1,
-  "price": 100000000,
-  "quantity": 0.005,
-  "lockedAmount": 500000,
-  "lockedCoinId": 1,
-  "placedAt": "2026-02-21T14:30:00"
-}
+```
+ksh.tryptoengine/
+├── consumer/   # RabbitMQ 리스너, 인바운드 이벤트 record
+├── matching/   # 매칭 스레드, 오더북, 도메인 타입
+├── wal/        # WAL append, 스냅샷, 리플레이 복구
+├── dbwriter/   # DB 쓰기 스레드, 체결 트랜잭션, 홀딩 갱신
+├── outbox/     # 아웃박스 폴링·발행
+├── metrics/    # Micrometer 지표
+└── config/     # 스프링 설정
 ```
 
-`OrderCanceled` (header `event_type=OrderCanceled`)
+---
 
-```json
-{ "orderId": 42, "exchangeCoinId": 11 }
-```
+# 문서 인덱스
 
-`TickReceived` (header `event_type=TickReceived`)
+작업 시작 전 관련 문서를 확인한다. 컨벤션은 작업 전 통독, 스레드별 상세는 필요할 때만 펼친다.
 
-```json
-{
-  "exchange": "BITHUMB",
-  "displayName": "BTC",
-  "tradePrice": 100274000,
-  "tickAt": "2026-02-21T14:30:00"
-}
-```
+**공통**
+- [conventions.md](conventions.md) — 코드 스타일, 네이밍, 로깅·예외 처리 규약
 
-### 4.2 아웃바운드 — RabbitMQ fanout
+**스레드별 상세** (해당 스레드 작업 시 `index.md` 부터 진입)
+- [threads/index.md](threads/index.md) — 매칭·WAL·DB 쓰기·아웃박스 릴레이 스레드의 책임과 처리 흐름
 
-- Exchange: `${engine.publisher.fanout-exchange}`
-- 발행 경로: `FillTransactionExecutor`가 `outbox` 테이블에 INSERT → `OutboxRelay`가 500ms 주기로 폴링/발행
-
-**`OrderFilledEvent` 스키마**
-
-| 필드 | 타입 |
-|------|------|
-| `orderId` | Long |
-| `userId` | Long |
-| `executedPrice` | BigDecimal |
-| `quantity` | BigDecimal |
-| `executedAt` | LocalDateTime |
-
-샘플 (fanout routing key `""`)
-
-```json
-{
-  "orderId": 42,
-  "userId": 7,
-  "executedPrice": 100274000,
-  "quantity": 0.005,
-  "executedAt": "2026-02-21T14:30:01"
-}
-```
-
-### 4.3 스키마 변경 정책
-
-- 인바운드 이벤트는 `trypto-api`(주문) 또는 `trypto-collector`(틱)가 발행자, 엔진이 소비자. 필드 추가는 하위 호환(엔진이 무시)이지만 **필드 제거·타입 변경은 호환 불가** — 양쪽 동시 릴리스 필요
-- `event_type`은 enum-like 키. 새 타입 추가는 엔진이 먼저 알아들을 수 있어야 하므로 엔진 릴리스 → 발행자 릴리스 순으로 배포
-- 아웃바운드 `OrderFilledEvent`는 엔진이 발행자, `trypto-api`가 소비자. 동일 규칙을 반대 방향으로 적용
-- WAL/스냅샷 포맷은 엔진 내부 규약이지만 **in-flight 이벤트를 보존한 채 무중단 업그레이드를 원하면** 기존 WAL을 전부 소진하고 체크포인트를 찍은 뒤 새 포맷으로 롤아웃한다
-
-
+**서비스 간 계약** (루트 `docs/contracts/`)
+- [engine-inbox](../../docs/contracts/engine-inbox.md) — 엔진이 받는 주문·취소·틱 메시지 스펙
+- [outbox-events](../../docs/contracts/outbox-events.md) — 엔진이 발행하는 체결 결과 메시지 스펙

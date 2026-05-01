@@ -1,0 +1,4 @@
+- [engine-core.md](engine-core.md) — 인바운드 주문/틱을 순차 소비해 오더북을 갱신하고 체결 가능한 주문을 일괄 체결
+- [engine-wal.md](engine-wal.md) — 처리 전 append-then-process, 스냅샷, 리플레이 복구
+- [engine-dbwriter.md](engine-dbwriter.md) — 체결·홀딩·잔고·아웃박스를 한 트랜잭션으로 묶는 DB 쓰기
+- [outbox-relay.md](outbox-relay.md) — 아웃박스 테이블 폴링과 RabbitMQ fanout 발행

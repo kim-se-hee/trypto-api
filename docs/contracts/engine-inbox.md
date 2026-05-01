@@ -7,7 +7,7 @@
 | 종류 | RabbitMQ Durable Queue (default exchange + queue name routing) |
 | 이름 | `engine.inbox` (`engine.inbox.queue`로 외부화) |
 | 발행자 | `collector` — `ksh.tryptocollector.rabbitmq.EngineInboxPublisher` (TickReceived), `api` — `ksh.tryptobackend.trading.adapter.out.event.EngineInboxPublisher` (OrderPlaced / OrderCanceled) |
-| 소비자 | `engine` — `ksh.tryptoengine.ingress.RabbitIngress` (`concurrency=1`) |
+| 소비자 | `engine` — `ksh.tryptoengine.consumer.RabbitIngress` (`concurrency=1`) |
 | Content-Type | `application/json` |
 | Routing key | `engine.inbox` (default exchange + queue name) |
 | Durable | true · non-exclusive · non-auto-delete |
@@ -72,7 +72,7 @@ api가 주문 검증·잔고 차감을 DB에 커밋한 직후 발행한다.
 | `exchangeCoinId` | 오더북 키 (거래소-코인 페어) |
 | `coinId` | base 코인 ID |
 | `baseCoinId` | **quote 코인 ID** (필드명과 의미가 반대) |
-| `price` | 지정가. **`null`이면 시장가** |
+| `price` | 지정가 |
 | `quantity` | base 단위 수량 |
 | `lockedAmount` | `lockedCoinId` 통화 기준 잠금량 |
 | `lockedCoinId` | BUY=`baseCoinId`, SELL=`coinId` |
