@@ -38,7 +38,7 @@
 
 작업 시작 전 관련 문서를 확인한다. 컨벤션은 작업 전 통독, 기능/도메인 문서는 필요할 때만 펼친다.
 
-**토대 (작업 전 필독)**
+**토대**
 - [docs/architecture.md](docs/architecture.md) — 헥사고날 포트/어댑터, 패키지 구조, 컨텍스트 의존 그래프, Common Shared Kernel
 - [docs/conventions.md](docs/conventions.md) — DTO · 에러 처리 · 공통 · 레이어별 코딩 컨벤션
 
@@ -56,8 +56,15 @@
 - `docs/investmentround/` — 투자 라운드, 긴급 충전
 - `docs/user/` — 회원, 프로필
 
-**시스템 단위**
-- [docs/realtime-ticker.md](docs/realtime-ticker.md) · [docs/websocket.md](docs/websocket.md) · [docs/candle-data.md](docs/candle-data.md)
+**인프라**
+- [docs/websocket.md](docs/websocket.md) — STOMP/WebSocket 인프라
 - `docs/batch/` — 배치 잡 설계
+
+**화면**
 - `docs/screen/` — 화면 단위 통합 명세
+
+**테스트**
 - [docs/testing.md](docs/testing.md)
+
+**서비스 간 계약** (루트 `docs/contracts/`)
+- collector ↔ api 시세·체결 메시지/저장소 스키마는 루트 [docs/contracts/](../docs/contracts/) 참조

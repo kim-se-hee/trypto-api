@@ -3,7 +3,7 @@
 캔들(OHLC) 차트 데이터를 조회하는 REST API다.
 InfluxDB에 저장된 시계열 캔들 데이터를 커서 기반 페이징으로 반환한다.
 
-InfluxDB 저장 구조는 [candle-data.md](../candle-data.md)를 참고한다.
+InfluxDB 저장 구조는 [../../../docs/contracts/influx-candle.md](../../../docs/contracts/influx-candle.md)를 참고한다.
 
 # 목적
 
