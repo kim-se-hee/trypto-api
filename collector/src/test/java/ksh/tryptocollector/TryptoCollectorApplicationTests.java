@@ -1,6 +1,6 @@
 package ksh.tryptocollector;
 
-import ksh.tryptocollector.metadata.ExchangeInitializer;
+import ksh.tryptocollector.ingest.ExchangeInitializer;
 import ksh.tryptocollector.support.TestContainerConfiguration;
 import ksh.tryptocollector.support.TestInfluxConfig;
 import ksh.tryptocollector.support.TestRedissonConfig;

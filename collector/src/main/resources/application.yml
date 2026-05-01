@@ -60,4 +60,4 @@ management:
 logging:
   level:
     ksh.tryptocollector: DEBUG
-    ksh.tryptocollector.exchange: INFO
+    ksh.tryptocollector.ingest: INFO
