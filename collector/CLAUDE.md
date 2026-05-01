@@ -168,7 +168,7 @@ GitHub Flow를 따른다. `main` 브랜치와 `feature/*` 브랜치만 사용한
 작업에 필요한 상세 문서는 아래 경로에 있다. 필요할 때 참조한다.
 
 - 전체 아키텍처: `docs/architecture.md`
-- 공통 인프라: `docs/common-infrastructure.md`
-- 거래소별: `docs/upbit.md`, `docs/bithumb.md`, `docs/binance.md`
-- 캔들 데이터: `docs/candle.md`
+- 수신 (거래소 → NormalizedTicker): `docs/ingest/index.md` 부터 진입
+- 분배 (NormalizedTicker → 4채널): `docs/distribute/index.md` 부터 진입
+- HA (리더 선출 + 라이프사이클): `docs/ha.md`
 - 모니터링: `docs/monitoring.md`

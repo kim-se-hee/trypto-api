@@ -1,0 +1,1 @@
+- [store-and-publish.md](store-and-publish.md) — 시세를 어디에 저장하고 어디로 발행하는지 정리
